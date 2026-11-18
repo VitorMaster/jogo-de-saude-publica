@@ -10,6 +10,7 @@ const INTRO_KEY = 'saude-sim-intro-v1';
 
 let cfg, S;
 let aba = 'territorio';
+let confirmaReset = false;
 let folha = null; // { tipo: 'familia'|'pessoa'|'relatorio'|'intro'|'sobre', id? }
 
 const $ = (sel) => document.querySelector(sel);
@@ -258,7 +259,7 @@ function folhaSobre() {
     <div class="card"><p>Protótipo v0.1 — simulação simplificada de uma unidade básica de saúde. As regras ficam em <code>data/*.json</code> e as fontes de cada condição estão listadas lá, <b>a validar com consultoria clínica</b>.</p>
     <p class="dica">Fora do escopo desta versão: óbitos, gestação, puericultura, vacinação, outras doenças e os modos de profissional individuais.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
-    <button class="btn perigo" style="margin-top:14px" data-act="reiniciar"><span>🗑 Começar um novo território</span></button>`;
+    <button class="btn perigo" style="margin-top:14px" data-act="reiniciar"><span>${confirmaReset ? '⚠ Toque de novo para confirmar: o progresso será perdido' : '🗑 Começar um novo território'}</span></button>`;
 }
 
 function viewFolha() {
@@ -294,7 +295,7 @@ document.addEventListener('click', (ev) => {
     case 'aba': aba = id; render(); window.scrollTo(0, 0); break;
     case 'abrir-familia': folha = { tipo: 'familia', id }; render(); break;
     case 'abrir-pessoa': folha = { tipo: 'pessoa', id }; render(); break;
-    case 'fechar': folha = null; render(); break;
+    case 'fechar': folha = null; confirmaReset = false; render(); break;
     case 'ajuda': folha = { tipo: 'intro', reaberta: true }; render(); break;
     case 'sobre': folha = { tipo: 'sobre' }; render(); break;
     case 'comecar': marcaIntro(); folha = null; render(); break;
@@ -307,7 +308,8 @@ document.addEventListener('click', (ev) => {
     case 'obra': resultado(acaoObra(S, cfg, id)); break;
     case 'avancar': avancarMes(S, cfg); folha = { tipo: 'relatorio' }; salvar(); render(); break;
     case 'reiniciar':
-      if (confirm('Começar um novo território? O progresso atual será perdido.')) { S = newGame(cfg); folha = null; aba = 'territorio'; salvar(); render(); }
+      if (!confirmaReset) { confirmaReset = true; render(); break; }
+      confirmaReset = false; S = newGame(cfg); folha = null; aba = 'territorio'; salvar(); render();
       break;
     default: break;
   }
