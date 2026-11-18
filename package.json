@@ -1,0 +1,11 @@
+{
+  "name": "saude-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Simulador de saúde (UBS e território) para o público geral — protótipo mobile-first",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

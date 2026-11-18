@@ -1,0 +1,41 @@
+{
+  "inicio": { "mes": 8, "ano": 2026, "tempoBase": 8, "insumos": 14, "verba": 30, "infestacao": 25 },
+  "ritmo": 1.0,
+  "custos": { "visita": 1, "medir": 1, "consulta": 2, "orientar": 1, "mutirao": 2 },
+  "economia": { "verbaBase": 18, "verbaBonus": 14, "insumosCap": 60, "custoInternacao": 8 },
+  "dengue": {
+    "estacao": [10, 11, 0, 1, 2, 3],
+    "ataque": 0.12,
+    "mutiraoEfeito": 22,
+    "crescimentoEstacao": [6, 14],
+    "quedaForaEstacao": 8,
+    "imunidadeMeses": 12,
+    "pGraveSemAtendimento": 0.12,
+    "pGraveComAtendimento": 0.01
+  },
+  "predios": {
+    "consultorio": {
+      "nome": "Consultório", "icone": "🩺",
+      "efeito": "+2 horas de equipe por mês por nível",
+      "custo": [25, 45, 70], "meses": [1, 2, 3]
+    },
+    "farmacia": {
+      "nome": "Farmácia da unidade", "icone": "💊",
+      "efeito": "+4 insumos por mês por nível",
+      "custo": [25, 45, 70], "meses": [1, 2, 3]
+    },
+    "vigilancia": {
+      "nome": "Vigilância e controle de vetores", "icone": "🦟",
+      "efeito": "Reduz o crescimento da infestação e melhora os mutirões",
+      "custo": [30, 50, 75], "meses": [1, 2, 3]
+    },
+    "acs": {
+      "nome": "Agentes comunitários", "icone": "🏘️",
+      "efeito": "+1,5 de vínculo por mês em todas as famílias por nível",
+      "custo": [30, 50, 75], "meses": [1, 2, 3]
+    }
+  },
+  "insumosBase": 6,
+  "insumosPorNivel": 4,
+  "tempoPorNivel": 2
+}

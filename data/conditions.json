@@ -1,0 +1,41 @@
+{
+  "has": {
+    "nome": "Hipertensão arterial", "icone": "❤️", "idadeMin": 18, "silenciosa": true,
+    "pesos": { "idade": 0.9, "sedentarismo": 0.7, "alimentacao": 0.7, "tabagismo": 0.4, "estresse": 0.4, "imc": 0.8, "genetica": 1.0 },
+    "init": { "a1": -0.3, "a2": -1.1, "b": 2.2, "pComplicadaInicial": 0.08 },
+    "prog": { "p01": 0.010, "p12": 0.015, "p23": 0.008, "k": 1.4, "fatorControlado": 0.15 },
+    "estagios": ["Sem alteração", "Pressão limítrofe (risco)", "Hipertensão", "Hipertensão com complicação"],
+    "queixas": [],
+    "evento": "sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)",
+    "licao": "A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.",
+    "fonte": "Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"
+  },
+  "dm": {
+    "nome": "Diabetes tipo 2", "icone": "🩸", "idadeMin": 18, "silenciosa": false,
+    "pesos": { "idade": 0.7, "sedentarismo": 0.7, "alimentacao": 0.9, "imc": 1.0, "genetica": 1.0, "sono": 0.2, "tabagismo": 0.2 },
+    "init": { "a1": -1.4, "a2": -2.4, "b": 2.2, "pComplicadaInicial": 0.08 },
+    "prog": { "p01": 0.007, "p12": 0.012, "p23": 0.007, "k": 1.4, "fatorControlado": 0.2 },
+    "estagios": ["Sem alteração", "Pré-diabetes (risco)", "Diabetes", "Diabetes com complicação"],
+    "queixas": ["sede excessiva", "urina com muita frequência", "cansaço", "feridas que demoram a cicatrizar"],
+    "evento": "teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)",
+    "licao": "O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.",
+    "fonte": "Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"
+  },
+  "dep": {
+    "nome": "Depressão", "icone": "🌧️", "idadeMin": 15, "silenciosa": false,
+    "pesos": { "estresse": 1.0, "sono": 0.8, "sedentarismo": 0.5, "genetica": 0.9, "idade": 0.1, "tabagismo": 0.2 },
+    "init": { "a1": -1.2, "a2": -2.2, "b": 2.2, "pComplicadaInicial": 0.05 },
+    "prog": { "p01": 0.008, "p12": 0.015, "p23": 0.005, "k": 1.4, "fatorControlado": 0.2, "remissao": 0.07 },
+    "estagios": ["Sem alteração", "Sinais leves (risco)", "Depressão", "Depressão grave"],
+    "queixas": ["tristeza persistente", "falta de interesse nas atividades", "insônia", "cansaço constante"],
+    "evento": "teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação",
+    "licao": "A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.",
+    "fonte": "Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"
+  },
+  "dengue": {
+    "nome": "Dengue", "icone": "🦟",
+    "queixas": ["febre alta", "dor no corpo e atrás dos olhos", "manchas vermelhas na pele", "muita fraqueza"],
+    "licao": "A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.",
+    "fonte": "Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"
+  }
+}
