@@ -118,3 +118,10 @@ main { flex: 1; padding: 14px 16px calc(150px + env(safe-area-inset-bottom)); }
 .aviso { font-size: 12.5px; color: var(--muted); margin-top: 14px; }
 .liga { font-size: 22px; font-weight: 800; }
 .grande { font-size: 28px; font-weight: 800; }
+
+/* Guia e ajuda */
+.guia { display: flex; gap: 12px; align-items: center; background: var(--info-soft); border-color: var(--info); margin-bottom: 4px; font-size: 15px; }
+.passo { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+.passos .p { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+.passos .p + .p { margin-top: 12px; }
+.ajuda { margin-left: 6px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(255,255,255,.25); color: inherit; font-weight: 800; cursor: pointer; }

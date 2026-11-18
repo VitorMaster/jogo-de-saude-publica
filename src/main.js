@@ -69,12 +69,24 @@ function selosFamilia(f) {
 /* ---------- Telas ---------- */
 function viewTopo() {
   return `<header class="topo">
-    <div class="linha"><h1>🏥 ${esc(cfg.territorio.nomeUnidade)}</h1><span class="data">${esc(rotuloData(S))}</span></div>
+    <div class="linha"><h1>🏥 ${esc(cfg.territorio.nomeUnidade)}</h1><span class="data">${esc(rotuloData(S))} <button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></span></div>
     <div class="chips">
       <span class="chip">⏱ Equipe ${S.tempo}/${S.tempoMax}</span>
       <span class="chip">💊 Insumos ${S.insumos}</span>
       <span class="chip">💰 Verba ${S.verba}</span>
     </div></header>`;
+}
+
+function proximoPasso() {
+  const pess = todasPessoas(S);
+  const adultos = pess.filter((p) => p.idade >= 18);
+  if (S.tempo <= 0) return { n: '▶', txt: 'Suas horas deste mês acabaram. Toque em <b>Avançar para o próximo mês</b> e veja o que aconteceu.' };
+  if (!S.familias.some((f) => f.visTurno >= 0)) return { n: 1, txt: 'Toque em uma <b>casa</b> abaixo e faça uma <b>Visita domiciliar</b>. Isso cria vínculo com a família.' };
+  if (!adultos.some((p) => p.conhecido.medidasTurno !== null)) return { n: 2, txt: 'Abra uma <b>pessoa adulta</b> (dentro da casa) e toque em <b>Medir PA e glicemia</b>. Muita doença não dá sintoma.' };
+  if (pess.some((p) => p.conhecido.suspeitas.length)) return { n: 3, txt: 'Alguém está com <b>⚠ suspeita</b> (valores alterados). Abra a pessoa e faça uma <b>Consulta</b> para confirmar.' };
+  if (pess.some((p) => CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat))) return { n: 4, txt: 'Há um diagnóstico <b>sem tratamento</b>. Abra a pessoa e toque em <b>Iniciar tratamento</b> (gasta 1 insumo por mês).' };
+  if (S.turno === 0) return { n: 5, txt: 'Continue medindo os outros adultos. Quando acabar as horas ⏱, avance o mês.' };
+  return null;
 }
 
 function viewTerritorio() {
@@ -86,7 +98,9 @@ function viewTerritorio() {
       <span><span class="rotulo"><span>Vínculo</span><span>${Math.round(f.vinculo)}%</span></span>
       <span class="barra ${f.vinculo < 30 ? 'perigo' : f.vinculo < 50 ? 'alerta' : ''}"><i style="width:${f.vinculo}%"></i></span></span>
     </button>`).join('');
-  return `<h2 class="secao">Seu território</h2><div class="grade">${casas}</div>
+  const passo = proximoPasso();
+  const guia = passo ? `<div class="card guia"><span class="passo">${passo.n}</span><div>${passo.txt}</div></div>` : '';
+  return `${guia}<h2 class="secao">Seu território</h2><div class="grade">${casas}</div>
     <p class="dica">Toque numa casa para visitar a família e cuidar de cada pessoa. Você tem horas de equipe limitadas por mês.</p>`;
 }
 
@@ -226,12 +240,17 @@ function folhaRelatorio() {
 }
 
 function folhaIntro() {
-  return `<div class="folha-topo"><h2>Bem-vindo(a) à ${esc(cfg.territorio.nomeUnidade)}</h2></div>
-    <div class="card"><p>Você cuida de uma unidade básica de saúde e das famílias do seu bairro — gente de todas as idades.</p></div>
-    <div class="card"><strong>Como jogar</strong>
-      <p class="dica" style="font-size:14.5px">🏠 Visite as famílias para criar <b>vínculo</b>.<br>📏 Meça pressão e glicemia dos adultos: muita doença é <b>silenciosa</b>.<br>🩺 Confirme em consulta, <b>trate</b> e oriente hábitos.<br>⏱ Suas horas de equipe são limitadas por mês.<br>▶ Avance o mês e veja o que aconteceu. As pessoas evoluem com seus hábitos e com o seu cuidado — e há dengue na temporada de calor!</p></div>
+  return `<div class="folha-topo"><h2>Como jogar</h2></div>
+    <div class="card"><p>Você é a equipe da <b>${esc(cfg.territorio.nomeUnidade)}</b> e cuida das famílias do bairro. <b>Seu objetivo:</b> manter todos saudáveis ao longo dos meses, evitar internações e se preparar para a dengue no verão.</p></div>
+    <div class="card passos">
+      <div class="p"><span class="passo">1</span><div><b>Visite uma casa</b><br>Toque numa família e depois em <i>Visita domiciliar</i>. Cria vínculo e mostra os hábitos.</div></div>
+      <div class="p"><span class="passo">2</span><div><b>Meça os adultos</b><br>Abra uma pessoa e toque em <i>Medir PA e glicemia</i>. Muita doença é silenciosa.</div></div>
+      <div class="p"><span class="passo">3</span><div><b>Confirme e trate</b><br>Se aparecer <i>⚠ suspeita</i>, faça uma <i>Consulta</i>; com diagnóstico, <i>Iniciar tratamento</i>.</div></div>
+      <div class="p"><span class="passo">4</span><div><b>Avance o mês</b><br>Suas horas de equipe (⏱) são limitadas por mês. Gastou? Toque em <i>▶ Avançar</i> e leia o relatório.</div></div>
+    </div>
+    <p class="dica">💊 Faltou remédio? 💰 Use a verba para melhorar a unidade. 🦟 No calor, faça mutirões contra o mosquito. O botão <b>?</b> no topo abre esta ajuda de novo.</p>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
-    <button class="btn primario" style="margin-top:12px" data-act="comecar"><span>Começar</span></button>`;
+    <button class="btn primario" style="margin-top:12px" data-act="comecar"><span>Entendi, vamos jogar!</span></button>`;
 }
 
 function folhaSobre() {
@@ -276,6 +295,7 @@ document.addEventListener('click', (ev) => {
     case 'abrir-familia': folha = { tipo: 'familia', id }; render(); break;
     case 'abrir-pessoa': folha = { tipo: 'pessoa', id }; render(); break;
     case 'fechar': folha = null; render(); break;
+    case 'ajuda': folha = { tipo: 'intro', reaberta: true }; render(); break;
     case 'sobre': folha = { tipo: 'sobre' }; render(); break;
     case 'comecar': marcaIntro(); folha = null; render(); break;
     case 'visita': resultado(acaoVisita(S, cfg, id)); break;
