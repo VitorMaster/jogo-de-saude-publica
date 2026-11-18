@@ -203,6 +203,25 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
   <div id="toast" role="status"></div>
 
 <script>
+(function () {
+  var d = document.createElement('div');
+  d.id = 'diag';
+  d.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 72px);z-index:200;background:#fff;color:#14201e;border:1px solid #cbd5d1;border-radius:12px;padding:12px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.2)';
+  d.innerHTML = '<b>Carregando o jogo…</b><div id="diag-msg" style="margin-top:6px;color:#5b6b68"></div>';
+  (document.body || document.documentElement).appendChild(d);
+  var msgs = [];
+  window.__diag = function (m) { msgs.push(String(m)); var e = document.getElementById('diag-msg'); if (e) e.textContent = msgs.slice(-4).join(' | '); };
+  window.addEventListener('error', function (ev) { window.__diag('Erro: ' + (ev.message || 'desconhecido') + (ev.lineno ? ' (linha ' + ev.lineno + ')' : '')); }, true);
+  window.addEventListener('unhandledrejection', function (ev) { window.__diag('Erro: ' + (ev.reason && ev.reason.message ? ev.reason.message : ev.reason)); });
+  setTimeout(function () {
+    if (!window.__jogoPronto) {
+      var e = document.getElementById('diag');
+      if (e) { e.firstChild.textContent = 'O jogo não iniciou'; window.__diag('Navegador: ' + navigator.userAgent.slice(0, 90)); }
+    }
+  }, 4000);
+})();
+</script>
+<script>
 document.body.classList.add('sem-jogo');
 (function () {
 'use strict';
@@ -795,7 +814,7 @@ function construirMapa(cfg) {
   for (const o of objs) bloq[idx(o.x, o.y)] = 1;
 
   const porTipo = {};
-  for (const o of objs) (porTipo[o.t] ||= []).push(o);
+  for (const o of objs) (porTipo[o.t] = porTipo[o.t] || []).push(o);
   return { w, h, terr, piso, objs, casas, ubs, lugares, bloq, porTipo };
 }
 
@@ -1145,7 +1164,7 @@ function chegada(W, S, cfg, a, p) {
     const ord = pend.ord;
     ord.estado = 'espera';
     a.espera = ord;
-    (W.ubsFila[ord.tipo] ||= []).push(a.id);
+    (W.ubsFila[ord.tipo] = W.ubsFila[ord.tipo] || []).push(a.id);
     return;
   }
   if (pend.k === 'atendido') { a.atend.pronto = true; return; }
@@ -2696,6 +2715,9 @@ async function iniciar() {
     abrirFolha({ tipo: 'cenarios' });
   }
   requestAnimationFrame(quadro);
+  window.__jogoPronto = true;
+  const diag = document.getElementById('diag');
+  if (diag) diag.remove();
   window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, selecionar };
 }
 

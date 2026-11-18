@@ -560,6 +560,9 @@ async function iniciar() {
     abrirFolha({ tipo: 'cenarios' });
   }
   requestAnimationFrame(quadro);
+  window.__jogoPronto = true;
+  const diag = document.getElementById('diag');
+  if (diag) diag.remove();
   window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, selecionar };
 }
 

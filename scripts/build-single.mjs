@@ -25,9 +25,27 @@ new Function(js); // falha aqui se houver nomes duplicados ou erro de sintaxe
 
 // HTML: reaproveita o corpo do index.html
 const corpo = ler('index.html').match(/<!--CONTEUDO-->([\s\S]*?)<!--\/CONTEUDO-->/)[1];
+const diag = `(function () {
+  var d = document.createElement('div');
+  d.id = 'diag';
+  d.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 72px);z-index:200;background:#fff;color:#14201e;border:1px solid #cbd5d1;border-radius:12px;padding:12px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.2)';
+  d.innerHTML = '<b>Carregando o jogo…</b><div id="diag-msg" style="margin-top:6px;color:#5b6b68"></div>';
+  (document.body || document.documentElement).appendChild(d);
+  var msgs = [];
+  window.__diag = function (m) { msgs.push(String(m)); var e = document.getElementById('diag-msg'); if (e) e.textContent = msgs.slice(-4).join(' | '); };
+  window.addEventListener('error', function (ev) { window.__diag('Erro: ' + (ev.message || 'desconhecido') + (ev.lineno ? ' (linha ' + ev.lineno + ')' : '')); }, true);
+  window.addEventListener('unhandledrejection', function (ev) { window.__diag('Erro: ' + (ev.reason && ev.reason.message ? ev.reason.message : ev.reason)); });
+  setTimeout(function () {
+    if (!window.__jogoPronto) {
+      var e = document.getElementById('diag');
+      if (e) { e.firstChild.textContent = 'O jogo não iniciou'; window.__diag('Navegador: ' + navigator.userAgent.slice(0, 90)); }
+    }
+  }, 4000);
+})();`;
 const html = `<title>Saúde Sim</title>
 <style>\n${css}\n</style>
 ${corpo}
+<script>\n${diag}\n</script>
 <script>\ndocument.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}\n</script>
 `;
 const saida = process.argv[2] || 'dist/saude-sim.html';

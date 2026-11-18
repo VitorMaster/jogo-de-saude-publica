@@ -99,7 +99,7 @@ export function construirMapa(cfg) {
   for (const o of objs) bloq[idx(o.x, o.y)] = 1;
 
   const porTipo = {};
-  for (const o of objs) (porTipo[o.t] ||= []).push(o);
+  for (const o of objs) (porTipo[o.t] = porTipo[o.t] || []).push(o);
   return { w, h, terr, piso, objs, casas, ubs, lugares, bloq, porTipo };
 }
 
@@ -449,7 +449,7 @@ function chegada(W, S, cfg, a, p) {
     const ord = pend.ord;
     ord.estado = 'espera';
     a.espera = ord;
-    (W.ubsFila[ord.tipo] ||= []).push(a.id);
+    (W.ubsFila[ord.tipo] = W.ubsFila[ord.tipo] || []).push(a.id);
     return;
   }
   if (pend.k === 'atendido') { a.atend.pronto = true; return; }
