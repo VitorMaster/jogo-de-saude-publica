@@ -186,6 +186,21 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 .topo .data { font-size: 12.5px; white-space: nowrap; margin: 0; opacity: .95; }
 .vel button { min-width: 30px; height: 30px; padding: 0 6px; font-size: 12px; }
 
+/* v0.4: personagem único, menus de ação, painel */
+.chip-fila { border: 0; background: var(--warn-soft); color: var(--warn); font-weight: 700; font-size: 12px; border-radius: 999px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+.alerta-sint { margin-top: 6px; background: var(--bad-soft); color: var(--bad); border-radius: 10px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.btn.peq.ligado { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.c-btns { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+.abas-pers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.abas-pers button { min-height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-weight: 700; cursor: pointer; }
+.abas-pers button.on { background: var(--brand); color: var(--brand-ink); border-color: transparent; }
+.pers + .pers { margin-top: 10px; }
+.fundo.leve { background: rgba(0,0,0,.18); }
+.folha.menu-op { max-height: 70%; }
+.folha.menu-op .btn { justify-content: flex-start; gap: 10px; }
+.folha.menu-op .btn small { margin-left: auto; color: var(--muted); white-space: normal; text-align: right; }
+.selo { margin: 2px 4px 2px 0; display: inline-block; }
+
 </style>
 
   <div id="app">
@@ -194,7 +209,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
     <section id="mundo" class="mundo">
       <canvas id="cv" aria-label="Mapa do bairro"></canvas>
       <div id="dica" class="dica-mundo" hidden></div>
-      <div class="ferr"><button data-act="familias" aria-label="Famílias">👥</button><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="paredes" aria-label="Paredes">🧱</button></div>
+      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="paredes" aria-label="Paredes">🧱</button></div>
       <div id="cartao" class="cartao" hidden></div>
     </section>
     <nav id="rodape" class="rodape"></nav>
@@ -225,7 +240,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 document.body.classList.add('sem-jogo');
 (function () {
 'use strict';
-const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá e TV","icone":"📺"},"m":{"nome":"Mesa","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"}},"modelos":{"casa":{"piso":"casa","linhas":["#######","#B_B_C#","#_____#","#Sm_G_#","###+###"]},"apto":{"piso":"casa","linhas":["#####","#BCG#","#___#","#S_m#","##+##"]},"ubs":{"piso":"ubs","linhas":["#############","#H_H_U#Y___D#","#_____+_____#","#H____#___D_#","#___________#","######+######"]},"escola":{"piso":"escola","linhas":["#########","#EE_E_EE#","#_______#","#_______#","####+####"]},"trabalho":{"piso":"trabalho","linhas":["#########","#OO_O_OO#","#_______#","#_______#","####+####"]},"lanche":{"piso":"lanche","linhas":["#######","#L_L_L#","#_____#","###+###"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18},"mapa":{"w":46,"h":24,"base":"c","retangulos":[{"c":".","x":0,"y":10,"w":46,"h":3},{"c":".","x":20,"y":0,"w":3,"h":24},{"c":",","x":24,"y":18,"w":22,"h":6}],"carimbos":[{"m":"ubs","x":1,"y":4},{"m":"apto","x":15,"y":5,"casa":"silva"},{"m":"apto","x":24,"y":5,"casa":"oliveira"},{"m":"apto","x":30,"y":5,"casa":"pereira"},{"m":"trabalho","x":36,"y":5},{"m":"apto","x":1,"y":13,"flip":true,"casa":"costa"},{"m":"apto","x":7,"y":13,"flip":true,"casa":"souza"},{"m":"apto","x":13,"y":13,"flip":true,"casa":"santos"},{"m":"escola","x":24,"y":13,"flip":true},{"m":"lanche","x":34,"y":13,"flip":true}],"objetos":[{"t":"P","x":27,"y":20},{"t":"P","x":29,"y":20},{"t":"A","x":33,"y":20},{"t":"A","x":35,"y":20},{"t":"T","x":30,"y":19},{"t":"T","x":39,"y":19},{"t":"T","x":42,"y":22},{"t":"T","x":26,"y":22},{"t":"T","x":9,"y":20},{"t":"T","x":15,"y":21}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola"}]},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho"}]},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"aposentado"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado"}]}]}},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0},"mapa":{"w":45,"h":22,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":45,"h":2},{"c":".","x":22,"y":0,"w":2,"h":22},{"c":"c","x":15,"y":8,"w":14,"h":5}],"carimbos":[{"m":"ubs","x":2,"y":7},{"m":"casa","x":31,"y":8,"casa":"silva"},{"m":"casa","x":38,"y":8,"casa":"oliveira"},{"m":"casa","x":2,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":17,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":25,"y":15,"flip":true},{"m":"trabalho","x":35,"y":15,"flip":true}],"objetos":[{"t":"P","x":17,"y":10},{"t":"P","x":27,"y":10},{"t":"A","x":18,"y":9},{"t":"A","x":26,"y":9},{"t":"T","x":20,"y":9},{"t":"T","x":25,"y":12},{"t":"T","x":16,"y":12},{"t":"T","x":14,"y":2},{"t":"T","x":30,"y":3},{"t":"T","x":41,"y":4},{"t":"T","x":6,"y":20},{"t":"T","x":28,"y":20},{"t":"T","x":40,"y":20}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola"}]},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"aposentado"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado"}]}]}},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8},"mapa":{"w":60,"h":26,"base":",","retangulos":[{"c":".","x":0,"y":11,"w":60,"h":2},{"c":"F","x":3,"y":16,"w":22,"h":8},{"c":"F","x":36,"y":16,"w":15,"h":8}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":25,"y":5},{"m":"escola","x":41,"y":6},{"m":"casa","x":51,"y":6,"casa":"souza"},{"m":"casa","x":27,"y":14,"flip":true,"casa":"pereira"},{"m":"casa","x":52,"y":14,"flip":true,"casa":"costa"}],"objetos":[{"t":"R","x":6,"y":18},{"t":"R","x":10,"y":20},{"t":"R","x":15,"y":18},{"t":"R","x":20,"y":22},{"t":"R","x":23,"y":19},{"t":"R","x":39,"y":18},{"t":"R","x":43,"y":21},{"t":"R","x":48,"y":19},{"t":"T","x":12,"y":3},{"t":"T","x":33,"y":3},{"t":"T","x":48,"y":3},{"t":"T","x":30,"y":22},{"t":"T","x":55,"y":22},{"t":"T","x":1,"y":14}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa"}]},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"aposentado"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola"}]},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa"}]}]}}}}};
+const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá","icone":"🛋️"},"m":{"nome":"Mesa de jantar","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"},"V":{"nome":"Televisão","icone":"📺"},"K":{"nome":"Fonte","icone":"⛲"}},"modelos":{"casa":{"piso":"casa","linhas":["#########","#B_B_C_G#","#_______#","#__V____#","#__m__m_#","#__S____#","####+####"]},"apto":{"piso":"casa","linhas":["#######","#B_C_G#","#_____#","#_V_m_#","#_S___#","###+###"]},"ubs":{"piso":"ubs","linhas":["###############","#H_H_H__#_Y__D#","#_______#_____#","#_______+_____#","#_____U_#_____#","#_______#____D#","#H_H_H__#_____#","#######+#######"]},"escola":{"piso":"escola","linhas":["###########","#E_E_E_E_E#","#_________#","#E_E_E_E_E#","#_________#","#_________#","#####+#####"]},"trabalho":{"piso":"trabalho","linhas":["###########","#O_O_O_O_O#","#_________#","#O_O_O_O_O#","#_________#","#_________#","#####+#####"]},"lanche":{"piso":"lanche","linhas":["#########","#L_L_L_L#","#_______#","#_m___m_#","#_______#","####+####"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18},"mapa":{"w":58,"h":32,"base":"c","retangulos":[{"c":".","x":0,"y":12,"w":58,"h":3},{"c":".","x":26,"y":0,"w":3,"h":32},{"c":",","x":2,"y":24,"w":22,"h":7},{"c":",","x":30,"y":24,"w":26,"h":7}],"carimbos":[{"m":"ubs","x":2,"y":4},{"m":"apto","x":19,"y":6,"casa":"silva"},{"m":"apto","x":30,"y":6,"casa":"oliveira"},{"m":"apto","x":38,"y":6,"casa":"pereira"},{"m":"trabalho","x":46,"y":5},{"m":"apto","x":2,"y":15,"flip":true,"casa":"costa"},{"m":"apto","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":19,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":30,"y":15,"flip":true},{"m":"lanche","x":43,"y":15,"flip":true}],"objetos":[{"t":"P","x":33,"y":27},{"t":"P","x":36,"y":27},{"t":"A","x":41,"y":27},{"t":"A","x":44,"y":27},{"t":"T","x":31,"y":25},{"t":"T","x":38,"y":29},{"t":"T","x":47,"y":26},{"t":"T","x":53,"y":28},{"t":"T","x":5,"y":26},{"t":"T","x":12,"y":29},{"t":"T","x":20,"y":27},{"t":"P","x":8,"y":27},{"t":"P","x":16,"y":27},{"t":"T","x":22,"y":25}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho","profissao":"Designer"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"}]},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]}},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0},"mapa":{"w":54,"h":28,"base":",","retangulos":[{"c":".","x":0,"y":14,"w":54,"h":2},{"c":".","x":26,"y":0,"w":2,"h":15},{"c":"c","x":22,"y":17,"w":8,"h":8}],"carimbos":[{"m":"ubs","x":2,"y":6},{"m":"apto","x":19,"y":8,"casa":"santos"},{"m":"casa","x":30,"y":7,"casa":"silva"},{"m":"casa","x":41,"y":7,"casa":"oliveira"},{"m":"casa","x":2,"y":16,"flip":true,"casa":"pereira"},{"m":"casa","x":12,"y":16,"flip":true,"casa":"souza"},{"m":"escola","x":30,"y":16,"flip":true},{"m":"trabalho","x":42,"y":16,"flip":true}],"objetos":[{"t":"P","x":24,"y":19},{"t":"P","x":27,"y":19},{"t":"A","x":24,"y":22},{"t":"A","x":27,"y":22},{"t":"T","x":22,"y":24},{"t":"T","x":29,"y":24},{"t":"T","x":22,"y":17},{"t":"T","x":29,"y":17}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa","profissao":"Costureira"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]}},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8},"mapa":{"w":68,"h":30,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":68,"h":2},{"c":"F","x":2,"y":17,"w":24,"h":11},{"c":"F","x":42,"y":17,"w":14,"h":11}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":28,"y":5},{"m":"escola","x":46,"y":6},{"m":"casa","x":59,"y":6,"casa":"souza"},{"m":"casa","x":30,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":58,"y":15,"flip":true,"casa":"costa"}],"objetos":[{"t":"R","x":6,"y":19},{"t":"R","x":10,"y":21},{"t":"R","x":14,"y":19},{"t":"R","x":18,"y":23},{"t":"R","x":22,"y":20},{"t":"R","x":5,"y":25},{"t":"R","x":12,"y":26},{"t":"R","x":20,"y":26},{"t":"R","x":45,"y":20},{"t":"R","x":49,"y":23},{"t":"R","x":53,"y":19},{"t":"R","x":46,"y":25},{"t":"R","x":52,"y":26},{"t":"T","x":12,"y":3},{"t":"T","x":40,"y":3},{"t":"T","x":57,"y":3},{"t":"T","x":28,"y":24},{"t":"T","x":36,"y":26},{"t":"T","x":60,"y":25},{"t":"T","x":1,"y":15},{"t":"T","x":26,"y":16}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa","profissao":"Designer"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa","profissao":"Entregador"}]}]}}},"papeis":{"acs":{"nome":"Agente comunitário de saúde","icone":"🧑‍🌾","resumo":"Percorre o território, visita famílias, afere pressão em casa, orienta hábitos e convida para a unidade (busca ativa).","desafios":["Distâncias e calor","Famílias com pouco vínculo","Dengue: mutirões contra focos"],"curto":"Agente comunitário"},"tecnico":{"nome":"Técnico(a) de enfermagem","icone":"🧑‍🔬","resumo":"Faz a triagem: aferição de pressão e glicemia, e encaminha cada pessoa para enfermagem, consulta ou orientações.","desafios":["Fila crescendo","Decidir o encaminhamento certo","Tempo curto por pessoa"],"curto":"Técnico(a)"},"enfermeiro":{"nome":"Enfermeiro(a)","icone":"🧑‍⚕️","resumo":"Faz a consulta de enfermagem: rastreia riscos, orienta hábitos e encaminha ao médico quando preciso.","desafios":["Prevenção e vínculo","Escolher o foco da orientação","Equipe enxuta"],"curto":"Enfermeiro(a)"},"medico":{"nome":"Médico(a)","icone":"👨‍⚕️","resumo":"Faz a consulta médica: confirma diagnósticos, inicia tratamento e acompanha o retorno.","desafios":["Poucos dias de atendimento em alguns lugares","Insumos limitados","Doenças silenciosas"],"curto":"Médico(a)"}}}};
 // Gerador pseudo-aleatório com estado serializável (mulberry32) — permite salvar/carregar e testar de forma determinística.
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const sig = (x) => 1 / (1 + Math.exp(-x));
@@ -279,7 +294,7 @@ function novaPessoa(s, cfg, tpl, famId, idx) {
   const h = (k, lo = 20, hi = 90) => { const [a, b] = hb[k] || [lo, hi]; return Math.round(a + rnd(s) * (b - a)); };
   return {
     id: `${famId}-${idx}`, familiaId: famId, nome: tpl.nome, idade: tpl.idade, sexo: tpl.sexo,
-    ocupacao: tpl.ocupacao || 'casa',
+    ocupacao: tpl.ocupacao || 'casa', profissao: tpl.profissao || '',
     habitos: { atividade: h('atividade'), alimentacao: h('alimentacao'), sono: h('sono'), estresse: h('estresse', 15, 85) },
     tabagismo: adulto && rnd(s) < (cfg.game.tabagismo ?? 0.16),
     imc: adulto ? Math.round((20 + rnd(s) * 14) * 10) / 10 : 17,
@@ -326,7 +341,7 @@ function gerarTerritorio(s, cfg) {
 function newGame(cfg, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
   const G = cfg.game;
   const s = {
-    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null,
+    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0 },
     mes: G.inicio.mes, ano: G.inicio.ano, turno: 0,
     tempo: 0, tempoMax: 0, insumos: G.inicio.insumos, verba: G.inicio.verba,
     infestacao: G.inicio.infestacao, mutiraoTurno: -99,
@@ -607,7 +622,7 @@ function avancarMes(s, cfg) {
     precisam++;
     if (s.insumos < 1) { faltou++; continue; }
     s.insumos -= 1;
-    if (rnd(s) < adesao(f)) st.ctrl = true; else naoAderiu++;
+    if (rnd(s) < (typeof p.adesaoOverride === 'number' ? p.adesaoOverride : adesao(f))) st.ctrl = true; else naoAderiu++;
   }
   if (faltou > 0) add('alerta', `💊 Faltou medicamento/insumo para ${faltou} tratamento(s) neste mês. Melhore a farmácia da unidade.`);
   if (naoAderiu > 0) add('info', `${naoAderiu} tratamento(s) não foram seguidos direito — vínculo e orientação aumentam a adesão.`);
@@ -718,17 +733,17 @@ function avancarMes(s, cfg) {
   return saida;
 }
 
-// Mundo em tempo real (estilo "vida simulada"): mapa, personagens que andam, necessidades, rotina e equipe da UBS.
-// Sem DOM. Os desfechos de saúde continuam sendo calculados pelo motor (engine.js); aqui nasce o comportamento
-// (hábitos) e acontecem as ações da equipe (deslocamento, fila, atendimento) que antes eram instantâneas.
+// Mundo em tempo real (estilo "vida simulada"). O jogador controla UM personagem — um morador (paciente) ou um
+// profissional da unidade — e todos os demais agem sozinhos. Sem DOM. Os desfechos de saúde continuam vindo do
+// motor (engine.js); aqui nascem o comportamento (hábitos), a rotina, a fila e as ações da equipe.
 
 const CAMINHAVEL = new Set(['.', ',', 'c', 'F', '_', '+']);
 const MIN_DIA = 1440;
 const DIAS_MES = 30;
 const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const PAPEIS = ['acs', 'tecnico', 'enfermeiro', 'medico'];
 
 /* ---------- Configuração por cenário ---------- */
-
 function mesclar(a, b) {
   for (const k of Object.keys(b || {})) {
     if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = mesclar(a[k] && typeof a[k] === 'object' ? a[k] : {}, b[k]);
@@ -737,18 +752,17 @@ function mesclar(a, b) {
   return a;
 }
 
-/** Junta regras gerais + cenário escolhido: { game, cond, territorio, cenario, modelos, objetos, ... } */
+/** Junta regras gerais + cenário escolhido. */
 function montarCfg(base, id) {
   const c = base.cenarios.cenarios[id];
   const game = mesclar(JSON.parse(JSON.stringify(base.game)), c.game);
   return {
     game, cond: base.cond, territorio: c.territorio, cenario: { id, ...c },
-    modelos: base.cenarios.modelos, objetos: base.cenarios.objetos, terreno: base.cenarios.terreno, pisos: base.cenarios.pisos,
+    modelos: base.cenarios.modelos, objetos: base.cenarios.objetos, terreno: base.cenarios.terreno, pisos: base.cenarios.pisos, papeis: base.cenarios.papeis,
   };
 }
 
 /* ---------- Tempo ---------- */
-
 const diaDoJogo = (s) => Math.floor(s.mundo.min / MIN_DIA);
 const diaSemana = (s) => (diaDoJogo(s) + 1) % 7; // o jogo começa numa terça-feira
 const minutoDoDia = (s) => s.mundo.min % MIN_DIA;
@@ -767,6 +781,7 @@ function minutosPorSegundo(s) {
 }
 
 /* ---------- Mapa ---------- */
+const ruidoM = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 2246822519) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
 function construirMapa(cfg) {
   const m = cfg.cenario.mapa;
@@ -809,6 +824,19 @@ function construirMapa(cfg) {
   }
   for (const o of m.objetos || []) objs.push({ t: o.t, x: o.x, y: o.y, casa: null, lugar: 'publico' });
 
+  // árvores decorativas: moldura do mapa e áreas de grama, sempre longe de ruas, portas e prédios
+  const ocupado = new Set(objs.map((o) => idx(o.x, o.y)));
+  const gramado = (x, y) => x >= 0 && y >= 0 && x < w && y < h && terr[idx(x, y)] === ',';
+  const planta = (x, y) => { const k = idx(x, y); if (!ocupado.has(k) && (terr[k] === ',' || terr[k] === 'c')) { ocupado.add(k); objs.push({ t: 'T', x, y, casa: null, lugar: 'decor', decor: true }); } };
+  for (let x = 3; x < w - 2; x += 4) { planta(x, 1); planta(x, h - 2); }
+  for (let y = 3; y < h - 2; y += 4) { planta(1, y); planta(w - 2, y); }
+  for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x++) {
+    if (!gramado(x, y) || ruidoM(x, y, 3) < 0.9) continue;
+    let ok = true;
+    for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2; dx++) if (!gramado(x + dx, y + dy)) { ok = false; break; }
+    if (ok) planta(x, y);
+  }
+
   const bloq = new Uint8Array(w * h);
   for (let k = 0; k < w * h; k++) if (!CAMINHAVEL.has(terr[k])) bloq[k] = 1;
   for (const o of objs) bloq[idx(o.x, o.y)] = 1;
@@ -820,14 +848,12 @@ function construirMapa(cfg) {
 
 const caminhavel = (W, x, y) => x >= 0 && y >= 0 && x < W.w && y < W.h && !W.bloq[y * W.w + x];
 
-/** Tiles caminháveis vizinhos de um objeto (de onde ele pode ser usado). */
 function pontosDeUso(W, o) {
   if (o.pontos) return o.pontos;
   o.pontos = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: o.x + dx, y: o.y + dy })).filter((q) => caminhavel(W, q.x, q.y));
   return o.pontos;
 }
 
-/** Busca em largura até o alvo mais próximo. Devolve a lista de tiles (sem o ponto de partida) ou null. */
 function caminhoAte(W, sx, sy, alvos) {
   const { w, h } = W;
   const objetivo = new Set(alvos.map((q) => q.y * w + q.x));
@@ -856,8 +882,7 @@ function caminhoAte(W, sx, sy, alvos) {
   return null;
 }
 
-/* ---------- Estado persistente do mundo (dentro de S.mundo) ---------- */
-
+/* ---------- Estado persistente do mundo (S.mundo) ---------- */
 const NECESSIDADES = ['fome', 'energia', 'higiene', 'disp', 'humor'];
 const ROTULO_NEC = { fome: ['🍽️', 'Fome'], energia: ['😴', 'Energia'], higiene: ['🚿', 'Higiene'], disp: ['🏃', 'Disposição'], humor: ['😊', 'Humor'] };
 
@@ -866,44 +891,51 @@ function contadoresNovos() {
 }
 
 function iniciarEstadoMundo(S) {
-  const M = { v: 1, min: 6 * 60, rng: (S.seed ^ 0x9e3779b9) >>> 0 || 7, needs: {}, dia: {}, intencao: {}, fumar: {} };
+  const M = { v: 2, min: 6 * 60, rng: (S.seed ^ 0x9e3779b9) >>> 0 || 7, needs: {}, dia: {}, intencao: {}, fumar: {}, remedios: {} };
   for (const p of todasPessoas(S)) {
     M.needs[p.id] = { fome: rint(M, 60, 95), energia: rint(M, 70, 100), higiene: rint(M, 60, 95), disp: rint(M, 50, 90), humor: rint(M, 55, 90) };
     M.dia[p.id] = contadoresNovos();
     M.intencao[p.id] = { atividade: 0, alimentacao: 0, sono: 0, estresse: 0 };
     M.fumar[p.id] = 8 * 60 + rint(M, 0, 120);
+    M.remedios[p.id] = { dias: 0, hoje: false };
   }
   S.mundo = M;
 }
 
-/* ---------- Criação do mundo em execução (não é salvo; é reconstruído) ---------- */
+/** Define quem o jogador será: { modo: 'paciente', pid } ou { modo: 'profissional', papel }. */
+function escolherPersonagem(S, escolha) {
+  S.jogador = { ...escolha, vontade: true, seguir: true, notas: [] };
+}
 
+/* ---------- Criação do mundo em execução (não é salvo; é reconstruído) ---------- */
 function criarMundo(S, cfg) {
   const W = construirMapa(cfg);
   W.agentes = [];
   W.ordens = [];
   W.tarefasACS = [];
-  W.ubsFila = { triagem: [], consulta: [] };
   W.vel = cfg.cenario.mundo.velocidade || 1;
   W.msgs = [];
   W.relatorio = null;
   W.sinal = 0;
   for (const f of S.familias) for (const p of f.pessoas) W.agentes.push(novoAgente('res', p.id, { pid: p.id }));
   sincronizarEquipe(W, S);
-  for (const a of W.agentes) if (a.k === 'res') posicionarEmCasa(W, S, a);
+  const j = S.jogador;
+  for (const a of W.agentes) {
+    a.jogador = !!j && ((a.k === 'res' && j.modo === 'paciente' && a.pid === j.pid) || (a.k === 'staff' && j.modo === 'profissional' && a.papel === j.papel && a.ind === 0));
+    if (a.k === 'res') posicionarEmCasa(W, S, a);
+  }
   return W;
 }
 
 function novoAgente(k, id, extra) {
-  return { k, id, x: 0, y: 0, path: [], acao: null, pend: null, facing: 1, vis: false, espera: null, atend: null, tarefa: null, ...extra };
+  return { k, id, x: 0, y: 0, path: [], acao: null, pend: null, facing: 1, vis: false, espera: null, atend: null, tarefa: null, fila: [], proximos: [], pausa: 0, ocioso: 0, jogador: false, ...extra };
 }
 
-function numMedicos(S) { return 1 + (S.predios.consultorio >= 1 ? 1 : 0); }
 function numACS(S) { return 1 + S.predios.acs; }
 const duracaoConsulta = (S) => 30 - 5 * Math.max(0, S.predios.consultorio - 1);
 
 function sincronizarEquipe(W, S) {
-  const quer = [['tecnico', 1], ['medico', numMedicos(S)], ['acs', numACS(S)]];
+  const quer = [['tecnico', 1], ['enfermeiro', 1], ['medico', 1], ['acs', numACS(S)]];
   for (const [papel, n] of quer) {
     for (let i = 0; i < n; i++) {
       const id = `${papel}-${i}`;
@@ -915,29 +947,31 @@ function sincronizarEquipe(W, S) {
 function posicionarEmCasa(W, S, a) {
   const casa = W.casas[achaPessoa(S, a.pid).familiaId];
   const q = casa.porta.dentro;
-  a.x = q.x; a.y = q.y; a.path = []; a.acao = null; a.pend = null; a.vis = true;
+  a.x = q.x; a.y = q.y; a.path = []; a.acao = null; a.pend = null; a.vis = true; a.proximos = [];
 }
 
-/* ---------- Utilidades ---------- */
+const agenteJogador = (W) => W.agentes.find((a) => a.jogador) || null;
 
+/* ---------- Utilidades ---------- */
 const hash = (t) => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; };
 
 function objetosDe(W, tipo, casa) {
   return (W.porTipo[tipo] || []).filter((o) => (casa === undefined ? true : casa ? o.casa === casa : o.casa === null));
 }
-
 function irPara(W, a, alvos) {
   const rota = caminhoAte(W, a.x, a.y, alvos);
   if (!rota) return false;
   a.path = rota;
   return true;
 }
-
 function escolhe(M, opcoes) {
   const total = opcoes.reduce((t, [, w]) => t + w, 0);
   let r = rnd(M) * total;
   for (const [k, w] of opcoes) { r -= w; if (r <= 0) return k; }
   return opcoes[0][0];
+}
+function vizinhosDe(W, x, y) {
+  return [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: Math.round(x) + dx, y: Math.round(y) + dy })).filter((q) => caminhavel(W, q.x, q.y));
 }
 
 function ubsAberta(W, S, cfg, medico = false) {
@@ -948,32 +982,57 @@ function ubsAberta(W, S, cfg, medico = false) {
   return true;
 }
 
+function avisar(W, S, texto, tipo = 'info', extra = {}) {
+  W.msgs.push({ texto, tipo, ...extra });
+  S.diario.push({ mes: S.mes, ano: S.ano, tipo, texto, ...extra });
+}
+
+/* ---------- Ações dos moradores ---------- */
+// pose/onde dizem ao desenho como mostrar: 'objeto' = em cima do móvel; 'frente' = de pé/sentado ao lado, olhando para ele.
 const ACOES = {
-  dormir: { ic: '💤', rot: 'Dormindo', obj: 'B', casa: true, dur: 720, max: 720, ef: (n, dt) => { n.energia += 0.1 * dt; n.fome -= 0.02 * dt; }, fim: (n) => n.energia >= 97, cont: 'sonoMin' },
-  descansar: { ic: '🤒', rot: 'Acamado(a), com febre', obj: 'B', casa: true, dur: 240, ef: (n, dt) => { n.energia += 0.03 * dt; n.humor -= 0.02 * dt; } },
-  banho: { ic: '🚿', rot: 'Tomando banho', obj: 'C', casa: true, dur: 15, ef: (n, dt) => { n.higiene += 6 * dt; } },
-  comer: { ic: '🍳', rot: 'Refeição caseira', obj: 'G', casa: true, dur: 25, ef: (n, dt) => { n.fome += 3.6 * dt; }, fimC: (c, p, int, M) => { if (rnd(M) < clamp(0.3 + 0.65 * p.habitos.alimentacao / 100 + 0.4 * int.alimentacao, 0, 0.98)) c.saudavel++; else c.fast++; } },
-  lanche: { ic: '🍔', rot: 'Comendo na lanchonete', obj: 'L', dur: 20, ef: (n, dt) => { n.fome += 4.5 * dt; n.humor += 0.4 * dt; }, fimC: (c) => { c.fast++; } },
-  tv: { ic: '📺', rot: 'Descansando na TV', obj: 'S', casa: true, dur: 60, ef: (n, dt) => { n.humor += 0.18 * dt; n.disp -= 0.04 * dt; }, cont: 'sedMin' },
-  praca: { ic: '🚶', rot: 'Passeando na praça', obj: 'P', dur: 45, ef: (n, dt) => { n.disp += 0.5 * dt; n.humor += 0.25 * dt; }, cont: 'exMin' },
-  academia: { ic: '🏋️', rot: 'Exercitando-se', obj: 'A', dur: 40, ef: (n, dt) => { n.disp += 0.8 * dt; n.humor += 0.2 * dt; }, cont: 'exMin' },
-  trabalho: { ic: '💼', rot: 'Trabalhando', obj: 'O', dur: 0, ef: (n, dt) => { n.disp -= 0.03 * dt; n.humor -= 0.04 * dt; }, cont: 'trabMin' },
-  roca: { ic: '🌽', rot: 'Trabalhando na roça', obj: 'R', dur: 0, ef: (n, dt) => { n.disp += 0.1 * dt; n.humor -= 0.03 * dt; n.fome -= 0.02 * dt; }, cont: 'trabMin', exLeve: 0.15 },
-  escola: { ic: '📚', rot: 'Na escola', obj: 'E', dur: 0, ef: (n, dt) => { n.humor += 0.02 * dt; }, cont: 'trabMin' },
-  fumar: { ic: '🚬', rot: 'Fumando', dur: 6, local: 'porta', ef: (n, dt) => { n.humor += 0.8 * dt; } },
-  conversar: { ic: '💬', rot: 'Conversando', dur: 30, local: 'rua', ef: (n, dt) => { n.humor += 0.3 * dt; n.disp += 0.12 * dt; }, cont: 'exMin', exLeve: 0.3 },
+  dormir: { ic: '💤', rot: 'Dormindo', obj: 'B', casa: true, dur: 720, max: 720, pose: 'deitar', onde: 'objeto', ef: (n, dt) => { n.energia += 0.1 * dt; n.fome -= 0.02 * dt; }, fim: (n) => n.energia >= 97, cont: 'sonoMin' },
+  descansar: { ic: '🛏️', rot: 'Descansando na cama', obj: 'B', casa: true, dur: 90, pose: 'deitar', onde: 'objeto', ef: (n, dt) => { n.energia += 0.06 * dt; n.humor += 0.05 * dt; } },
+  doente: { ic: '🤒', rot: 'Acamado(a), com febre', obj: 'B', casa: true, dur: 240, pose: 'deitar', onde: 'objeto', ef: (n, dt) => { n.energia += 0.03 * dt; n.humor -= 0.02 * dt; } },
+  banho: { ic: '🚿', rot: 'Tomando banho', obj: 'C', casa: true, dur: 15, pose: 'banho', onde: 'objeto', ef: (n, dt) => { n.higiene += 6 * dt; } },
+  cozinhar: { ic: '🍳', rot: 'Cozinhando', obj: 'G', casa: true, dur: 14, pose: 'cozinhar', onde: 'frente', ef: (n, dt) => { n.fome += 0.5 * dt; } },
+  comer_mesa: { ic: '🍽️', rot: 'Fazendo a refeição', obj: 'm', casa: true, dur: 14, pose: 'comer', onde: 'frente', cadeira: true, ef: (n, dt) => { n.fome += 3.4 * dt; }, fimC: (c, p, int, M, a) => { if (a.refeicao && a.refeicao.saudavel === false) c.fast++; else c.saudavel++; } },
+  lanche: { ic: '🍔', rot: 'Comendo um lanche', obj: 'L', dur: 20, pose: 'comer', onde: 'frente', ef: (n, dt) => { n.fome += 4.5 * dt; n.humor += 0.4 * dt; }, fimC: (c) => { c.fast++; } },
+  tv: { ic: '📺', rot: 'Assistindo TV', obj: 'S', casa: true, dur: 60, pose: 'sentar', onde: 'objeto', ef: (n, dt) => { n.humor += 0.18 * dt; n.disp -= 0.04 * dt; }, cont: 'sedMin' },
+  praca: { ic: '🌳', rot: 'Descansando na praça', obj: 'P', dur: 40, pose: 'sentar', onde: 'objeto', ef: (n, dt) => { n.humor += 0.3 * dt; n.disp += 0.05 * dt; } },
+  academia: { ic: '🏋️', rot: 'Exercitando-se', obj: 'A', dur: 40, pose: 'exercitar', onde: 'frente', ef: (n, dt) => { n.disp += 0.8 * dt; n.humor += 0.2 * dt; }, cont: 'exMin' },
+  trabalho: { ic: '💼', rot: 'Trabalhando', obj: 'O', dur: 120, pose: 'digitar', onde: 'frente', cadeira: true, ef: (n, dt) => { n.disp -= 0.03 * dt; n.humor -= 0.04 * dt; }, cont: 'trabMin' },
+  roca: { ic: '🌽', rot: 'Trabalhando na roça', obj: 'R', dur: 120, pose: 'enxada', onde: 'frente', ef: (n, dt) => { n.disp += 0.1 * dt; n.humor -= 0.03 * dt; n.fome -= 0.02 * dt; }, cont: 'trabMin', exLeve: 0.15 },
+  escola: { ic: '📚', rot: 'Estudando', obj: 'E', dur: 120, pose: 'digitar', onde: 'frente', cadeira: true, ef: (n, dt) => { n.humor += 0.02 * dt; }, cont: 'trabMin' },
+  fumar: { ic: '🚬', rot: 'Fumando', dur: 6, local: 'porta', pose: 'fumar', onde: 'local', ef: (n, dt) => { n.humor += 0.8 * dt; } },
+  conversar: { ic: '💬', rot: 'Conversando', dur: 25, local: 'rua', pose: 'falar', onde: 'local', ef: (n, dt) => { n.humor += 0.3 * dt; n.disp += 0.05 * dt; } },
+  caminhar: { ic: '🚶', rot: 'Caminhando pelo bairro', dur: 1, local: 'rua', pose: 'parado', onde: 'local', ef: (n, dt) => { n.disp += 0.4 * dt; n.humor += 0.2 * dt; }, andarExercicio: true },
+  remedio: { ic: '💊', rot: 'Tomando o remédio', obj: 'G', casa: true, dur: 2, pose: 'comer', onde: 'frente', fimC: (c, p, int, M) => { const r = M.remedios[p.id]; if (!r.hoje) { r.hoje = true; r.dias += 1; } } },
+  esperar: { ic: '⏳', rot: 'Esperando', dur: 5, pose: 'parado', onde: 'local' },
 };
+const ACOES_INFO = ACOES;
 const ROTULO_ACAO = Object.fromEntries(Object.entries(ACOES).map(([k, v]) => [k, v.rot]));
 
-/* ---------- Decisão dos moradores ---------- */
+/* ---------- Sintomas (o que o paciente sente) ---------- */
+function sintomasDe(S, cfg, pid) {
+  const p = achaPessoa(S, pid);
+  const dia = diaDoJogo(S);
+  const out = [];
+  if (p.dengue.ativa) out.push(...cfg.cond.dengue.queixas.slice(0, 3));
+  for (const id of ['dm', 'dep']) {
+    if (p.cond[id].estagio >= 2 && !p.cond[id].ctrl) { const q = cfg.cond[id].queixas; out.push(q[hash(`${pid}${id}${Math.floor(dia / 4)}`) % q.length]); }
+  }
+  if (S.mundo.needs[pid].energia < 25) out.push('cansaço');
+  return [...new Set(out)];
+}
 
+/* ---------- Decisão autônoma ("vontade própria") ---------- */
 function decidir(W, S, cfg, a, p, f, n, c, int) {
   const M = S.mundo, m = minutoDoDia(S), dow = diaSemana(S), util = dow < 5;
   const oc = p.ocupacao || 'casa';
   const mundo = cfg.cenario.mundo;
   const temLanche = (W.porTipo.L || []).length > 0;
 
-  // 1) atendimento marcado pelo jogador (ou procura espontânea)
+  // atendimento marcado (convite, retorno ou procura espontânea)
   const ord = W.ordens.find((o) => o.pid === p.id);
   if (ord && ord.estado === 'pendente' && !(a.acao && a.acao.k === 'dormir')) {
     const abre = ubsAberta(W, S, cfg, ord.tipo === 'consulta') && m >= mundo.expediente[0] * 60 + 15 && m < mundo.expediente[1] * 60 - 60;
@@ -982,7 +1041,7 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
         ord.rolou = true;
         if (!ord.espontaneo && rnd(M) > adesao(f)) {
           W.ordens.splice(W.ordens.indexOf(ord), 1);
-          avisar(W, S, `${p.nome} não compareceu à unidade (vínculo baixo: é mais difícil ir). Uma visita ajuda.`, 'info');
+          avisar(W, S, `${p.nome} não compareceu à unidade (vínculo baixo: é mais difícil ir).`, 'info', { pessoaId: p.id });
           return null;
         }
       }
@@ -992,86 +1051,138 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
   }
   if (p.dengue.ativa && f.vinculo >= 50 && !a.procurou && !ord) {
     a.procurou = true;
-    W.ordens.push({ pid: p.id, tipo: 'consulta', estado: 'pendente', espontaneo: true, rolou: false });
+    W.ordens.push({ pid: p.id, tipo: 'consulta', estado: 'pendente', espontaneo: true, rolou: false, origem: 'sintoma', t0: M.min });
   }
+  if (p.dengue.ativa) return { k: 'doente' };
 
-  // 2) doente: repouso em casa
-  if (p.dengue.ativa) return { k: 'descansar' };
-
-  // 3) sono
+  // sono
   const dormeAs = 22 * 60 + Math.round(((100 - p.habitos.sono) / 100) * 150) - Math.round(60 * int.sono);
   const noite = m >= dormeAs || m < 5 * 60;
   if ((noite && n.energia < 97) || n.energia < 18) return { k: 'dormir' };
 
-  // 4) higiene e refeições
+  // higiene e refeições
+  const refeicao = (forcaRapida) => {
+    const ph = clamp(0.3 + 0.65 * p.habitos.alimentacao / 100 + 0.4 * int.alimentacao, 0, 0.98);
+    return { k: 'cozinhar', saudavel: forcaRapida ? false : rnd(M) < ph };
+  };
   if (n.higiene < 35 || (m >= 6 * 60 && m < 8 * 60 && n.higiene < 80)) return { k: 'banho' };
-  if (m >= 6 * 60 && m < 9 * 60 && !c.cafe && n.fome < 85) { c.cafe = true; return { k: 'comer' }; }
+  if (m >= 6 * 60 && m < 9 * 60 && !c.cafe && n.fome < 85) { c.cafe = true; return refeicao(); }
   if (m >= 12 * 60 && m < 14 * 60 && !c.almoco && n.fome < 92) {
     c.almoco = true;
     const pFast = clamp(((100 - p.habitos.alimentacao) / 100) * 0.9 - int.alimentacao * 0.5, 0, 0.9);
     if (temLanche && mundo.almoco === 'lanchonete' && rnd(M) < Math.max(0.15, pFast)) return { k: 'lanche' };
-    return { k: 'comer' };
+    return refeicao();
   }
-  if (m >= 19 * 60 && m < 21 * 60 && !c.jantar && n.fome < 92) { c.jantar = true; return { k: 'comer' }; }
-  if (n.fome < 25) return { k: 'comer' };
+  if (m >= 19 * 60 && m < 21 * 60 && !c.jantar && n.fome < 92) { c.jantar = true; return refeicao(); }
+  if (n.fome < 25) return refeicao();
 
-  // 5) cigarro
   if (p.tabagismo && m >= M.fumar[p.id] && m < 22 * 60) { M.fumar[p.id] = m + 150 + rint(M, 0, 60); return { k: 'fumar' }; }
 
-  // 6) trabalho e escola
+  // trabalho e escola
   if (util && oc === 'trabalho' && !p.dengue.ativa) {
     if (m >= 7.5 * 60 && m < 12 * 60) return { k: mundo.trabalho === 'R' ? 'roca' : 'trabalho', fim: 12 * 60 };
     if (m >= 13 * 60 && m < 17 * 60) return { k: mundo.trabalho === 'R' ? 'roca' : 'trabalho', fim: 17 * 60 };
   }
   if (util && oc === 'escola' && m >= 7 * 60 && m < 12 * 60) return { k: 'escola', fim: 12 * 60 };
 
-  // 7) lazer
+  // lazer
   if (m < 6 * 60 + 30 || m >= 22 * 60) return { k: 'tv' };
   const temPraca = objetosDe(W, 'P', null).length > 0, temAcad = objetosDe(W, 'A', null).length > 0;
   const ativ = p.habitos.atividade / 100 + int.atividade * 0.8;
-  // exercício ao ar livre: horários mais frescos e teto diário (ninguém passa o dia inteiro na praça)
   const fresco = (m >= 6.5 * 60 && m < 10 * 60) || (m >= 16 * 60 && m < 20 * 60);
   const fatorEx = (fresco ? 1 : 0.15) * (c.exMin >= 60 ? 0.1 : 1) * (!util ? 1.3 : 1);
   const op = [['tv', 0.9 + (1 - ativ) * 1.6 + (n.humor < 40 ? 0.5 : 0)]];
-  if (temPraca) op.push(['praca', (0.15 + ativ * 0.9) * fatorEx]);
+  op.push(['caminhar', (0.15 + ativ * 0.9) * fatorEx]);
+  if (temPraca) op.push(['praca', 0.25 + (1 - ativ) * 0.3]);
   if (temAcad && p.idade >= 14) op.push(['academia', (0.05 + ativ * 0.6 + int.atividade * 0.6) * fatorEx]);
-  if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.9) * fatorEx]);
+  if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.5) * fatorEx]);
   if (temLanche && mundo.almoco === 'lanchonete' && m >= 17 * 60 && p.idade >= 14) op.push(['lanche', 0.1 + ((100 - p.habitos.alimentacao) / 100) * 0.8 - int.alimentacao * 0.4]);
-  if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['conversar', temPraca ? 0 : 0.8 * fatorEx]]) };
+  if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['caminhar', 0.5 * fatorEx], ['conversar', temPraca ? 0 : 0.5 * fatorEx]]) };
   return { k: escolhe(M, op.map(([k, w]) => [k, Math.max(0.02, w)])) };
 }
 
-function avisar(W, S, texto, tipo = 'info', extra = {}) {
-  W.msgs.push({ texto, tipo });
-  S.diario.push({ mes: S.mes, ano: S.ano, tipo, texto, ...extra });
+const CAPACIDADE = { B: 2 };
+/** Quantas pessoas (além de `a`) estão usando ou indo usar o móvel. */
+function ocupantes(W, o, a) {
+  let n = 0;
+  for (const x of W.agentes) {
+    if (x === a || !x.vis) continue;
+    if ((x.acao && x.acao.obj === o) || (x.pend && x.pend.obj === o) || x.cadeira === o) n++;
+  }
+  return n;
+}
+/** Escolhe um móvel livre da lista, começando por um ponto "preferido" estável para cada pessoa. */
+function moveLivre(W, lista, p, a, ini = 0) {
+  if (!lista.length) return null;
+  const base = hash(p.id) % lista.length;
+  for (let k = 0; k < lista.length; k++) {
+    const o = lista[(base + ini + k) % lista.length];
+    if (ocupantes(W, o, a) < (CAPACIDADE[o.t] || 1)) return o;
+  }
+  return null;
+}
+/** Pontos de uso sem ninguém parado em cima (se todos estiverem ocupados, usa todos). */
+function pontosLivres(W, pontos, a) {
+  const livres = pontos.filter((q) => !W.agentes.some((x) => x !== a && x.vis && !x.path.length && Math.round(x.x) === q.x && Math.round(x.y) === q.y));
+  return livres.length ? livres : pontos;
 }
 
-/** Define a rota até um dos alvos; se já está lá, "chega" na hora. */
 function partir(W, S, cfg, a, p, alvos) {
   if (!irPara(W, a, alvos)) return false;
   if (!a.path.length) chegada(W, S, cfg, a, p);
   return true;
 }
 
-/** Começa a executar uma decisão: escolhe o objeto/local, calcula a rota. */
+function pontoAleatorio(W, M, a) {
+  for (let t = 0; t < 40; t++) {
+    const x = clamp(Math.round(a.x) + rint(M, -9, 9), 0, W.w - 1), y = clamp(Math.round(a.y) + rint(M, -9, 9), 0, W.h - 1);
+    const k = y * W.w + x;
+    if (!W.bloq[k] && (W.terr[k] === '.' || W.terr[k] === ',' || W.terr[k] === 'c')) return { x, y };
+  }
+  return null;
+}
+
+/** Começa a executar uma decisão (ou comando): escolhe o objeto/local e calcula a rota. */
 function iniciarDecisao(W, S, cfg, a, p, d) {
   if (d.k === 'ubs') {
-    const alvos = objetosDe(W, 'H', null).flatMap((o) => pontosDeUso(W, o));
+    const livres = objetosDe(W, 'H', null).filter((o) => ocupantes(W, o, a) === 0);
+    const lista = livres.length ? livres : objetosDe(W, 'H', null);
+    const alvos = lista.flatMap((o) => pontosDeUso(W, o));
     a.pend = { k: 'ubs', ord: d.ord };
-    if (!partir(W, S, cfg, a, p, alvos)) { a.pend = null; d.ord.estado = 'pendente'; }
+    a.cadeira = null;
+    if (!partir(W, S, cfg, a, p, alvos)) { a.pend = null; d.ord.estado = 'pendente'; return; }
     return;
   }
   const def = ACOES[d.k];
   const dur = d.dur || def.dur || 30;
-  const semLocal = () => { a.pend = null; a.acao = { k: d.k, restante: Math.min(30, dur), sem: true }; };
-  if (def.obj) {
+  if (!d.continua) {
+    a.proximos = d.proximos ? [...d.proximos] : [];
+    if (d.k === 'cozinhar') a.proximos.push({ k: 'comer_mesa' });
+    if (d.k === 'caminhar') a.proximos.push({ k: 'caminhar' }, { k: 'caminhar' });
+  }
+  if (d.k === 'cozinhar') a.refeicao = { saudavel: d.saudavel !== false };
+  const semLocal = () => { a.pend = null; a.proximos = []; a.acao = { k: d.k, restante: Math.min(30, dur), sem: true }; };
+  const ocupado = () => {
+    a.pend = null; a.proximos = [];
+    if (a.jogador && (d.tent || 0) < 40) {
+      // o jogador espera a vez: a ordem volta para o início da fila
+      a.fila.unshift({ k: 'acao', acao: d.k, obj: d.obj, saudavel: d.saudavel, dur: d.dur, tent: (d.tent || 0) + 1 });
+      a.acao = { k: 'esperar', restante: 3, sem: true };
+    } else if (a.jogador) avisar(W, S, 'Esse lugar continua ocupado. Tente de novo mais tarde.', 'info');
+    else a.acao = { k: 'esperar', restante: 4, sem: true };
+  };
+  if (def.obj || d.obj) {
     const casa = def.casa ? p.familiaId : null;
-    let lista = objetosDe(W, def.obj, casa);
-    if (!lista.length && def.obj === 'S') lista = objetosDe(W, 'B', casa);
+    let lista = d.obj ? [d.obj] : objetosDe(W, def.obj, casa);
+    if (!lista.length && d.k === 'comer_mesa') lista = objetosDe(W, 'G', casa);
     if (!lista.length) return semLocal();
-    const o = def.casa ? lista[hash(p.id + d.k) % lista.length] : lista[hash(p.id) % lista.length];
+    const o = d.obj && lista.length === 1 ? (ocupantes(W, d.obj, a) < (CAPACIDADE[d.obj.t] || 1) ? d.obj : null) : moveLivre(W, lista, p, a);
+    if (!o) {
+      if (!a.jogador && ['tv', 'praca', 'academia'].includes(d.k)) return iniciarDecisao(W, S, cfg, a, p, { k: 'caminhar' });
+      return ocupado();
+    }
     a.pend = { k: d.k, dur, fim: d.fim, obj: o };
-    if (!partir(W, S, cfg, a, p, pontosDeUso(W, o))) semLocal();
+    if (!partir(W, S, cfg, a, p, pontosLivres(W, pontosDeUso(W, o), a))) semLocal();
     return;
   }
   if (def.local === 'porta') {
@@ -1086,17 +1197,7 @@ function iniciarDecisao(W, S, cfg, a, p, d) {
   }
 }
 
-function pontoAleatorio(W, M, a) {
-  for (let t = 0; t < 40; t++) {
-    const x = clamp(Math.round(a.x) + rint(M, -9, 9), 0, W.w - 1), y = clamp(Math.round(a.y) + rint(M, -9, 9), 0, W.h - 1);
-    const k = y * W.w + x;
-    if (!W.bloq[k] && (W.terr[k] === '.' || W.terr[k] === ',' || W.terr[k] === 'c')) return { x, y };
-  }
-  return null;
-}
-
-/* ---------- Passo de cada tipo de agente ---------- */
-
+/* ---------- Moradores ---------- */
 function mover(a, dt, vel) {
   let d = vel * dt;
   while (d > 0 && a.path.length) {
@@ -1107,14 +1208,15 @@ function mover(a, dt, vel) {
   }
 }
 
+function limparOrdens(W, pid) { W.ordens = W.ordens.filter((o) => o.pid !== pid); }
+
 function passoMorador(W, S, cfg, a, dt) {
   const p = achaPessoa(S, a.pid), f = achaFamilia(S, p.familiaId), M = S.mundo;
   const n = M.needs[a.pid], c = M.dia[a.pid], int = M.intencao[a.pid];
-  if (p.internado) { a.vis = false; a.path = []; a.acao = null; a.pend = null; a.espera = null; a.atend = null; limparOrdens(W, p.id); return; }
-  if (!a.vis) { posicionarEmCasa(W, S, a); }
+  if (p.internado) { a.vis = false; a.path = []; a.acao = null; a.pend = null; a.espera = null; a.atend = null; a.fila = []; a.proximos = []; limparOrdens(W, p.id); return; }
+  if (!a.vis) posicionarEmCasa(W, S, a);
 
-  // necessidades
-  const dormindo = a.acao && (a.acao.k === 'dormir');
+  const dormindo = a.acao && a.acao.k === 'dormir';
   n.fome -= (dormindo ? 0.02 : 0.065) * dt;
   if (!dormindo) n.energia -= 0.05 * dt;
   n.higiene -= 0.03 * dt;
@@ -1122,35 +1224,47 @@ function passoMorador(W, S, cfg, a, dt) {
   const media = (n.fome + n.energia + n.higiene + n.disp) / 4;
   n.humor += (media - n.humor) * 0.004 * dt;
   if (p.cond.dep.estagio >= 2 && !p.cond.dep.ctrl) n.humor -= 0.02 * dt;
-  if (!dormindo) c.sedMin += (a.path.length ? 0 : dt);
 
-  if (a.path.length) {
+  if (a.pausa > 0) { a.pausa -= dt; } // conversando com um profissional
+  else if (a.path.length) {
     mover(a, dt, W.vel);
-    c.exMin += dt * 0.25; // deslocamento a pé conta como atividade leve
+    c.exMin += dt * 0.25;
     if (a.pend && a.pend.andar) c.exMin += dt * 0.5;
     if (!a.path.length) chegada(W, S, cfg, a, p);
   } else if (a.atend) {
-    // esperando o profissional (a lógica da UBS controla o tempo)
     n.humor -= 0.005 * dt;
   } else if (a.espera) {
-    n.humor -= 0.01 * dt; // ficar na fila cansa
+    n.humor -= 0.01 * dt;
+    a.espera.esperou = (a.espera.esperou || 0) + dt;
+    if (a.espera.esperou > 200 && !(a.jogador && S.jogador.modo === 'paciente' && false)) {
+      avisar(W, S, `${p.nome} cansou de esperar e foi embora sem ser atendido(a).`, 'alerta', { pessoaId: p.id });
+      limparOrdens(W, p.id); a.espera = null; a.cadeira = null; n.humor = clamp(n.humor - 10, 0, 100);
+    }
   } else if (a.acao) {
     const def = ACOES[a.acao.k];
     if (def.ef) def.ef(n, dt);
-    if (def.cont) c[def.cont] += dt * (def.cont === 'exMin' ? 1 : 1);
+    if (def.cont) c[def.cont] += dt;
     if (def.exLeve) c.exMin += dt * def.exLeve;
     a.acao.restante -= dt;
-    const alarme = a.acao.k === 'dormir' && minutoDoDia(S) >= 6 * 60 && minutoDoDia(S) < 12 * 60 && diaSemana(S) < 5 && ['trabalho', 'escola'].includes(p.ocupacao);
+    const alarme = a.acao.k === 'dormir' && minutoDoDia(S) >= 6 * 60 && minutoDoDia(S) < 12 * 60 && diaSemana(S) < 5 && ['trabalho', 'escola'].includes(p.ocupacao) && !a.jogador;
     const fim = alarme || (def.fim && def.fim(n)) || a.acao.restante <= 0 || (def.max && (a.acao.t = (a.acao.t || 0) + dt) > def.max);
     if (fim) {
-      if (def.fimC) def.fimC(c, p, int, M);
-      if (a.acao.k === 'dormir' && minutoDoDia(S) < 5 * 60) { /* acordou cedo: segue o dia */ }
+      if (def.fimC) def.fimC(c, p, int, M, a);
+      const prox = a.proximos.shift();
       a.acao = null;
+      a.ocioso = 0;
+      if (prox) iniciarDecisao(W, S, cfg, a, p, { ...prox, continua: true });
     }
   } else {
-    const d = decidir(W, S, cfg, a, p, f, n, c, int);
-    if (d) iniciarDecisao(W, S, cfg, a, p, d);
-    else a.acao = { k: 'tv', restante: 5, sem: true };
+    a.ocioso += dt;
+    if (a.jogador) {
+      if (a.fila.length) { const cmd = a.fila.shift(); executarComando(W, S, cfg, a, p, cmd); }
+      else if (S.jogador.vontade && a.ocioso >= 12) { const d = decidir(W, S, cfg, a, p, f, n, c, int); if (d) iniciarDecisao(W, S, cfg, a, p, d); }
+    } else {
+      const d = decidir(W, S, cfg, a, p, f, n, c, int);
+      if (d) iniciarDecisao(W, S, cfg, a, p, d);
+      else a.acao = { k: 'esperar', restante: 5, sem: true };
+    }
   }
   for (const k of NECESSIDADES) n[k] = clamp(n[k], 0, 100);
   c.humorSoma += n.humor * dt; c.humorN += dt;
@@ -1163,34 +1277,134 @@ function chegada(W, S, cfg, a, p) {
   if (pend.k === 'ubs') {
     const ord = pend.ord;
     ord.estado = 'espera';
+    ord.t0 = ord.t0 || S.mundo.min;
     a.espera = ord;
-    (W.ubsFila[ord.tipo] = W.ubsFila[ord.tipo] || []).push(a.id);
+    a.cadeira = (W.porTipo.H || []).find((o) => Math.abs(o.x - a.x) + Math.abs(o.y - a.y) === 1 && ocupantes(W, o, a) === 0) || null;
     return;
   }
   if (pend.k === 'atendido') { a.atend.pronto = true; return; }
+  if (pend.k === 'chegar') return;
   const def = ACOES[pend.k];
+  if (!def) return;
   const dur = pend.fim != null ? Math.max(5, pend.fim - minutoDoDia(S)) : (pend.dur || def.dur || 30);
   a.acao = { k: pend.k, restante: dur, obj: pend.obj };
 }
 
-function limparOrdens(W, pid) {
-  W.ordens = W.ordens.filter((o) => o.pid !== pid);
-  for (const k of Object.keys(W.ubsFila)) W.ubsFila[k] = W.ubsFila[k].filter((id) => id !== pid);
+/** Executa um comando do jogador (paciente). */
+function executarComando(W, S, cfg, a, p, cmd) {
+  a.ocioso = 0;
+  if (cmd.k === 'ir') {
+    a.pend = { k: 'chegar' };
+    const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y);
+    if (!alvo.length || !irPara(W, a, alvo)) { a.pend = null; avisar(W, S, 'Não consigo chegar até lá.', 'info'); }
+    return;
+  }
+  if (cmd.k === 'ubs') {
+    const m = minutoDoDia(S);
+    if (!ubsAberta(W, S, cfg, cmd.tipo === 'consulta')) { avisar(W, S, `A unidade não atende agora${cmd.tipo === 'consulta' && !ubsAberta(W, S, cfg) ? '' : ' (sem médico hoje)'}. Veja o horário na aba Unidade.`, 'alerta'); return; }
+    if (m >= cfg.cenario.mundo.expediente[1] * 60 - 60) { avisar(W, S, 'Já é tarde: a unidade está quase fechando. Tente amanhã cedo.', 'alerta'); return; }
+    limparOrdens(W, p.id);
+    const ord = { pid: p.id, tipo: 'triagem', estado: 'indo', espontaneo: true, rolou: true, origem: 'paciente', meta: { consulta: cmd.tipo === 'consulta' }, t0: S.mundo.min };
+    W.ordens.push(ord);
+    iniciarDecisao(W, S, cfg, a, p, { k: 'ubs', ord });
+    return;
+  }
+  if (cmd.k === 'acao') iniciarDecisao(W, S, cfg, a, p, { k: cmd.acao, obj: cmd.obj, saudavel: cmd.saudavel, dur: cmd.dur, proximos: cmd.proximos, tent: cmd.tent });
 }
 
 /* ---------- Equipe da UBS ---------- */
-
 function postoDe(W, papel, ind) {
-  if (papel === 'tecnico') {
-    const o = (W.porTipo.U || [])[0];
-    return o ? pontosDeUso(W, o) : [];
-  }
-  if (papel === 'medico') {
-    const o = (W.porTipo.D || [])[ind] || (W.porTipo.D || [])[0];
-    return o ? pontosDeUso(W, o) : [];
-  }
+  if (papel === 'tecnico') { const o = (W.porTipo.U || [])[0]; return o ? pontosDeUso(W, o) : []; }
+  if (papel === 'medico') { const o = (W.porTipo.D || [])[0]; return o ? pontosDeUso(W, o) : []; }
+  if (papel === 'enfermeiro') { const o = (W.porTipo.D || [])[1] || (W.porTipo.D || [])[0]; return o ? pontosDeUso(W, o) : []; }
   const p = W.ubs.porta.fora;
   return [{ x: p.x + ind - 1, y: p.y }];
+}
+const servicoDe = (papel) => (papel === 'tecnico' ? 'triagem' : papel === 'enfermeiro' ? 'enfermagem' : 'consulta');
+const objetoDoServico = (W, papel) => (papel === 'tecnico' ? (W.porTipo.U || [])[0] : (W.porTipo.D || [])[papel === 'enfermeiro' ? 1 : 0] || (W.porTipo.D || [])[0]);
+
+function filaEspera(W, tipo) {
+  return W.ordens.filter((o) => o.estado === 'espera' && (!tipo || o.tipo === tipo)).sort((x, y) => x.t0 - y.t0);
+}
+
+function piorHabito(p) {
+  const h = p.habitos;
+  const c = [['atividade', h.atividade], ['alimentacao', h.alimentacao], ['sono', h.sono]];
+  if (p.tabagismo) c.push(['fumo', 15]);
+  if (h.estresse > 60) c.push(['estresse', 100 - h.estresse]);
+  return c.sort((x, y) => x[1] - y[1])[0][0];
+}
+
+/** O profissional chama o próximo paciente da fila do seu serviço. */
+function chamarPaciente(W, S, cfg, a, ord) {
+  const pac = W.agentes.find((x) => x.k === 'res' && x.pid === ord.pid);
+  if (!pac || !pac.espera) return false;
+  const obj = objetoDoServico(W, a.papel);
+  const posto = postoDe(W, a.papel, a.ind);
+  const pontos = pontosDeUso(W, obj).filter((q) => !posto.length || q.x !== posto[0].x || q.y !== posto[0].y);
+  const spot = pontos[0] || posto[0];
+  ord.estado = 'atendimento';
+  S.metricas.esperaTotal += Math.max(0, S.mundo.min - ord.t0);
+  pac.atend = { staff: a.id, spot, pronto: false, tipo: ord.tipo };
+  pac.pend = { k: 'atendido' };
+  if (!irPara(W, pac, [spot]) || !pac.path.length) { pac.pend = null; pac.atend.pronto = true; }
+  a.tarefa = { tipo: ord.tipo, pac: pac.id, ord, fase: 'chamando', restante: 0 };
+  return true;
+}
+
+const duracaoServico = (S, tipo) => (tipo === 'triagem' ? 10 : tipo === 'enfermagem' ? 25 : duracaoConsulta(S));
+
+function aplicarServico(W, S, cfg, a, t) {
+  const p = achaPessoa(S, t.ord.pid);
+  const partes = [];
+  if (t.tipo === 'triagem') {
+    const r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: true, msg: 'Sinais vitais normais para a idade.' };
+    partes.push(r.msg); S.metricas.triagens++;
+  } else if (t.tipo === 'enfermagem') {
+    if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
+    const foco = (t.opts && t.opts.foco) || piorHabito(p);
+    const r = acaoOrientar(S, cfg, p.id, foco);
+    if (r.ok && foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (foco in it) it[foco] = clamp(it[foco] + 0.5, 0, 1); }
+    partes.push(r.msg); S.metricas.orientacoes++;
+  } else {
+    partes.push(acaoConsulta(S, cfg, p.id).msg);
+    p.retornoTurno = S.turno; S.metricas.atendidos++;
+  }
+  const texto = `${t.tipo === 'triagem' ? '📏 Triagem' : t.tipo === 'enfermagem' ? '🩺 Enfermagem' : '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
+  t.resultado = partes.join(' ');
+  avisar(W, S, texto, 'info', { pessoaId: p.id });
+}
+
+/** Termina o atendimento: libera a pessoa ou a encaminha ao próximo serviço. */
+function concluirAtendimento(W, S, cfg, a, destino) {
+  const t = a.tarefa;
+  if (!t) return;
+  const pac = W.agentes.find((x) => x.id === t.pac);
+  const ord = t.ord;
+  if (pac) { pac.atend = null; pac.pend = null; pac.espera = null; pac.cadeira = null; pac.ocioso = 0; }
+  if (destino === 'liberar' || !pac) {
+    W.ordens = W.ordens.filter((o) => o !== ord);
+  } else {
+    ord.tipo = destino;
+    if (destino === 'consulta' && !ubsAberta(W, S, cfg, true)) { ord.estado = 'pendente'; ord.rolou = true; ord.espontaneo = true; avisar(W, S, `${achaPessoa(S, ord.pid).nome} precisa de consulta médica, mas o médico não atende hoje: volta no próximo dia de médico.`, 'info', { pessoaId: ord.pid }); }
+    else { ord.estado = 'espera'; if (pac) pac.espera = ord; }
+  }
+  a.tarefa = null;
+  W.sinal++;
+}
+
+/** Decisão automática dos profissionais não controlados. */
+function rotearAuto(W, S, cfg, a, t) {
+  const p = achaPessoa(S, t.ord.pid);
+  if (t.tipo === 'triagem') {
+    const sint = sintomasDe(S, cfg, p.id).length > 0;
+    if (p.dengue.ativa || p.conhecido.suspeitas.length || sint || (t.ord.meta && t.ord.meta.consulta) || t.ord.origem === 'retorno') return 'consulta';
+    const risco = p.idade >= 18 && (p.conhecido.risco.length || p.habitos.atividade < 40 || p.habitos.alimentacao < 40 || p.tabagismo);
+    return risco ? 'enfermagem' : 'liberar';
+  }
+  if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
+  for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
+  return 'liberar';
 }
 
 function passoEquipe(W, S, cfg, a, dt) {
@@ -1202,106 +1416,132 @@ function passoEquipe(W, S, cfg, a, dt) {
     const q = W.ubs.porta.fora;
     a.x = q.x; a.y = q.y; a.path = []; a.tarefa = null;
   }
-  if (!deveEstar && !a.tarefa && !a.path.length) { a.vis = false; liberarFila(W, a); return; }
+  if (!deveEstar && !a.tarefa && !a.path.length) {
+    a.vis = false; a.fila = [];
+    if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && o.tipo === servicoDe(a.papel)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
+    return;
+  }
   if (a.path.length) { mover(a, dt, W.vel); return; }
-
   if (a.papel === 'acs') return passoACS(W, S, cfg, a, dt);
 
   const posto = postoDe(W, a.papel, a.ind);
-  const naPosicao = posto.find((q) => q.x === a.x && q.y === a.y);
+  const naPos = posto.find((q) => q.x === a.x && q.y === a.y);
+  const servico = servicoDe(a.papel);
+
   if (!a.tarefa) {
-    if (!naPosicao && posto.length) { irPara(W, a, [posto[0]]); return; }
-    // próximo paciente
-    const tipo = a.papel === 'tecnico' ? 'triagem' : 'consulta';
-    const fila = W.ubsFila[tipo];
-    for (let i = 0; i < fila.length; i++) {
-      const pac = W.agentes.find((x) => x.id === fila[i]);
-      if (!pac || !pac.espera || pac.atend) continue;
-      fila.splice(i, 1);
-      const oposto = pontosDeUso(W, a.papel === 'tecnico' ? W.porTipo.U[0] : (W.porTipo.D[a.ind] || W.porTipo.D[0])).filter((q) => !posto.length || q.x !== posto[0].x || q.y !== posto[0].y);
-      const spot = oposto[0] || posto[0];
-      pac.atend = { staff: a.id, spot, pronto: false, tipo };
-      pac.pend = { k: 'atendido' };
-      if (!irPara(W, pac, [spot]) || !pac.path.length) { pac.pend = null; pac.atend.pronto = true; }
-      a.tarefa = { tipo, pac: pac.id, restante: tipo === 'triagem' ? 10 : duracaoConsulta(S), fase: 'chamando' };
-      break;
+    if (a.jogador && a.fila.length) {
+      const cmd = a.fila.shift();
+      if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
+      if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && o.tipo === servico); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
     }
+    if (a.jogador) return; // o jogador decide quem chamar
+    if (!naPos && posto.length) { irPara(W, a, [posto[0]]); return; }
+    const prox = filaEspera(W, servico).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    if (prox) chamarPaciente(W, S, cfg, a, prox);
     return;
   }
+
   const t = a.tarefa;
   const pac = W.agentes.find((x) => x.id === t.pac);
   if (!pac || !pac.atend) { a.tarefa = null; return; }
-  if (!naPosicao && posto.length) { if (!a.path.length) irPara(W, a, [posto[0]]); return; }
-  if (!pac.atend.pronto) return;
-  t.fase = 'atendendo';
-  t.restante -= dt;
-  if (t.restante > 0) return;
-  const p = achaPessoa(S, pac.pid);
-  const r = t.tipo === 'triagem' ? acaoMedir(S, cfg, p.id) : acaoConsulta(S, cfg, p.id);
-  avisar(W, S, `${t.tipo === 'triagem' ? '📏' : '🩺'} ${p.nome}: ${r.msg}`, 'info', { pessoaId: p.id });
-  W.ordens = W.ordens.filter((o) => o.pid !== p.id);
-  pac.espera = null; pac.atend = null; pac.pend = null;
-  a.tarefa = null;
-  W.sinal++;
-}
-
-function liberarFila(W) {
-  for (const a of W.agentes) if (a.k === 'res' && a.espera && !a.atend) {
-    a.espera.estado = 'pendente';
-    a.espera = null;
+  if (t.fase === 'chamando') {
+    if (!naPos && posto.length) { if (!a.path.length) irPara(W, a, [posto[0]]); return; }
+    if (!pac.atend.pronto) return;
+    t.fase = 'pronto';
+    if (!a.jogador) { t.fase = 'atendendo'; t.restante = duracaoServico(S, t.tipo); }
+    return;
   }
-  W.ubsFila = { triagem: [], consulta: [] };
+  if (t.fase === 'atendendo') {
+    t.restante -= dt;
+    if (t.restante > 0) return;
+    aplicarServico(W, S, cfg, a, t);
+    if (a.jogador) { t.fase = 'resultado'; W.sinal++; return; }
+    concluirAtendimento(W, S, cfg, a, rotearAuto(W, S, cfg, a, t));
+  }
+  // fases 'pronto' e 'resultado' do jogador esperam a decisão pela interface
 }
 
+/* ---------- Agentes comunitários ---------- */
 function passoACS(W, S, cfg, a, dt) {
   if (!a.tarefa) {
-    if (W.tarefasACS.length && ubsAberta(W, S, cfg)) {
-      a.tarefa = W.tarefasACS.shift();
-      const t = a.tarefa;
-      t.fase = 'indo';
-      if (t.tipo === 'mutirao') {
-        t.pontos = []; for (let i = 0; i < 3; i++) t.pontos.push(pontoAleatorio(W, S.mundo, { x: W.ubs.porta.fora.x, y: W.ubs.porta.fora.y }) || W.ubs.porta.fora);
-        t.i = 0; irPara(W, a, [t.pontos[0]]);
-      } else {
-        const fam = t.tipo === 'visita' ? t.fam : achaPessoa(S, t.pid).familiaId;
-        t.fam = fam;
-        if (!irPara(W, a, [W.casas[fam].porta.dentro])) { a.tarefa = null; }
-      }
+    if (a.jogador && a.fila.length) {
+      const cmd = a.fila.shift();
+      if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
+      const t = { ...cmd, fase: 'indo', rep: 0 };
+      a.tarefa = t;
+      if (t.tipo === 'mutirao') { t.pontos = []; for (let i = 0; i < 3; i++) t.pontos.push(pontoAleatorio(W, S.mundo, { x: a.x, y: a.y }) || W.ubs.porta.fora); t.i = 0; irPara(W, a, [t.pontos[0]]); }
+      else if (t.tipo === 'visita') { if (!irPara(W, a, [W.casas[t.fam].porta.dentro])) a.tarefa = null; }
       return;
     }
+    if (!a.jogador && W.tarefasACS.length && ubsAberta(W, S, cfg)) {
+      const t = W.tarefasACS.shift();
+      a.tarefa = t; t.fase = 'indo';
+      if (t.tipo === 'mutirao') { t.pontos = []; for (let i = 0; i < 3; i++) t.pontos.push(pontoAleatorio(W, S.mundo, { x: W.ubs.porta.fora.x, y: W.ubs.porta.fora.y }) || W.ubs.porta.fora); t.i = 0; irPara(W, a, [t.pontos[0]]); }
+      else { t.fam = t.tipo === 'visita' ? t.fam : achaPessoa(S, t.pid).familiaId; if (!irPara(W, a, [W.casas[t.fam].porta.dentro])) a.tarefa = null; }
+      return;
+    }
+    if (a.jogador) return;
     const posto = postoDe(W, 'acs', a.ind)[0];
     if (posto && (a.x !== posto.x || a.y !== posto.y)) irPara(W, a, [posto]);
     return;
   }
   const t = a.tarefa;
+  if (t.tipo === 'pessoa') {
+    const alvo = W.agentes.find((x) => x.k === 'res' && x.pid === t.pid && x.vis);
+    if (!alvo) { avisar(W, S, 'A pessoa não está mais por perto.', 'info'); a.tarefa = null; return; }
+    if (t.fase === 'indo') {
+      if (Math.hypot(alvo.x - a.x, alvo.y - a.y) <= 1.6) { t.fase = 'fazendo'; t.restante = t.acao === 'convidar' ? 10 : 20; alvo.pausa = t.restante + 2; alvo.path = []; return; }
+      if (!a.path.length || (t.rep = (t.rep || 0) - 1) <= 0) { irPara(W, a, vizinhosDe(W, alvo.x, alvo.y)); t.rep = 12; }
+      return;
+    }
+    t.restante -= dt;
+    if (t.restante > 0) return;
+    const p = achaPessoa(S, t.pid);
+    let r;
+    if (t.acao === 'medir') { r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: false, msg: 'A aferição de rotina é para adultos.' }; }
+    else if (t.acao === 'orientar') { r = acaoOrientar(S, cfg, p.id, t.foco); if (r.ok && t.foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (t.foco in it) it[t.foco] = clamp(it[t.foco] + 0.5, 0, 1); S.metricas.orientacoes++; } }
+    else if (t.acao === 'convidar') { r = ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }); }
+    else { const f = achaFamilia(S, p.familiaId); f.vinculo = clamp(f.vinculo + 3, 0, 100); r = { ok: true, msg: 'Conversa amigável (vínculo +3).' }; }
+    avisar(W, S, `${t.acao === 'medir' ? '📏' : t.acao === 'orientar' ? '💬' : t.acao === 'convidar' ? '📣' : '🙂'} ${p.nome}: ${r.msg}`, 'info', { pessoaId: p.id });
+    alvo.pausa = 0;
+    a.tarefa = null; W.sinal++;
+    return;
+  }
   if (t.fase === 'indo') {
+    if (a.path.length) return;
     t.fase = 'fazendo';
     t.restante = t.tipo === 'visita' ? 40 : t.tipo === 'orientar' ? 30 : 45;
   }
   t.restante -= dt;
   if (t.restante > 0) return;
   if (t.tipo === 'mutirao' && t.i < 2) { t.i++; t.restante = 45; irPara(W, a, [t.pontos[t.i]]); t.fase = 'indo'; return; }
-  let r;
   if (t.tipo === 'visita') {
-    r = acaoVisita(S, cfg, t.fam);
-    avisar(W, S, `🚶 ${achaFamilia(S, t.fam).nome}: ${r.msg}`, r.ok ? 'info' : 'info');
-  } else if (t.tipo === 'orientar') {
-    r = acaoOrientar(S, cfg, t.pid, t.foco);
-    if (r.ok && t.foco !== 'fumo') {
-      const it = S.mundo.intencao[t.pid]; const k = t.foco === 'estresse' ? 'estresse' : t.foco;
-      if (k in it) it[k] = clamp(it[k] + 0.5, 0, 1);
+    const r = acaoVisita(S, cfg, t.fam);
+    const fam = achaFamilia(S, t.fam);
+    const extras = [];
+    if (r.ok) {
+      S.metricas.visitas++;
+      for (const p of fam.pessoas) { // busca ativa: afere os adultos e convida quem estiver com valores alterados
+        if (p.idade >= 18 && !p.internado && (p.conhecido.medidasTurno === null || S.turno - p.conhecido.medidasTurno >= 3)) {
+          const m = acaoMedir(S, cfg, p.id);
+          if (m.ok && p.conhecido.suspeitas.length) { ordenarUnidade(W, S, cfg, p.id, 'consulta', { origem: 'acs' }); extras.push(`${p.nome} está com valores alterados e foi convidado(a) para consulta`); }
+        }
+      }
     }
+    avisar(W, S, `🏠 ${fam.nome}: ${r.msg}${extras.length ? ' ' + extras.join('. ') + '.' : ''}`, 'info', { familiaId: t.fam });
+  } else if (t.tipo === 'orientar') {
+    const r = acaoOrientar(S, cfg, t.pid, t.foco);
+    if (r.ok && t.foco !== 'fumo') { const it = S.mundo.intencao[t.pid]; if (t.foco in it) it[t.foco] = clamp(it[t.foco] + 0.5, 0, 1); }
     avisar(W, S, `💬 ${achaPessoa(S, t.pid).nome}: ${r.msg}`, 'info', { pessoaId: t.pid });
   } else {
-    r = acaoMutirao(S, cfg);
+    const r = acaoMutirao(S, cfg);
     avisar(W, S, `🧹 ${r.msg}`, r.ok ? 'bom' : 'info');
   }
   a.tarefa = null;
   W.sinal++;
 }
 
-/* ---------- Ordens do jogador ---------- */
-
+/* ---------- Pedidos (usados pelos profissionais autônomos e pelos testes) ---------- */
 const jaNaFilaACS = (W, tipo, chave) => W.tarefasACS.some((t) => t.tipo === tipo && (t.fam === chave || t.pid === chave)) || W.agentes.some((a) => a.tarefa && a.tarefa.tipo === tipo && (a.tarefa.fam === chave || a.tarefa.pid === chave));
 
 function ordenarVisita(W, S, cfg, famId) {
@@ -1309,37 +1549,211 @@ function ordenarVisita(W, S, cfg, famId) {
   if (f.visTurno === S.turno) return { ok: false, msg: 'Esta família já foi visitada neste mês.' };
   if (jaNaFilaACS(W, 'visita', famId)) return { ok: false, msg: 'O agente comunitário já vai até lá.' };
   W.tarefasACS.push({ tipo: 'visita', fam: famId });
-  return { ok: true, msg: `Visita à ${f.nome} na fila do agente comunitário (${W.tarefasACS.length}).` };
+  return { ok: true, msg: `Visita à ${f.nome} na fila do agente comunitário.` };
 }
-
 function ordenarOrientar(W, S, cfg, pid, foco) {
   const p = achaPessoa(S, pid);
   if (p.internado) return { ok: false, msg: `${p.nome} está internado(a).` };
   if (foco === 'fumo' && !p.tabagismo) return { ok: false, msg: 'Esta pessoa não fuma.' };
   if (jaNaFilaACS(W, 'orientar', pid)) return { ok: false, msg: 'Já há uma orientação pedida para esta pessoa.' };
   W.tarefasACS.push({ tipo: 'orientar', pid, foco });
-  return { ok: true, msg: `Orientação para ${p.nome} na fila do agente comunitário (${W.tarefasACS.length}).` };
+  return { ok: true, msg: `Orientação para ${p.nome} na fila.` };
 }
-
-function ordenarMutirao(W, S, cfg) {
+function ordenarMutirao(W, S) {
   if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'O mutirão já foi realizado neste mês.' };
   if (W.tarefasACS.some((t) => t.tipo === 'mutirao') || W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao')) return { ok: false, msg: 'O mutirão já está a caminho.' };
   W.tarefasACS.push({ tipo: 'mutirao' });
   return { ok: true, msg: 'Mutirão contra focos na fila da equipe.' };
 }
-
-function ordenarUnidade(W, S, cfg, pid, tipo) {
+function ordenarUnidade(W, S, cfg, pid, tipo, opts = {}) {
   const p = achaPessoa(S, pid);
   if (p.internado) return { ok: false, msg: `${p.nome} está internado(a).` };
-  if (tipo === 'triagem' && p.idade < 18) return { ok: false, msg: 'A triagem de PA e glicemia é para adultos.' };
+  if (tipo === 'triagem' && p.idade < 18 && !opts.permiteCrianca) return { ok: false, msg: 'A triagem de PA e glicemia é para adultos.' };
   if (W.ordens.some((o) => o.pid === pid)) return { ok: false, msg: `${p.nome} já foi chamado(a) à unidade.` };
-  W.ordens.push({ pid, tipo, estado: 'pendente', rolou: false });
+  W.ordens.push({ pid, tipo, estado: 'pendente', rolou: !!opts.espontaneo, espontaneo: !!opts.espontaneo, origem: opts.origem || 'ordem', meta: opts.meta || (tipo === 'triagem' && opts.origem === 'acs' ? { consulta: true } : null), t0: S.mundo.min });
   const med = tipo === 'consulta' && cfg.cenario.mundo.medicoDias.length < 5 ? ' O médico atende só em alguns dias da semana.' : '';
-  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a triagem' : 'a consulta'}. Vai quando a unidade estiver aberta.${med}` };
+  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a triagem' : 'a consulta'}.${med}` };
+}
+
+/* ---------- Demanda e rotinas diárias dos profissionais autônomos ---------- */
+function gerarDemanda(W, S, cfg) {
+  const M = S.mundo;
+  for (const f of S.familias) for (const p of f.pessoas) {
+    if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
+    const eu = S.jogador && S.jogador.modo === 'paciente' && S.jogador.pid === p.id;
+    // retorno de quem está em tratamento
+    const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat);
+    if (emTrat && S.turno - (p.retornoTurno === undefined ? -99 : p.retornoTurno) >= 1) {
+      if (eu) { if (M.lembreteRetorno !== S.turno) { M.lembreteRetorno = S.turno; avisar(W, S, '🗓️ Já faz um mês da sua última consulta: o médico pediu retorno. Vá à unidade em dia de médico.', 'alerta', { pessoaId: p.id }); } continue; }
+      if (rnd(M) < 0.12 * (0.4 + adesao(f))) ordenarUnidade(W, S, cfg, p.id, 'consulta', { espontaneo: true, origem: 'retorno', permiteCrianca: true });
+      continue;
+    }
+    if (eu) continue; // o paciente decide por conta própria
+    // sintomas que levam a procurar a unidade
+    const doente = ['dm', 'dep'].some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
+    if (doente && rnd(M) < 0.035 * (0.5 + f.vinculo / 50)) ordenarUnidade(W, S, cfg, p.id, 'triagem', { espontaneo: true, origem: 'sintoma', meta: { consulta: true } });
+  }
+}
+
+function planejarACS(W, S, cfg) {
+  if (diaSemana(S) > 4) return;
+  const npc = W.agentes.filter((a) => a.k === 'staff' && a.papel === 'acs' && !a.jogador).length;
+  if (!npc) return;
+  if (W.tarefasACS.filter((t) => t.tipo === 'visita').length >= 2 * npc) return;
+  const risco = (f) => f.pessoas.reduce((n, p) => n + (p.conhecido.suspeitas.length ? 2 : 0) + (CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat) ? 2 : 0) + (p.dengue.ativa ? 3 : 0), 0);
+  const cand = S.familias.filter((f) => f.visTurno !== S.turno && !jaNaFilaACS(W, 'visita', f.id)).sort((x, y) => (risco(y) - risco(x)) || (x.visTurno - y.visTurno));
+  for (const f of cand.slice(0, npc)) W.tarefasACS.push({ tipo: 'visita', fam: f.id });
+  const emTemporada = cfg.game.dengue.estacao.includes(S.mes);
+  if (emTemporada && S.infestacao >= 40 && S.mutiraoTurno !== S.turno && !W.tarefasACS.some((t) => t.tipo === 'mutirao') && diaDoMes(S) >= 3) W.tarefasACS.push({ tipo: 'mutirao' });
+}
+
+/* ---------- Interações do jogador ---------- */
+const FOCOS_ORIENTAR = [['atividade', 'Atividade física'], ['alimentacao', 'Alimentação'], ['sono', 'Sono'], ['estresse', 'Manejo do estresse'], ['fumo', 'Parar de fumar']];
+
+/** Opções que o jogador tem ao tocar em `alvo`: { tipo:'obj'|'agente'|'chao', ... }. */
+function opcoesPara(W, S, cfg, alvo) {
+  const j = S.jogador, ag = agenteJogador(W);
+  if (!j || !ag) return [];
+  const ops = [];
+  const op = (id, rot, ic, desab) => ops.push({ id, rot, ic, desab: desab || null });
+  if (alvo.tipo === 'chao') { op('ir', 'Ir até aqui', '📍'); if (j.modo === 'paciente') op('caminhar', 'Caminhar por aqui', '🚶'); if (j.modo === 'profissional' && j.papel === 'acs' && alvo.rua) op('mutirao', 'Mutirão contra focos aqui', '🧹', S.mutiraoTurno === S.turno ? 'Já feito neste mês' : null); return ops; }
+
+  if (j.modo === 'paciente') {
+    const p = achaPessoa(S, ag.pid);
+    if (alvo.tipo === 'agente') {
+      const o = W.agentes.find((x) => x.id === alvo.id);
+      if (o && o.id !== ag.id) op('conversar', 'Conversar', '💬');
+      return ops;
+    }
+    const o = alvo.obj;
+    if (o.casa && o.casa !== p.familiaId) { op('nada', 'Casa de outra família', '🚪', 'Você não pode usar'); return ops; }
+    const idade = p.idade;
+    switch (o.t) {
+      case 'B': op('dormir', 'Dormir', '💤'); op('descansar', 'Descansar um pouco', '🛏️'); break;
+      case 'S': case 'V': op('tv', 'Assistir TV', '📺'); break;
+      case 'G': case 'm': op('cozinhar_saudavel', 'Cozinhar uma refeição saudável', '🥗'); op('cozinhar_rapido', 'Fazer algo rápido (frito/pronto)', '🍟'); { const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat); if (emTrat) op('remedio', 'Tomar o remédio', '💊', S.mundo.remedios[p.id].hoje ? 'Já tomou hoje' : null); } break;
+      case 'C': op('banho', 'Tomar banho', '🚿'); break;
+      case 'P': op('praca', 'Sentar na praça', '🌳'); break;
+      case 'A': op('academia', 'Exercitar-se', '🏋️', idade < 14 ? 'Só a partir de 14 anos' : null); break;
+      case 'L': op('lanche', 'Comer um lanche', '🍔'); break;
+      case 'O': op('trabalho', 'Trabalhar (2h)', '💼', p.ocupacao !== 'trabalho' ? 'Você não trabalha aqui' : null); break;
+      case 'R': op('roca', 'Trabalhar na roça (2h)', '🌽', p.ocupacao !== 'trabalho' ? 'Você não trabalha aqui' : null); break;
+      case 'E': op('escola', 'Estudar (2h)', '📚', p.ocupacao !== 'escola' ? 'Você não estuda aqui' : null); break;
+      case 'casa': op('ir_casa', 'Ir para casa', '🏠'); break;
+      case 'H': case 'U': case 'D': case 'Y': {
+        const aberta = ubsAberta(W, S, cfg), med = ubsAberta(W, S, cfg, true);
+        op('ubs_triagem', 'Pedir triagem (medir pressão/glicemia)', '📏', aberta && idade >= 18 ? null : idade < 18 ? 'Triagem é para adultos' : 'Unidade fechada agora');
+        op('ubs_consulta', 'Pedir consulta médica', '🩺', med ? null : aberta ? 'Sem médico hoje' : 'Unidade fechada agora');
+        break;
+      }
+      default: break;
+    }
+    return ops;
+  }
+
+  // profissional
+  if (alvo.tipo === 'agente') {
+    const o = W.agentes.find((x) => x.id === alvo.id);
+    if (!o || o.k !== 'res') return ops;
+    const p = achaPessoa(S, o.pid);
+    if (j.papel === 'acs') {
+      op('acs_medir', 'Aferir PA e glicemia', '📏', p.idade < 18 ? 'Só adultos' : null);
+      for (const [k, nome] of FOCOS_ORIENTAR) { if (k === 'fumo' && !p.tabagismo) continue; if (p.idade < 12 && !['atividade', 'alimentacao', 'sono'].includes(k)) continue; op(`acs_orientar:${k}`, `Orientar: ${nome}`, '💬'); }
+      op('acs_convidar', 'Convidar para a unidade', '📣', W.ordens.some((x) => x.pid === p.id) ? 'Já foi chamado(a)' : null);
+      op('acs_conversar', 'Conversar (criar vínculo)', '🙂');
+    } else {
+      const ord = W.ordens.find((x) => x.pid === o.pid && x.estado === 'espera' && x.tipo === servicoDe(j.papel));
+      op('chamar', 'Chamar para atendimento', '📣', ord ? (ag.tarefa ? 'Você está atendendo' : null) : 'Não está na sua fila');
+    }
+    return ops;
+  }
+  const o = alvo.obj;
+  if (j.papel === 'acs' && o && o.casa) op('acs_visita', `Visitar a família ${achaFamilia(S, o.casa).nome.replace('Família ', '').replace('Casal ', '')}`, '🏠', achaFamilia(S, o.casa).visTurno === S.turno ? 'Já visitada neste mês' : null);
+  return ops;
+}
+
+/** Aplica a opção escolhida. Devolve { ok, msg }. */
+function comandar(W, S, cfg, opId, alvo) {
+  const j = S.jogador, ag = agenteJogador(W);
+  if (!j || !ag) return { ok: false, msg: 'Nenhum personagem.' };
+  if (ag.fila.length >= 6) return { ok: false, msg: 'Fila de ordens cheia.' };
+  const [id, arg] = opId.split(':');
+  if (id === 'ir') { ag.fila.push({ k: 'ir', x: alvo.x, y: alvo.y }); return { ok: true, msg: 'Indo até lá.' }; }
+  if (id === 'ir_casa') { const q = W.casas[achaPessoa(S, ag.pid).familiaId].porta.dentro; ag.fila.push({ k: 'ir', x: q.x, y: q.y }); return { ok: true, msg: 'Indo para casa.' }; }
+  if (j.modo === 'paciente') {
+    const p = achaPessoa(S, ag.pid);
+    const obj = alvo.obj;
+    const objDaCasa = (t) => objetosDe(W, t, p.familiaId)[0];
+    const empilha = (cmd) => { ag.fila.push(cmd); return { ok: true, msg: 'Ordem na fila.' }; };
+    switch (id) {
+      case 'caminhar': return empilha({ k: 'acao', acao: 'caminhar' });
+      case 'dormir': return empilha({ k: 'acao', acao: 'dormir', obj: obj && obj.t === 'B' ? obj : undefined });
+      case 'descansar': return empilha({ k: 'acao', acao: 'descansar', obj: obj && obj.t === 'B' ? obj : undefined });
+      case 'tv': return empilha({ k: 'acao', acao: 'tv', obj: objDaCasa('S') });
+      case 'cozinhar_saudavel': return empilha({ k: 'acao', acao: 'cozinhar', saudavel: true });
+      case 'cozinhar_rapido': return empilha({ k: 'acao', acao: 'cozinhar', saudavel: false, dur: 6 });
+      case 'remedio': return empilha({ k: 'acao', acao: 'remedio' });
+      case 'banho': return empilha({ k: 'acao', acao: 'banho', obj: objDaCasa('C') });
+      case 'praca': case 'academia': case 'lanche': case 'trabalho': case 'roca': case 'escola': return empilha({ k: 'acao', acao: id, obj });
+      case 'ubs_triagem': return empilha({ k: 'ubs', tipo: 'triagem' });
+      case 'ubs_consulta': return empilha({ k: 'ubs', tipo: 'consulta' });
+      case 'conversar': {
+        const o = W.agentes.find((x) => x.id === alvo.id);
+        if (!o) return { ok: false, msg: 'A pessoa saiu.' };
+        o.pausa = 22; o.path = [];
+        ag.fila.push({ k: 'ir', x: Math.round(o.x), y: Math.round(o.y) });
+        ag.fila.push({ k: 'acao', acao: 'conversar' });
+        return { ok: true, msg: 'Indo conversar.' };
+      }
+      default: return { ok: false, msg: 'Opção indisponível.' };
+    }
+  }
+  // profissional
+  if (id === 'mutirao') { if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' }; ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' }; }
+  if (id === 'chamar') { ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
+  const o = alvo.id ? W.agentes.find((x) => x.id === alvo.id) : null;
+  if (id === 'acs_visita') { ag.fila.push({ k: 'x', tipo: 'visita', fam: alvo.obj.casa }); return { ok: true, msg: 'Indo visitar a família.' }; }
+  if (id.startsWith('acs_') && o) {
+    const acao = id.replace('acs_', '');
+    ag.fila.push({ k: 'x', tipo: 'pessoa', pid: o.pid, acao, foco: arg });
+    return { ok: true, msg: 'Indo até a pessoa.' };
+  }
+  return { ok: false, msg: 'Opção indisponível.' };
+}
+
+// "k:'x'" = tarefa de campo do ACS (a fila usa a mesma estrutura de tarefa)
+function cancelarFila(W, S) {
+  const ag = agenteJogador(W);
+  if (!ag) return;
+  ag.fila = []; ag.proximos = [];
+  if (ag.k === 'res' && ag.acao && ag.acao.k !== 'dormir') ag.acao = null;
+  if (ag.k === 'res') { ag.path = []; ag.pend = null; }
+}
+function alternaVontade(S) { S.jogador.vontade = !S.jogador.vontade; return S.jogador.vontade; }
+
+/** O profissional começa o atendimento (quando o paciente já chegou). */
+function iniciarAtendimento(W, S, cfg, opts = {}) {
+  const a = agenteJogador(W);
+  if (!a || !a.tarefa || a.tarefa.fase !== 'pronto') return { ok: false, msg: 'Nenhum paciente pronto.' };
+  a.tarefa.opts = opts;
+  a.tarefa.fase = 'atendendo';
+  a.tarefa.restante = duracaoServico(S, a.tarefa.tipo);
+  return { ok: true, msg: 'Atendimento iniciado.' };
+}
+function finalizarAtendimento(W, S, cfg, destino) {
+  const a = agenteJogador(W);
+  if (!a || !a.tarefa || a.tarefa.fase !== 'resultado') return { ok: false, msg: 'Nada a concluir.' };
+  concluirAtendimento(W, S, cfg, a, destino);
+  return { ok: true, msg: destino === 'liberar' ? 'Atendimento concluído.' : 'Encaminhado.' };
+}
+function atendimentoAtual(W, S) {
+  const a = agenteJogador(W);
+  if (!a || a.k !== 'staff' || !a.tarefa || !a.tarefa.ord) return null;
+  const t = a.tarefa;
+  return { tipo: t.tipo, fase: t.fase, pid: t.ord.pid, restante: t.restante, resultado: t.resultado || null };
 }
 
 /* ---------- Simulação ---------- */
-
 function fimDoDia(W, S, cfg) {
   const M = S.mundo;
   for (const p of todasPessoas(S)) {
@@ -1356,6 +1770,7 @@ function fimDoDia(W, S, cfg) {
       for (const k of Object.keys(alvo)) p.habitos[k] = clamp(p.habitos[k] * 0.96 + alvo[k] * 0.04, 0, 100);
     }
     for (const k of Object.keys(int)) int[k] *= 0.96;
+    M.remedios[p.id].hoje = false;
     M.dia[p.id] = contadoresNovos();
   }
 }
@@ -1372,11 +1787,19 @@ function passoCurto(W, S, cfg, dt) {
     fimDoDia(W, S, cfg);
     for (const a of W.agentes) if (a.k === 'res') a.procurou = false;
     if (diaDoJogo(S) % DIAS_MES === 0) {
+      // adesão do paciente controlado = dias em que tomou o remédio
+      if (S.jogador && S.jogador.modo === 'paciente') {
+        const r = M.remedios[S.jogador.pid], p = achaPessoa(S, S.jogador.pid);
+        if (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)) p.adesaoOverride = clamp(r.dias / (DIAS_MES * 0.85), 0, 1); else delete p.adesaoOverride;
+        r.dias = 0;
+      }
       W.relatorio = avancarMes(S, cfg);
       sincronizarEquipe(W, S);
       W.sinal++;
+      gerarDemanda(W, S, cfg); planejarACS(W, S, cfg);
       return true;
     }
+    gerarDemanda(W, S, cfg); planejarACS(W, S, cfg);
   }
   return false;
 }
@@ -1393,7 +1816,6 @@ function passoMundo(W, S, cfg, dtMin) {
   return mes;
 }
 
-/** Avança direto até as 7h do próximo dia (sem animação). Devolve true se um mês terminou. */
 function pularDia(W, S, cfg) {
   const m = minutoDoDia(S);
   let faltam = (7 * 60 - m + MIN_DIA) % MIN_DIA;
@@ -1403,7 +1825,6 @@ function pularDia(W, S, cfg) {
   return mes;
 }
 
-/** Avança direto até o fim do mês corrente (sem animação). */
 function pularMes(W, S, cfg) {
   const alvo = (Math.floor(diaDoJogo(S) / DIAS_MES) + 1) * DIAS_MES * MIN_DIA;
   const faltam = alvo - S.mundo.min;
@@ -1413,22 +1834,32 @@ function pularMes(W, S, cfg) {
 }
 
 /* ---------- Consultas para a interface ---------- */
-
 function acaoAtual(W, S, a) {
+  if (a.k === 'staff') {
+    if (!a.vis) return 'Fora do expediente';
+    if (a.tarefa) {
+      const t = a.tarefa;
+      if (t.ord) return { chamando: '📣 Chamando o paciente', pronto: '🧑 Paciente pronto', atendendo: '🩺 Atendendo', resultado: '📝 Atendimento concluído' }[t.fase];
+      return { visita: '🏠 Em visita domiciliar', orientar: '💬 Orientando', mutirao: '🧹 Mutirão contra focos', pessoa: t.fase === 'indo' ? '🚶 Indo até a pessoa' : '🙂 Atendendo a pessoa' }[t.tipo] || 'Trabalhando';
+    }
+    return a.path.length ? '🚶 Andando' : 'Aguardando';
+  }
   const p = achaPessoa(S, a.pid);
   if (!a.vis) return p.internado ? '🏥 Internado(a)' : '—';
+  if (a.pausa > 0) return '🙂 Conversando';
   if (a.atend) return a.atend.pronto ? '🩺 Em atendimento' : '🚶 Indo ao atendimento';
   if (a.espera) return '🪑 Aguardando atendimento na unidade';
   if (a.pend && a.pend.k === 'ubs') return '🚶 A caminho da unidade';
   if (a.acao) return `${ACOES[a.acao.k].ic} ${ACOES[a.acao.k].rot}`;
   if (a.path.length) return '🚶 Andando';
-  return '…';
+  return a.jogador ? '🧍 Aguardando suas ordens' : '…';
 }
 
 function bolhaDe(W, S, a) {
   if (a.k === 'staff') return a.tarefa ? (a.tarefa.tipo === 'mutirao' ? '🧹' : a.tarefa.tipo === 'visita' ? '🏠' : a.tarefa.fase === 'atendendo' ? '🩺' : null) : null;
   const p = achaPessoa(S, a.pid);
-  if (sintomasDengueVisiveis(S, p)) return '🤒';
+  if (a.jogador) { if (p.dengue.ativa) return '🤒'; }
+  else if (sintomasDengueVisiveis(S, p)) return '🤒';
   if (a.atend && a.atend.pronto) return '🩺';
   if (a.espera) return '⏳';
   if (a.acao && ACOES[a.acao.k]) return ACOES[a.acao.k].ic;
@@ -1437,11 +1868,9 @@ function bolhaDe(W, S, a) {
   return null;
 }
 
-function resumoEquipe(W, S) {
-  return { acs: W.tarefasACS.length, triagem: W.ubsFila.triagem.length, consulta: W.ubsFila.consulta.length, chamados: W.ordens.length };
+function resumoEquipe(W) {
+  return { acs: W.tarefasACS.length, triagem: filaEspera(W, 'triagem').length, enfermagem: filaEspera(W, 'enfermagem').length, consulta: filaEspera(W, 'consulta').length, chamados: W.ordens.length };
 }
-
-const ACOES_INFO = ACOES;
 
 // Desenho isométrico do mundo (canvas 2D): terreno, paredes recortadas, móveis com volume, personagens animados,
 // partículas, iluminação de dia/noite e câmera por toque. Nenhuma regra de jogo mora aqui.
@@ -1506,11 +1935,13 @@ function preparaMapa(W) {
 const ehTerreno = (W, x, y, ch) => x >= 0 && y >= 0 && x < W.w && y < W.h && W.terr[y * W.w + x] === ch;
 
 function criarRenderer(canvas, getEstado, hooks) {
-  const ctx = canvas.getContext('2d');
+  const ctxPrincipal = canvas.getContext('2d');
+  let ctx = ctxPrincipal;
   const cam = { x: 0, y: 0, z: 1 };
   let largura = 300, altura = 300, dpr = 1;
   let selecionado = null;
   let paredesBaixas = false;
+  let marcador = null;
   const ponteiros = new Map();
   let arraste = null;
   const rs = new Map(); // estado visual de cada agente (posição suavizada, fase da caminhada, direção)
@@ -1532,7 +1963,7 @@ function criarRenderer(canvas, getEstado, hooks) {
     cam.y = L.y1 - L.y0 < mA * 2 ? (L.y0 + L.y1) / 2 : Math.max(L.y0 + mA - 60, Math.min(L.y1 - mA + 60, cam.y));
   }
   function redimensiona() {
-    dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    dpr = Math.min(2, window.devicePixelRatio || 1);
     largura = canvas.clientWidth || 300;
     altura = canvas.clientHeight || 300;
     canvas.width = Math.round(largura * dpr); canvas.height = Math.round(altura * dpr);
@@ -1604,6 +2035,8 @@ function criarRenderer(canvas, getEstado, hooks) {
         ctx.stroke();
       } else if (ch === '#' || ch === '+' || ch === '_') {
         losango(ctx, i, j, '#d9c7a8');
+      } else if (preparaDecor(W).pavers.has(k)) {
+        losango(ctx, i, j, (i + j) % 2 ? '#dcd5c3' : '#d2cbb8', 'rgba(0,0,0,.08)');
       } else { // grama
         losango(ctx, i, j, mistura('#7fbf6a', '#5fa653', r * 0.7));
         if (r > 0.55) {
@@ -1631,7 +2064,7 @@ function criarRenderer(canvas, getEstado, hooks) {
   function desenhaParede(W, i, j) {
     const { alt, cor, l } = paredeInfo(W, i, j);
     caixa(ctx, i, j, i + 1, j + 1, 0, alt, cor, { esq: claro(cor, 0.05), dir: escuro(cor, 0.2), topo: alt > 20 ? '#f8fafc' : claro(cor, 0.3) });
-    if (alt <= 40 || !l) return;
+    if (alt <= 40 || !l || cam.z < 0.42) return;
     const rodape = l.modelo === 'ubs' ? '#0f9f94' : escuro(cor, 0.3);
     poli(ctx, [proj(i, j + 1, 0), proj(i + 1, j + 1, 0), proj(i + 1, j + 1, 5), proj(i, j + 1, 5)], rodape);
     poli(ctx, [proj(i + 1, j, 0), proj(i + 1, j + 1, 0), proj(i + 1, j + 1, 5), proj(i + 1, j, 5)], escuro(rodape, 0.2));
@@ -1673,21 +2106,27 @@ function criarRenderer(canvas, getEstado, hooks) {
         caixa(ctx, i + 0.2, j + 0.18, i + 0.8, j + 0.4, 13, 17, '#ffffff');
         break;
       }
-      case 'S': {
-        caixa(ctx, i + 0.15, j + 0.05, i + 0.85, j + 0.3, 0, 12, '#5b4636');
-        const brilho = uso ? 0.5 + 0.5 * Math.sin(agora / 140) : 0;
-        caixa(ctx, i + 0.2, j + 0.08, i + 0.8, j + 0.2, 12, 30, '#1b1f27', { esq: uso ? mistura('#8fd3ff', '#ffffff', brilho * 0.5) : '#232a35', topo: '#2a3140' });
-        if (uso) poli(ctx, [proj(i, j + 0.4), proj(i + 1, j + 0.4), proj(i + 1, j + 1.2), proj(i, j + 1.2)], `rgba(140,210,255,${0.1 + brilho * 0.08})`);
-        caixa(ctx, i + 0.1, j + 0.48, i + 0.9, j + 0.95, 0, 9, '#5f86ad');
-        caixa(ctx, i + 0.1, j + 0.82, i + 0.9, j + 0.95, 9, 17, '#4f7399');
-        caixa(ctx, i + 0.06, j + 0.48, i + 0.16, j + 0.95, 0, 15, '#4f7399');
-        caixa(ctx, i + 0.84, j + 0.48, i + 0.94, j + 0.95, 0, 15, '#4f7399');
+      case 'S': { // sofá voltado para o norte (de frente para a TV); encosto baixo atrás (ao sul)
+        caixa(ctx, i + 0.08, j + 0.2, i + 0.92, j + 0.92, 0, 8, '#6b8fb8');
+        caixa(ctx, i + 0.14, j + 0.24, i + 0.86, j + 0.66, 8, 12, '#86a8cc');
+        caixa(ctx, i + 0.08, j + 0.78, i + 0.92, j + 0.94, 8, 20, '#5a7ea6');
+        caixa(ctx, i + 0.04, j + 0.2, i + 0.16, j + 0.94, 0, 16, '#527499');
+        caixa(ctx, i + 0.84, j + 0.2, i + 0.96, j + 0.94, 0, 16, '#527499');
         break;
       }
-      case 'm': {
+      case 'V': { // televisão sobre um móvel, com a tela voltada para o sofá (ao sul)
+        const ligada = W.agentes.some((a) => a.vis && a.acao && a.acao.k === 'tv' && a.acao.obj && a.acao.obj.casa === o.casa);
+        caixa(ctx, i + 0.1, j + 0.3, i + 0.9, j + 0.7, 0, 10, '#6a4b34');
+        const brilho = ligada ? 0.5 + 0.5 * Math.sin(agora / 160) : 0;
+        caixa(ctx, i + 0.14, j + 0.42, i + 0.86, j + 0.52, 10, 34, '#1a1d24', { esq: ligada ? mistura('#7fd0ff', '#ffffff', brilho * 0.45) : '#242a34', topo: '#2a3140' });
+        if (ligada) poli(ctx, [proj(i, j + 0.55), proj(i + 1, j + 0.55), proj(i + 1.1, j + 2.2), proj(i - 0.1, j + 2.2)], `rgba(130,205,255,${0.09 + brilho * 0.07})`);
+        break;
+      }
+      case 'm': { // mesa de jantar
         for (const [dx, dy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) caixa(ctx, i + dx - 0.04, j + dy - 0.04, i + dx + 0.04, j + dy + 0.04, 0, 12, '#6b4a2a', { borda: null });
-        caixa(ctx, i + 0.08, j + 0.1, i + 0.92, j + 0.9, 12, 15, '#a97c50');
-        const [px, py] = proj(i + 0.5, j + 0.5, 17); elipse(ctx, px, py, 7, 3, '#ffffff'); elipse(ctx, px, py - 1, 4, 1.8, '#ef8d6a');
+        caixa(ctx, i + 0.06, j + 0.1, i + 0.94, j + 0.9, 12, 15, '#b08455');
+        const comendo = W.agentes.some((a) => a.vis && a.acao && a.acao.k === 'comer_mesa' && a.acao.obj === o);
+        for (const [dx, dy] of [[0.3, 0.5], [0.7, 0.5]]) { const [px, py] = proj(i + dx, j + dy, 16); elipse(ctx, px, py, 5.5, 2.6, '#ffffff'); elipse(ctx, px, py - 1, 3.4, 1.6, comendo ? '#d97a4a' : '#9bd17a'); }
         break;
       }
       case 'G': {
@@ -1771,12 +2210,7 @@ function criarRenderer(canvas, getEstado, hooks) {
       }
       case 'T': {
         const [bx, by] = proj(i + 0.5, j + 0.6);
-        elipse(ctx, bx + 6, by + 2, 20, 8, 'rgba(0,0,0,.18)');
-        caixa(ctx, i + 0.42, j + 0.5, i + 0.58, j + 0.66, 0, 24, '#7a5230', { borda: null });
-        const balanco = Math.sin(agora / 1200 + i * 2 + j) * 1.2;
-        const cores = ['#2f7d32', '#3e9142', '#55a84d'];
-        [[0, -30, 22], [-9, -42, 17], [9, -42, 17], [0, -54, 15]].forEach(([dx, dy, r], n) => elipse(ctx, bx + dx + balanco * (n / 2), by + dy, r, r * 0.9, cores[n % 3]));
-        elipse(ctx, bx - 5 + balanco, by - 56, 7, 5, 'rgba(255,255,255,.18)');
+        ctx.drawImage(arvoreSprite(), bx - 60, by - 112);
         break;
       }
       default: break;
@@ -1834,7 +2268,7 @@ function criarRenderer(canvas, getEstado, hooks) {
       return;
     }
     elipse(ctx, 0, 1, 12, 5, 'rgba(0,0,0,.25)');
-    const sentado = pose === 'sentar' || pose === 'digitar';
+    const sentado = pose === 'sentar' || pose === 'digitar' || !!o.sentado;
     const quadril = sentado ? -11 : -17;
     // pernas
     ctx.lineCap = 'round';
@@ -1925,31 +2359,29 @@ function criarRenderer(canvas, getEstado, hooks) {
     poli(ctx, [[x, yy - 12], [x + 6 * f, yy], [x, yy - 2]], 'rgba(255,255,255,.4)');
   }
 
-  /** Decide pose, posição visual e direção para o agente. */
+  /** Decide pose, posição visual e direção a partir da ação que a pessoa realmente está executando. */
   function poseDe(W, a) {
     let pose = a.path.length ? 'andar' : 'parado';
-    let alvoX = a.x, alvoY = a.y, dirFixa = null, cadeira = null, ordem = 0;
+    let alvoX = a.x, alvoY = a.y, dirFixa = null, cadeira = null, ordem = 0, sentado = false;
     const virar = (ox, oy) => { dirFixa = dirDe(ox - a.x, oy - a.y); };
-    if (a.k === 'res' && a.espera && !a.path.length) {
-      const h = (W.porTipo.H || []).find((o) => Math.abs(o.x - a.x) + Math.abs(o.y - a.y) === 1);
+    if (a.k === 'res' && a.espera && !a.path.length && !a.atend) {
+      const h = a.cadeira;
       if (h) { pose = 'sentar'; alvoX = h.x; alvoY = h.y; dirFixa = 1; ordem = 0.35; }
-    } else if (a.acao && !a.path.length) {
-      const k = a.acao.k, o = a.acao.obj;
-      if (o) {
-        if (k === 'dormir' || k === 'descansar') { pose = 'deitar'; alvoX = o.x; alvoY = o.y; dirFixa = 0; ordem = 0.4; }
-        else if (k === 'tv') { pose = 'sentar'; alvoX = o.x; alvoY = o.y + 0.28; dirFixa = 2; ordem = 0.45; }
-        else if (k === 'praca') { pose = 'sentar'; alvoX = o.x; alvoY = o.y + 0.1; dirFixa = 1; ordem = 0.45; }
-        else if (k === 'banho') { pose = 'banho'; alvoX = o.x; alvoY = o.y; dirFixa = 1; ordem = 0.5; }
-        else if (k === 'comer') { pose = a.acao.restante > 10 ? 'cozinhar' : 'comer'; virar(o.x, o.y); }
-        else if (k === 'lanche') { pose = 'comer'; virar(o.x, o.y); }
-        else if (k === 'trabalho' || k === 'escola') { pose = 'digitar'; virar(o.x, o.y); cadeira = { x: a.x, y: a.y }; }
-        else if (k === 'roca') { pose = 'enxada'; virar(o.x, o.y); }
-        else if (k === 'academia') { pose = 'exercitar'; virar(o.x, o.y); }
-      } else if (k === 'fumar') pose = 'fumar';
-      else if (k === 'conversar') pose = 'falar';
+    } else if (a.acao && !a.path.length && ACOES_INFO[a.acao.k]) {
+      const info = ACOES_INFO[a.acao.k], o = a.acao.obj;
+      pose = info.pose;
+      if (info.onde === 'objeto' && o) {
+        alvoX = o.x; alvoY = o.y; ordem = 0.45;
+        if (pose === 'deitar') { dirFixa = 0; ordem = 0.4; const outros = W.agentes.filter((x) => x !== a && x.vis && x.acao && x.acao.obj === o && x.id < a.id).length; if (outros) { alvoX += 0.28; alvoY += 0.38; ordem = 0.41; } }
+        else if (a.acao.k === 'tv') { const v = (W.porTipo.V || []).find((x) => x.casa === o.casa); dirFixa = v ? dirDe(v.x - o.x, v.y - o.y) : 2; alvoY = o.y + 0.05; }
+        else dirFixa = 1;
+      } else if (info.onde === 'frente' && o) {
+        virar(o.x, o.y);
+        if (info.cadeira) { cadeira = { x: a.x, y: a.y }; sentado = true; }
+      }
     }
     if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') pose = 'digitar';
-    return { pose, alvoX, alvoY, dirFixa, cadeira, ordem };
+    return { pose, alvoX, alvoY, dirFixa, cadeira, ordem, sentado };
   }
 
   /* ---------- Iluminação ---------- */
@@ -2001,15 +2433,173 @@ function criarRenderer(canvas, getEstado, hooks) {
     }
   }
 
+  /* ---------- Cenário: decoração, céu e base (maquete) ---------- */
+  const terrEm = (W, x, y) => (x >= 0 && y >= 0 && x < W.w && y < W.h ? W.terr[y * W.w + x] : null);
+
+  function preparaDecor(W) {
+    const rv = preparaMapa(W);
+    if (rv.decor) return rv;
+    const decor = [], pavers = new Set();
+    const ocupados = new Set(W.objs.map((o) => o.y * W.w + o.x));
+    const livre = (x, y) => terrEm(W, x, y) === ',' && !ocupados.has(y * W.w + x);
+    const pisavel = (x, y) => { const c = terrEm(W, x, y); return (c === ',' || c === 'c') && !ocupados.has(y * W.w + x); };
+    for (const l of W.lugares) {
+      if (l.porta) {
+        const dx = l.porta.fora.x - l.porta.x, dy = l.porta.fora.y - l.porta.y;
+        let x = l.porta.fora.x, y = l.porta.fora.y;
+        for (let n = 0; n < 8; n++) {
+          const ch = terrEm(W, x, y);
+          if (ch === null || ch === '.' || ch === 'c') break;
+          if (ch === ',') pavers.add(y * W.w + x);
+          x += dx; y += dy;
+        }
+        const lado = dy !== 0 ? [2, 0] : [0, 2];
+        const q = { x: l.porta.fora.x + lado[0], y: l.porta.fora.y + lado[1] };
+        if (pisavel(q.x, q.y)) decor.push({ t: l.casa ? 'correio' : 'placa', modelo: l.modelo, x: q.x, y: q.y });
+      }
+      for (let y = l.y - 1; y <= l.y + l.h; y++) for (let x = l.x - 1; x <= l.x + l.w; x++) {
+        if (x >= l.x && x < l.x + l.w && y >= l.y && y < l.y + l.h) continue;
+        if (!livre(x, y)) continue;
+        if (l.porta && Math.abs(x - l.porta.fora.x) <= 1 && Math.abs(y - l.porta.fora.y) <= 1) continue;
+        if (pavers.has(y * W.w + x)) continue;
+        if (ruido(x, y, 7) > 0.42) decor.push({ t: ruido(x, y, 8) > 0.6 ? 'arbusto' : 'flores', x, y });
+      }
+    }
+    for (let y = 0; y < W.h; y++) for (let x = 0; x < W.w; x++) {
+      const k = y * W.w + x, c = W.terr[k];
+      if (c === 'c' && !ocupados.has(k) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => terrEm(W, x + a, y + b) === '.') && (x * 3 + y * 5) % 8 === 0) decor.push({ t: 'poste', x, y });
+      else if (c === ',' && livre(x, y) && ruido(x, y, 9) > 0.965 && !pavers.has(k)) decor.push({ t: 'flores', x, y });
+      if ((x === 0 || y === 0 || x === W.w - 1 || y === W.h - 1) && pisavel(x, y)) decor.push({ t: 'sebe', x, y });
+    }
+    rv.decor = decor; rv.pavers = pavers;
+    return rv;
+  }
+
+  function desenhaDecor(d, noite, agora) {
+    const [bx, by] = proj(d.x + 0.5, d.y + 0.5);
+    switch (d.t) {
+      case 'arbusto':
+        elipse(ctx, bx + 4, by + 3, 14, 5, 'rgba(0,0,0,.16)');
+        elipse(ctx, bx - 5, by - 5, 9, 8, '#3f8f42'); elipse(ctx, bx + 6, by - 5, 9, 8, '#4aa04b'); elipse(ctx, bx, by - 11, 9, 8, '#58b256');
+        elipse(ctx, bx - 3, by - 13, 3, 2.4, 'rgba(255,255,255,.25)');
+        break;
+      case 'flores': {
+        for (let n = 0; n < 5; n++) {
+          const fx = bx + (ruido(d.x, d.y, n) - 0.5) * 30, fy = by + (ruido(d.x, d.y, n + 9) - 0.5) * 12;
+          ctx.strokeStyle = '#3a7d3a'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 6); ctx.stroke();
+          ctx.fillStyle = ['#ff8fb1', '#ffd84d', '#ffffff', '#b99bff'][(d.x + d.y + n) % 4]; ctx.beginPath(); ctx.arc(fx, fy - 7, 2.6, 0, 7); ctx.fill();
+        }
+        break;
+      }
+      case 'sebe': caixa(ctx, d.x + 0.05, d.y + 0.05, d.x + 0.95, d.y + 0.95, 0, 11, '#3f8a43', { topo: '#58b256', borda: 'rgba(0,0,0,.12)' }); break;
+      case 'poste': {
+        caixa(ctx, d.x + 0.45, d.y + 0.45, d.x + 0.55, d.y + 0.55, 0, 54, '#4b5563', { borda: null });
+        const [lx, ly] = proj(d.x + 0.5, d.y + 0.5, 56);
+        elipse(ctx, lx, ly, 5, 3, noite ? '#fff3b0' : '#e5e7eb');
+        if (noite) { const g = ctx.createRadialGradient(lx, ly + 20, 2, lx, ly + 20, 46); g.addColorStop(0, 'rgba(255,230,150,.38)'); g.addColorStop(1, 'rgba(255,230,150,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lx, ly + 20, 46, 0, 7); ctx.fill(); }
+        break;
+      }
+      case 'correio': {
+        caixa(ctx, d.x + 0.45, d.y + 0.45, d.x + 0.55, d.y + 0.55, 0, 18, '#7a5a3a', { borda: null });
+        caixa(ctx, d.x + 0.3, d.y + 0.3, d.x + 0.7, d.y + 0.7, 18, 28, '#3b82c4');
+        break;
+      }
+      case 'placa': {
+        caixa(ctx, d.x + 0.44, d.y + 0.44, d.x + 0.56, d.y + 0.56, 0, 40, '#6b7280', { borda: null });
+        const cor = { ubs: '#16a34a', escola: '#e3a70b', lanche: '#e4572e', trabalho: '#3b6fb6' }[d.modelo] || '#16a34a';
+        const [sx, sy] = proj(d.x + 0.5, d.y + 0.5, 50);
+        rr(ctx, sx - 17, sy - 13, 34, 26, 6, cor);
+        ctx.font = `15px ${FONTE_EMOJI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+        ctx.fillText({ ubs: '✚', escola: '📚', lanche: '🍔', trabalho: '💼' }[d.modelo] || '✚', sx, sy + 1);
+        break;
+      }
+      default: break;
+    }
+  }
+
+  function desenhaCeu(agora) {
+    const g = ctx.createLinearGradient(0, 0, 0, altura);
+    g.addColorStop(0, '#8fcbee'); g.addColorStop(0.6, '#d8eefa'); g.addColorStop(1, '#eef8ee');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, largura, altura);
+    // sol suave e nuvens com paralaxe
+    const sol = ctx.createRadialGradient(largura * 0.85, altura * 0.12, 4, largura * 0.85, altura * 0.12, 120);
+    sol.addColorStop(0, 'rgba(255,245,200,.9)'); sol.addColorStop(1, 'rgba(255,245,200,0)');
+    ctx.fillStyle = sol; ctx.fillRect(0, 0, largura, altura);
+    for (let n = 0; n < 6; n++) {
+      const base = n * 190 + 40, x = ((base + agora * 0.006 * (0.6 + n * 0.1) - cam.x * 0.08) % (largura + 300)) - 150;
+      const y = 40 + ((n * 83) % 150) - cam.y * 0.04;
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.beginPath(); ctx.ellipse(x, y, 50, 14, 0, 0, 7); ctx.ellipse(x - 28, y + 4, 30, 11, 0, 0, 7); ctx.ellipse(x + 30, y + 5, 34, 11, 0, 0, 7); ctx.fill();
+    }
+  }
+
+  function desenhaBase(W) {
+    const e = 40;
+    const A = proj(0, W.h), B = proj(W.w, W.h), C = proj(W.w, 0);
+    ctx.save();
+    ctx.shadowColor = 'rgba(30,45,60,.35)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 36;
+    poli(ctx, [A, B, [B[0], B[1] + e], [A[0], A[1] + e]], '#8e5d3d');
+    ctx.restore();
+    poli(ctx, [A, B, [B[0], B[1] + e], [A[0], A[1] + e]], '#9a6743');
+    poli(ctx, [C, B, [B[0], B[1] + e], [C[0], C[1] + e]], '#6f4730');
+    // camadas de terra
+    ctx.strokeStyle = 'rgba(40,22,10,.25)'; ctx.lineWidth = 2;
+    for (const f of [0.35, 0.7]) {
+      ctx.beginPath(); ctx.moveTo(A[0], A[1] + e * f); ctx.lineTo(B[0], B[1] + e * f); ctx.lineTo(C[0], C[1] + e * f); ctx.stroke();
+    }
+    // faixa de grama na borda
+    poli(ctx, [A, B, [B[0], B[1] + 7], [A[0], A[1] + 7]], '#5aa24c');
+    poli(ctx, [C, B, [B[0], B[1] + 7], [C[0], C[1] + 7]], '#437f3a');
+  }
+
+  /* ---------- Cache: o terreno estático vira uma imagem; a árvore, um sprite ---------- */
+  function construirCache(S, W, cfg) {
+    const rv = preparaDecor(W);
+    if (rv.cache) return rv.cache;
+    const pad = 140, minX = -W.h * HW - pad, minY = -pad, larg = (W.w + W.h) * HW + pad * 2, alt = (W.w + W.h) * HH + pad * 2 + 60;
+    const escala = Math.min(1.4, Math.sqrt(9e6 / (larg * alt)));
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(larg * escala); cv.height = Math.ceil(alt * escala);
+    const c2 = cv.getContext('2d');
+    const anterior = ctx;
+    ctx = c2;
+    ctx.setTransform(escala, 0, 0, escala, -minX * escala, -minY * escala);
+    desenhaBase(W);
+    desenhaChao(S, W, cfg, 0, W.w - 1, 0, W.h - 1);
+    const fixos = rv.decor.filter((d) => d.t === 'sebe' || d.t === 'flores' || d.t === 'arbusto').sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    for (const d of fixos) desenhaDecor(d, false, 0);
+    ctx = anterior;
+    rv.cache = { cv, minX, minY, escala };
+    return rv.cache;
+  }
+
+  let spriteArvore = null;
+  function arvoreSprite() {
+    if (spriteArvore) return spriteArvore;
+    const cv = document.createElement('canvas'); cv.width = 120; cv.height = 140;
+    const c2 = cv.getContext('2d');
+    const anterior = ctx; ctx = c2;
+    ctx.translate(60, 112);
+    elipse(ctx, 6, 2, 20, 8, 'rgba(0,0,0,.18)');
+    caixa(ctx, -0.08, -0.1, 0.08, 0.06, 0, 24, '#7a5230', { borda: null });
+    const cores = ['#2f7d32', '#3e9142', '#55a84d'];
+    [[0, -30, 22], [-9, -42, 17], [9, -42, 17], [0, -54, 15]].forEach(([dx, dy, r], n) => elipse(ctx, dx, dy, r, r * 0.9, cores[n % 3]));
+    elipse(ctx, -5, -56, 7, 5, 'rgba(255,255,255,.18)');
+    ctx = anterior;
+    spriteArvore = cv;
+    return cv;
+  }
+
   /* ---------- Quadro ---------- */
   function desenha(agora) {
     const { S, W, cfg } = E();
     if (!S || !W) return;
     if (canvas.clientWidth !== largura || canvas.clientHeight !== altura) redimensiona();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#6fae60'; ctx.fillRect(0, 0, largura, altura);
+    desenhaCeu(agora);
     ctx.save();
     ctx.translate(largura / 2, altura / 2); ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
+    { const ch = construirCache(S, W, cfg); ctx.drawImage(ch.cv, ch.minX, ch.minY, ch.cv.width / ch.escala, ch.cv.height / ch.escala); }
 
     const xa = cam.x - largura / cam.z / 2 - 80, xb = cam.x + largura / cam.z / 2 + 80;
     const ya = cam.y - altura / cam.z / 2 - 140, yb = cam.y + altura / cam.z / 2 + 60;
@@ -2020,9 +2610,9 @@ function criarRenderer(canvas, getEstado, hooks) {
     }
     i0 = Math.max(0, Math.floor(i0) - 1); i1 = Math.min(W.w - 1, Math.ceil(i1) + 1); j0 = Math.max(0, Math.floor(j0) - 1); j1 = Math.min(W.h - 1, Math.ceil(j1) + 1);
 
-    desenhaChao(S, W, cfg, i0, i1, j0, j1);
-
     const els = [];
+    const horaNoite = (() => { const h = minutoDoDia(S) / 60; return h >= 18.5 || h < 6; })();
+    for (const d of preparaDecor(W).decor) { if (d.t === 'sebe' || d.t === 'flores' || d.t === 'arbusto') continue; if (d.x < i0 - 1 || d.x > i1 + 1 || d.y < j0 - 1 || d.y > j1 + 1) continue; els.push({ k: d.x + d.y + (d.t === 'sebe' ? 1 : 0.7), f: () => desenhaDecor(d, horaNoite, agora) }); }
     const vivos = new Set();
     for (const a of W.agentes) {
       if (!a.vis) continue;
@@ -2044,8 +2634,8 @@ function criarRenderer(canvas, getEstado, hooks) {
       if (a.k === 'res') st.estilo.humor = S.mundo.needs[a.pid].humor;
       els.push({ k: st.px + st.py + 1 + (pz.ordem || 0) + 0.02, f: () => {
         if (pz.cadeira) { const [cx, cy] = proj(pz.cadeira.x + 0.5, pz.cadeira.y + 0.5); desenhaCadeira(cx, cy + 3, dirUsar === 1 || dirUsar === 3); }
-        const yy = sy + (pz.pose === 'sentar' ? -5 : pz.pose === 'digitar' ? 2 : 6);
-        desenhaPessoa(st.estilo, { dir: dirUsar, fase: st.fase, pose: pz.pose, t: agora }, sx, yy);
+        const yy = sy + (pz.pose === 'sentar' ? -4 : pz.sentado || pz.pose === 'digitar' ? 2 : 6);
+        desenhaPessoa(st.estilo, { dir: dirUsar, fase: st.fase, pose: pz.pose, t: agora, sentado: pz.sentado }, sx, yy);
         if (pz.pose === 'fumar') for (let n = 0; n < 3; n++) { const f = ((agora / 1500) + n / 3) % 1; ctx.fillStyle = `rgba(220,220,220,${0.55 * (1 - f)})`; ctx.beginPath(); ctx.arc(sx + 6 + Math.sin(f * 7 + n) * 3, yy - 38 - f * 22, 2 + f * 3, 0, 7); ctx.fill(); }
         if (pz.pose === 'deitar') for (let n = 0; n < 3; n++) { const f = ((agora / 2200) + n / 3) % 1; ctx.fillStyle = `rgba(80,120,200,${1 - f})`; ctx.font = `bold ${9 + n * 2}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('z', sx + 12 + f * 14, yy - 30 - f * 26); }
       } });
@@ -2075,6 +2665,12 @@ function criarRenderer(canvas, getEstado, hooks) {
     }
     els.sort((p, q) => p.k - q.k);
     for (const e of els) e.f();
+    if (marcador) {
+      const [mx, my] = proj(marcador.x + 0.5, marcador.y + 0.5);
+      const r = 12 + Math.sin(agora / 220) * 2;
+      ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(mx, my, r * 1.4, r * 0.7, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.25)'; ctx.fill();
+    }
 
     desenhaRotulos(S, W, cfg);
 
@@ -2098,8 +2694,10 @@ function criarRenderer(canvas, getEstado, hooks) {
   }
 
   /* ---------- Entrada (toque / mouse) ---------- */
-  function agenteEm(px, py) {
+  function alvoEm(px, py) {
+    const { W } = E();
     const m = paraMundo(px, py);
+    // 1) pessoas
     let melhor = null, dMin = 1e9;
     for (const [id, st] of rs) {
       if (st.sx === undefined) continue;
@@ -2107,7 +2705,22 @@ function criarRenderer(canvas, getEstado, hooks) {
       const d = Math.hypot(st.sx - m.x, (st.sy - 22 * esc - m.y) * 0.8);
       if (d < 26 * Math.max(0.8, esc) && d < dMin) { dMin = d; melhor = id; }
     }
-    return melhor;
+    if (melhor) return { tipo: 'agente', id: melhor };
+    // 2) móveis e objetos (o mais à frente que contém o ponto)
+    let objeto = null, prof = -1;
+    for (const o of W.objs) {
+      if (o.decor) continue;
+      const [sx, sy] = proj(o.x + 0.5, o.y + 0.5);
+      const alto = o.t === 'T' ? 60 : o.t === 'V' || o.t === 'G' || o.t === 'C' || o.t === 'Y' ? 40 : 26;
+      if (Math.abs(m.x - sx) < 26 && m.y > sy - alto && m.y < sy + 14 && o.x + o.y > prof) { prof = o.x + o.y; objeto = o; }
+    }
+    if (objeto && objeto.t !== 'T') return { tipo: 'obj', obj: objeto };
+    // 3) chão
+    const ti = Math.floor((m.y / HH + m.x / HW) / 2), tj = Math.floor((m.y / HH - m.x / HW) / 2);
+    if (ti < 0 || tj < 0 || ti >= W.w || tj >= W.h) return null;
+    const rv = preparaMapa(W), ln = rv.lugarDe[tj * W.w + ti];
+    const c = W.terr[tj * W.w + ti];
+    return { tipo: 'chao', x: ti, y: tj, casa: ln >= 0 ? W.lugares[ln].casa : null, lugar: ln >= 0 ? W.lugares[ln].modelo : null, rua: c === '.' || c === 'c' };
   }
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -2131,14 +2744,14 @@ function criarRenderer(canvas, getEstado, hooks) {
       cam.x += antes.x - depois.x; cam.y += antes.y - depois.y;
       limitaCamera();
     } else if (ponteiros.size === 1 && arraste) {
-      if (!arraste.moveu && Math.hypot(e.offsetX - arraste.x0, e.offsetY - arraste.y0) > 7) arraste.moveu = true;
+      if (!arraste.moveu && Math.hypot(e.offsetX - arraste.x0, e.offsetY - arraste.y0) > 7) { arraste.moveu = true; if (hooks.aoArrastar) hooks.aoArrastar(); }
       if (arraste.moveu) { cam.x -= (e.offsetX - ant.x) / cam.z; cam.y -= (e.offsetY - ant.y) / cam.z; limitaCamera(); }
     }
   });
   const soltar = (e) => {
     const tinha = ponteiros.has(e.pointerId);
     ponteiros.delete(e.pointerId);
-    if (tinha && arraste && !arraste.moveu && ponteiros.size === 0 && e.type === 'pointerup') hooks.aoTocar(agenteEm(e.offsetX, e.offsetY));
+    if (tinha && arraste && !arraste.moveu && ponteiros.size === 0 && e.type === 'pointerup') hooks.aoTocar(alvoEm(e.offsetX, e.offsetY));
     if (ponteiros.size === 0) arraste = null;
   };
   canvas.addEventListener('pointerup', soltar);
@@ -2157,33 +2770,39 @@ function criarRenderer(canvas, getEstado, hooks) {
   return {
     desenha, redimensiona, enquadrarUBS, centralizar, cam,
     selecionar(id) { selecionado = id; },
+    estadoVisual(id) { const st = rs.get(id); return st ? { px: st.px, py: st.py, sx: st.sx, sy: st.sy, pose: st.pz && st.pz.pose, dir: st.dir, fase: st.fase } : null; },
+    paraTela(tx, ty, z = 0) { const [sx, sy] = proj(tx + 0.5, ty + 0.5, z); return [(sx - cam.x) * cam.z + largura / 2, (sy - cam.y) * cam.z + altura / 2]; },
+    marcar(x, y) { marcador = x === null ? null : { x, y }; },
+    seguirAlvo(tx, ty, k = 0.12) { const [sx, sy] = proj(tx + 0.5, ty + 0.5); cam.x += (sx - cam.x) * k; cam.y += (sy - 10 - cam.y) * k; limitaCamera(); },
     alternaParedes() { paredesBaixas = !paredesBaixas; return paredesBaixas; },
     zoom(f) { cam.z *= f; limitaCamera(); },
     get selecionado() { return selecionado; },
   };
 }
 
-// Interface (mobile-first). O mundo é desenhado em canvas (render.js); aqui ficam o HUD, o cartão do personagem,
-// as ordens à equipe e as demais telas. Nenhuma regra de jogo mora aqui.
+// Interface (mobile-first). O jogador escolhe UM personagem (paciente ou profissional) e joga só com ele: toca em
+// móveis, pessoas e no chão para dar ordens. Nenhuma regra de jogo mora aqui.
 
-const SAVE_KEY = 'saude-sim-save-v2';
-const INTRO_KEY = 'saude-sim-intro-v2';
+const SAVE_KEY = 'saude-sim-save-v3';
+const INTRO_KEY = 'saude-sim-intro-v3';
 
 let base, cfg, S, W, R;
 let aba = 'mundo';
-let folha = null; // { tipo }
-let sel = null;
-let jaSelecionou = false;
+let folha = null;
+let menu = null; // { titulo, ops, alvo }
+let abaPers = 'paciente';
 let vel = 1, velAntes = 1;
-let confirmaReset = false;
+let jaDeuOrdem = false;
 let assinaturaCartao = '';
+let ultimaChaveAtend = '';
+let errosSeguidos = 0;
 
-const $ = (sel_) => document.querySelector(sel_);
+const $ = (q) => document.querySelector(q);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (v) => (v === null ? '—' : `${Math.round(v * 100)}%`);
+const MESES_ABR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 /* ---------- Falhas: mostra o motivo e permite recomeçar ---------- */
-let errosSeguidos = 0;
 function telaErro(msg) {
   if (document.getElementById('tela-erro')) return;
   const d = document.createElement('div');
@@ -2203,9 +2822,9 @@ window.addEventListener('error', (e) => { if (!S) telaErro(`${e.message || e.err
 window.addEventListener('unhandledrejection', (e) => { if (!S) telaErro(`${e.reason && e.reason.message ? e.reason.message : e.reason}`); });
 
 /* ---------- Persistência ---------- */
-function salvar() { try { if (S) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* sem armazenamento: segue o jogo */ } }
+function salvar() { try { if (S && S.jogador) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* sem armazenamento: segue o jogo */ } }
 function carregarSalvo() {
-  try { const t = localStorage.getItem(SAVE_KEY); if (t) { const s = JSON.parse(t); if (s.v === 2 && s.tempoReal && s.mundo) return s; } } catch { /* ignora */ }
+  try { const t = localStorage.getItem(SAVE_KEY); if (t) { const s = JSON.parse(t); if (s.v === 2 && s.tempoReal && s.mundo && s.jogador && s.metricas) return s; } } catch { /* ignora */ }
   return null;
 }
 function jaViuIntro() { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return true; } }
@@ -2219,6 +2838,7 @@ function emojiPessoa(p) {
   if (p.idade >= 60) return p.sexo === 'F' ? '👵' : '👴';
   return p.sexo === 'F' ? '👩' : '👨';
 }
+const EMOJI_PAPEL = { acs: '🧑‍🌾', tecnico: '🧑‍🔬', enfermeiro: '🧑‍⚕️', medico: '🧑‍⚕️' };
 
 let toastTimer;
 function toast(msg, ok = true) {
@@ -2230,10 +2850,15 @@ function toast(msg, ok = true) {
 }
 function limpaToast() { clearTimeout(toastTimer); $('#toast').className = ''; }
 
+const modo = () => (S && S.jogador ? S.jogador.modo : null);
+const papel = () => (S && S.jogador && S.jogador.modo === 'profissional' ? S.jogador.papel : null);
+const clinico = () => ['tecnico', 'enfermeiro', 'medico'].includes(papel());
+const meuAgente = () => (W ? agenteJogador(W) : null);
+const minhaPessoa = () => { const a = meuAgente(); return a && a.k === 'res' ? achaPessoa(S, a.pid) : null; };
+
 function tagsPessoa(p) {
   const t = [];
   if (p.internado) t.push('<span class="selo bad">🏥 internado(a)</span>');
-  if (sintomasDengueVisiveis(S, p)) t.push('<span class="selo bad">🦟 febre / dengue?</span>');
   for (const id of CONDS) {
     const st = p.cond[id];
     if (st.diag) t.push(`<span class="selo ${st.trat ? 'ok' : 'warn'}">${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}${st.trat ? ' · em tratamento' : ''}</span>`);
@@ -2242,105 +2867,130 @@ function tagsPessoa(p) {
   return t.join('');
 }
 
-function selosFamilia(f) {
-  const t = [];
-  if (f.pessoas.some((p) => sintomasDengueVisiveis(S, p))) t.push('<span class="selo bad">🦟 febre</span>');
-  if (f.pessoas.some((p) => p.internado)) t.push('<span class="selo bad">🏥</span>');
-  if (f.visTurno === S.turno) t.push('<span class="selo ok">✔ visitada</span>');
-  else if (S.turno - f.visTurno > 2) t.push('<span class="selo warn">sem visita</span>');
-  return t.join('');
+/** Pistas sobre a vida da pessoa (sem revelar doenças). */
+function dicasDe(p) {
+  const d = [];
+  const oc = { trabalho: p.profissao ? `Trabalha como ${p.profissao.toLowerCase()}` : 'Trabalha', escola: 'Estuda', aposentado: 'Aposentado(a)', casa: p.idade < 6 ? 'Fica em casa' : 'Cuida da casa' }[p.ocupacao] || '';
+  if (oc) d.push(oc);
+  if (p.tabagismo) d.push('Fuma');
+  if (p.idade >= 18 && p.imc >= 30) d.push('Acima do peso');
+  if (p.idade >= 12) {
+    if (p.habitos.atividade < 35) d.push('Quase não se exercita'); else if (p.habitos.atividade >= 70) d.push('Gosta de se movimentar');
+    if (p.habitos.alimentacao < 35) d.push('Come muita coisa pronta'); else if (p.habitos.alimentacao >= 70) d.push('Come bem');
+    if (p.habitos.sono < 40) d.push('Dorme mal');
+    if (p.habitos.estresse > 65) d.push('Vive estressado(a)');
+  }
+  return d.slice(0, 5);
 }
 
-function proximoPasso() {
-  const pess = todasPessoas(S);
-  const adultos = pess.filter((p) => p.idade >= 18);
-  const equipeOcupada = W.tarefasACS.length || W.agentes.some((a) => a.tarefa);
-  if (!jaSelecionou) return 'Toque em um morador no mapa para ver as necessidades dele e dar ordens.';
-  if (!S.familias.some((f) => f.visTurno >= 0) && !equipeOcupada) return 'Peça uma <b>🚶 Visita</b>: o agente comunitário (de verde) vai até a casa e cria vínculo.';
-  if (!adultos.some((p) => p.conhecido.medidasTurno !== null) && !W.ordens.length) return 'Chame um adulto para <b>📏 Triagem</b>: ele vai à unidade em dia útil, no horário de funcionamento.';
-  if (pess.some((p) => p.conhecido.suspeitas.length) && !W.ordens.length) return 'Alguém está com <b>⚠ suspeita</b>. Chame para uma <b>🩺 Consulta</b> para confirmar.';
-  if (pess.some((p) => CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat))) return 'Há um diagnóstico <b>sem tratamento</b>. Abra o <b>📋 Prontuário</b> e inicie o tratamento (1 insumo por mês).';
-  return null;
-}
-
-/* ---------- Topo, abas e cartão (estrutura criada uma vez; só os textos mudam) ---------- */
+/* ---------- Topo, abas e painel ---------- */
 function montaTopo() {
   $('#topo').innerHTML = `
-    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-insumos"></span><span class="chip" id="t-verba"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
+    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-c1"></span><span class="chip" id="t-c2"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
     <div class="linha2">
       <span class="data" id="t-data"></span>
       <div class="vel" role="group" aria-label="Velocidade do tempo">
         <button data-act="vel" data-v="0" title="Pausar">⏸</button><button data-act="vel" data-v="1">1×</button><button data-act="vel" data-v="3">3×</button><button data-act="vel" data-v="8">8×</button><button data-act="pular-dia" title="Pular até as 7h do dia seguinte">☀ dia</button><button data-act="pular" title="Pular até o fim do mês">📅 mês</button>
       </div>
     </div>`;
-  $('#rodape').innerHTML = `<div class="abas">${[['mundo', '🗺️', 'Mundo'], ['unidade', '🏥', 'Unidade'], ['diario', '📓', 'Diário'], ['indicadores', '📊', 'Desempenho']]
-    .map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
+}
+function montaRodape() {
+  const abas = modo() === 'paciente'
+    ? [['mundo', '🗺️', 'Mundo'], ['saude', '🩺', 'Minha saúde'], ['diario', '📓', 'Diário']]
+    : [['mundo', '🗺️', 'Mundo'], ['unidade', '🏥', 'Unidade'], ['diario', '📓', 'Diário'], ['desempenho', '📊', 'Desempenho']];
+  $('#rodape').innerHTML = `<div class="abas" style="grid-template-columns:repeat(${abas.length},1fr)">${abas.map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
 }
 
 function atualizaTopo() {
-  $('#t-nome').textContent = `🏥 ${cfg.territorio.nomeUnidade}`;
-  const mesAbr = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][S.mes];
-  $('#t-data').textContent = `${mesAbr} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
-  $('#t-insumos').textContent = `💊 ${S.insumos}`;
-  $('#t-verba').textContent = `💰 ${S.verba}`;
+  const ag = meuAgente();
+  $('#t-nome').textContent = modo() === 'paciente' ? `${emojiPessoa(minhaPessoa())} ${minhaPessoa().nome}` : `${EMOJI_PAPEL[papel()]} ${cfg.papeis[papel()].curto}`;
+  $('#t-data').textContent = `${MESES_ABR[S.mes]} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
+  if (modo() === 'paciente') {
+    const n = S.mundo.needs[ag.pid];
+    $('#t-c1').textContent = `😊 ${Math.round(n.humor)}`;
+    $('#t-c2').textContent = ubsAberta(W, S, cfg) ? '🏥 aberta' : '🏥 fechada';
+  } else {
+    const r = resumoEquipe(W);
+    $('#t-c1').textContent = `📋 fila ${r.triagem + r.enfermagem + r.consulta}`;
+    $('#t-c2').textContent = `💊 ${S.insumos}`;
+  }
   document.querySelectorAll('#topo [data-act=vel]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.v) === vel)));
   document.querySelectorAll('#rodape .aba').forEach((b) => (b.dataset.id === aba ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
 }
 
-const NOMES_PAPEL = { medico: 'Médico(a)', tecnico: 'Técnico(a) de enfermagem', acs: 'Agente comunitário de saúde' };
+function barraNec(k, v) { return `<div class="nec" title="${ROTULO_NEC[k][1]}"><span>${ROTULO_NEC[k][0]}</span><span class="barra mini"><i id="n-${k}"></i></span></div>`; }
 
-function montaCartao(forcar = false) {
+function montaPainel(forcar = false) {
   const el = $('#cartao');
-  if (!sel || aba !== 'mundo') { el.hidden = true; assinaturaCartao = ''; return; }
-  const a = W.agentes.find((x) => x.id === sel);
-  if (!a) { el.hidden = true; return; }
-  let assin;
-  if (a.k === 'res') { const p = achaPessoa(S, a.pid); assin = `r|${a.id}|${tagsPessoa(p)}|${W.ordens.some((o) => o.pid === p.id)}`; } else assin = `s|${a.id}`;
+  if (!S || aba !== 'mundo') { el.hidden = true; return; }
+  const ag = meuAgente();
+  let assin = `${modo()}|${papel()}|${ag.id}`;
+  if (modo() === 'paciente') { const p = minhaPessoa(); assin += `|${p.tabagismo}|${CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)}|${S.jogador.vontade}|${ag.fila.length}|${sintomasDe(S, cfg, p.id).length}`; }
+  else assin += `|${ag.fila.length}|${atendimentoAtual(W, S) ? 1 : 0}`;
   if (!forcar && assin === assinaturaCartao) return;
   assinaturaCartao = assin;
   el.hidden = false;
-  if (a.k === 'staff') {
-    el.innerHTML = `<div class="c-topo"><span class="emoji">${a.papel === 'medico' ? '🧑‍⚕️' : a.papel === 'acs' ? '🧑‍🌾' : '🧑‍🔬'}</span>
-      <div class="c-id"><b>${NOMES_PAPEL[a.papel]}</b><div class="c-acao" id="c-acao"></div></div>
-      <button class="fechar peq" data-act="cartao-fechar" aria-label="Fechar">✕</button></div>`;
-    return;
+  if (modo() === 'paciente') {
+    const p = minhaPessoa();
+    const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat);
+    const sint = sintomasDe(S, cfg, p.id);
+    el.innerHTML = `<div class="c-topo"><span class="emoji">${emojiPessoa(p)}</span>
+        <div class="c-id"><b>${esc(p.nome)}</b> <small>${p.idade} anos</small><div class="c-acao" id="c-acao"></div></div>
+        ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar" aria-label="Cancelar ordens">✕ ${ag.fila.length} na fila</button>` : ''}</div>
+      ${sint.length ? `<div class="alerta-sint">🤒 Você está sentindo: ${esc(sint.join(', '))}</div>` : ''}
+      <div class="necs">${Object.keys(ROTULO_NEC).map((k) => barraNec(k)).join('')}</div>
+      <div class="c-btns">
+        <button class="btn peq" data-act="cartao-unidade">🏥 Unidade</button>
+        ${emTrat ? '<button class="btn peq" data-act="cartao-remedio">💊 Remédio</button>' : ''}
+        ${p.tabagismo ? '<button class="btn peq" data-act="cartao-fumar">🚬 Fumar</button>' : ''}
+        <button class="btn peq ${S.jogador.vontade ? 'ligado' : ''}" data-act="cartao-vontade">🧠 Vontade ${S.jogador.vontade ? 'ligada' : 'desl.'}</button>
+      </div>`;
+  } else {
+    const at = atendimentoAtual(W, S);
+    el.innerHTML = `<div class="c-topo"><span class="emoji">${EMOJI_PAPEL[papel()]}</span>
+        <div class="c-id"><b>${esc(cfg.papeis[papel()].nome)}</b><div class="c-acao" id="c-acao"></div></div>
+        ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar">✕ ${ag.fila.length} na fila</button>` : ''}</div>
+      <div class="c-btns" style="grid-template-columns:repeat(${papel() === 'acs' ? 2 : 2},1fr)">
+        ${papel() === 'acs' ? '<button class="btn peq" data-act="abrir-territorio">🏘️ Minhas famílias</button><button class="btn peq" data-act="cartao-mutirao">🧹 Mutirão</button>'
+    : `<button class="btn peq" data-act="abrir-fila">📋 Fila de espera</button><button class="btn peq" data-act="abrir-atend" ${at ? '' : 'disabled'}>🩺 Atendimento atual</button>`}
+      </div>`;
   }
-  const p = achaPessoa(S, a.pid);
-  const chamado = W.ordens.some((o) => o.pid === p.id);
-  const nec = Object.entries(ROTULO_NEC).map(([k, [ic, nome]]) => `<div class="nec" title="${nome}"><span>${ic}</span><span class="barra mini"><i id="n-${k}"></i></span></div>`).join('');
-  el.innerHTML = `<div class="c-topo"><span class="emoji">${emojiPessoa(p)}</span>
-      <div class="c-id"><b>${esc(p.nome)}</b> <small>${p.idade} anos</small><div class="c-acao" id="c-acao"></div></div>
-      <button class="fechar peq" data-act="cartao-fechar" aria-label="Fechar">✕</button></div>
-    <div class="tags">${tagsPessoa(p)}</div>
-    <div class="necs">${nec}</div>
-    <div class="c-btns">
-      <button class="btn peq" data-act="abrir-pessoa" data-id="${p.id}">📋 Prontuário</button>
-      <button class="btn peq" data-act="visita" data-id="${p.familiaId}">🚶 Visita</button>
-      <button class="btn peq" data-act="triagem" data-id="${p.id}" ${p.idade < 18 || chamado ? 'disabled' : ''}>📏 Triagem</button>
-      <button class="btn peq" data-act="consulta" data-id="${p.id}" ${chamado ? 'disabled' : ''}>🩺 Consulta</button>
-    </div>`;
 }
 
-function atualizaCartao() {
-  if (!sel || aba !== 'mundo') return;
-  const a = W.agentes.find((x) => x.id === sel);
-  if (!a) return;
+function atualizaPainel() {
+  if (aba !== 'mundo' || $('#cartao').hidden) return;
+  const ag = meuAgente();
   const acao = $('#c-acao');
-  if (a.k === 'res') {
-    if (acao) acao.textContent = acaoAtual(W, S, a);
-    const n = S.mundo.needs[a.pid];
+  if (acao) acao.textContent = acaoAtual(W, S, ag);
+  if (modo() === 'paciente') {
+    const n = S.mundo.needs[ag.pid];
     for (const k of Object.keys(ROTULO_NEC)) {
-      const barra = $(`#n-${k}`);
-      if (barra) { barra.style.width = `${n[k]}%`; barra.className = n[k] < 25 ? 'ruim' : n[k] < 50 ? 'medio' : ''; }
+      const b = $(`#n-${k}`);
+      if (b) { b.style.width = `${n[k]}%`; b.className = n[k] < 25 ? 'ruim' : n[k] < 50 ? 'medio' : ''; }
     }
-  } else if (acao) {
-    acao.textContent = a.tarefa ? { visita: '🏠 Em visita domiciliar', orientar: '💬 Orientando um morador', mutirao: '🧹 Mutirão contra focos', consulta: '🩺 Atendendo', triagem: '📏 Fazendo triagem' }[a.tarefa.tipo] : a.vis ? 'Aguardando' : 'Fora de expediente';
   }
 }
 
+function dicaDoMomento() {
+  if (modo() === 'paciente') {
+    const p = minhaPessoa();
+    if (!jaDeuOrdem) return 'Toque num <b>móvel</b> (cama, sofá, fogão…) ou no <b>chão</b> para dar ordens ao seu personagem. Com a <b>vontade própria</b> ligada, ele segue a rotina sozinho.';
+    const sint = sintomasDe(S, cfg, p.id);
+    if (sint.length && !p.conhecido.medidas) return `Você está sentindo <b>${esc(sint[0])}</b>. Pode ser algo sério: pense em procurar a unidade (toque nos móveis dela).`;
+    if (p.idade >= 18 && p.conhecido.medidasTurno === null && S.turno >= 0 && S.mundo.min > 3 * 1440) return 'Você nunca mediu pressão e glicemia. Muita doença é <b>silenciosa</b>: considere pedir uma <b>triagem</b> na unidade.';
+    if (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat) && !S.mundo.remedios[p.id].hoje && S.mundo.min % 1440 > 6 * 60 && S.mundo.min % 1440 < 12 * 60) return 'Hora do <b>remédio</b>: toque na cozinha e escolha "Tomar o remédio".';
+    return null;
+  }
+  if (!jaDeuOrdem) {
+    if (papel() === 'acs') return 'Toque numa <b>pessoa</b> para aferir pressão, orientar ou convidar à unidade, e numa <b>casa</b> para visitar a família.';
+    return 'Toque numa <b>pessoa sentada na fila</b> (⏳) para chamar para atendimento. Seu painel mostra a fila.';
+  }
+  if (clinico() && resumoEquipe(W)[papel() === 'tecnico' ? 'triagem' : papel() === 'enfermeiro' ? 'enfermagem' : 'consulta'] > 0 && !atendimentoAtual(W, S) && meuAgente().fila.length === 0) return 'Há gente na sua fila. Toque numa pessoa com ⏳ e escolha <b>Chamar para atendimento</b>.';
+  return null;
+}
 function atualizaDica() {
   const el = $('#dica');
-  const txt = aba === 'mundo' && !folha ? proximoPasso() : null;
+  const txt = aba === 'mundo' && !folha && !menu ? dicaDoMomento() : null;
   if (!txt) { el.hidden = true; return; }
   if (el.dataset.t !== txt) { el.innerHTML = txt; el.dataset.t = txt; }
   el.hidden = false;
@@ -2352,65 +3002,76 @@ function barraIndicador(rotulo, valor, detalhe = '') {
   return `<div style="margin-bottom:12px"><div class="rotulo"><span>${rotulo}</span><span>${pct(valor)}${detalhe}</span></div>
     <div class="barra ${valor !== null && valor < 0.3 ? 'perigo' : valor !== null && valor < 0.6 ? 'alerta' : ''}"><i style="width:${v}%"></i></div></div>`;
 }
+function linhaHabito(rotulo, v, inverso = false) {
+  const bom = inverso ? 100 - v : v;
+  return `<div class="hab"><div class="rotulo"><span>${rotulo}</span><span>${Math.round(v)}</span></div><div class="barra ${bom < 35 ? 'perigo' : bom < 60 ? 'alerta' : ''}"><i style="width:${bom}%"></i></div></div>`;
+}
 
-function viewUnidade() {
-  const G = cfg.game, mundo = cfg.cenario.mundo, inf = S.infestacao;
-  const r = resumoEquipe(W, S);
-  const aberta = ubsAberta(W, S, cfg), medico = ubsAberta(W, S, cfg, true);
-  const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
-  const diasMedico = mundo.medicoDias.filter((d) => d < 5).map((d) => dias[d]).join(', ');
-  const predios = Object.entries(G.predios).map(([id, b]) => {
-    const nivel = S.predios[id], max = b.custo.length, emObra = S.obra && S.obra.id === id;
-    let acao;
-    if (nivel >= max) acao = '<span class="selo ok">Nível máximo</span>';
-    else if (emObra) acao = `<span class="selo warn">🔨 em obra: ${S.obra.meses} mês(es)</span>`;
-    else acao = `<button class="btn" data-act="obra" data-id="${id}" ${S.obra || S.verba < b.custo[nivel] ? 'disabled' : ''}><span>Melhorar para nível ${nivel + 1}</span><small>💰 ${b.custo[nivel]} · ${b.meses[nivel]} mês(es)</small></button>`;
-    return `<div class="card"><div class="rotulo"><strong>${b.icone} ${esc(b.nome)}</strong><span>nível ${nivel}/${max}</span></div>
-      <p class="dica-t" style="margin:0 0 8px">${esc(b.efeito)}</p>${acao}</div>`;
-  }).join('');
-  const mutiraoFeito = S.mutiraoTurno === S.turno || W.tarefasACS.some((t) => t.tipo === 'mutirao') || W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao');
-  return `<h2 class="secao">Funcionamento</h2>
-    <div class="card">
-      <div class="rotulo"><strong>${aberta ? '🟢 Aberta agora' : '🔴 Fechada agora'}</strong><span>${mundo.expediente[0]}h–${mundo.expediente[1]}h, dias úteis</span></div>
-      <p class="dica-t">Médico(a): ${diasMedico} ${medico ? '· presente hoje' : '· <b>não atende hoje</b>'} (${numMedicos(S)} consultório${numMedicos(S) > 1 ? 's' : ''}).<br>
-      Agentes comunitários: ${numACS(S)}. Fila: ${r.acs} tarefa(s) de campo, ${r.triagem} em triagem, ${r.consulta} em consulta, ${r.chamados} chamado(s).</p>
-    </div>
-    <h2 class="secao">Vigilância do território</h2>
-    <div class="card">
-      <div class="rotulo"><strong>🦟 Índice de infestação do mosquito</strong><span>${inf}%</span></div>
-      <div class="barra ${inf >= 60 ? 'perigo' : inf >= 35 ? 'alerta' : ''}"><i style="width:${inf}%"></i></div>
-      <p class="dica-t">De novembro a abril, com calor e chuva, a infestação tende a subir. Prepare-se antes.</p>
-      <button class="btn" style="margin-top:8px" data-act="mutirao" ${mutiraoFeito ? 'disabled' : ''}><span>🧹 Mutirão contra focos</span><small>${mutiraoFeito ? 'já pedido / feito' : 'agente comunitário'}</small></button>
-    </div>
-    <h2 class="secao">Melhorias da unidade</h2>${predios}
-    <p class="dica-t">Só uma obra por vez. Mantenha a verba: internações custam caro.</p>`;
+function viewSaude() {
+  const p = minhaPessoa(), c = p.conhecido;
+  const sint = sintomasDe(S, cfg, p.id);
+  const diag = CONDS.filter((id) => p.cond[id].diag);
+  const r = S.mundo.remedios[p.id];
+  const retorno = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat) && S.turno - (p.retornoTurno === undefined ? -99 : p.retornoTurno) >= 1;
+  let medidas = '<p class="dica-t">Você ainda não mediu a pressão nem a glicemia. Muita doença não dá sintoma.</p>';
+  if (c.medidas) { const q = S.turno - c.medidasTurno; medidas = `<div class="kv"><span>Pressão arterial</span><span>${c.medidas.pas}/${c.medidas.pad} mmHg</span><span>Glicemia</span><span>${c.medidas.glic} mg/dL</span><span>Medido</span><span>${q === 0 ? 'neste mês' : `há ${q} mês(es)`}</span></div>`; }
+  const h = p.habitos;
+  return `<h2 class="secao">Como me sinto</h2>
+    <div class="card">${sint.length ? `<p>🤒 ${esc(sint.join(', '))}</p><p class="dica-t">Sintomas merecem atenção. A unidade atende em dia útil.</p>` : '<p>😊 Sem queixas no momento.</p><p class="dica-t">Atenção: algumas doenças, como a pressão alta, não dão sintoma.</p>'}</div>
+    ${retorno ? '<div class="card"><strong>🗓️ Retorno pendente</strong><p class="dica-t">Já faz um mês da última consulta: o médico pediu para voltar.</p></div>' : ''}
+    <h2 class="secao">Meu acompanhamento</h2>
+    <div class="card">${diag.length ? diag.map((id) => `<div class="rotulo"><strong>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}</strong><span>${p.cond[id].trat ? 'em tratamento' : 'sem tratamento'}</span></div>`).join('') + (diag.some((id) => p.cond[id].trat) ? `<p class="dica-t" style="margin-top:8px">💊 Remédio tomado neste mês: <b>${r.dias}</b> dia(s) ${r.hoje ? '· já tomou hoje' : '· ainda não tomou hoje'}. A adesão do mês decide se a doença fica controlada.</p>` : '') : '<p class="dica-t">Nenhum diagnóstico até agora.</p>'}
+      ${p.conhecido.suspeitas.length ? `<p class="dica-t">⚠ Valores alterados na última medida: ${p.conhecido.suspeitas.map((id) => esc(cfg.cond[id].nome)).join(', ')}. Vale uma consulta.</p>` : ''}</div>
+    <div class="card" style="margin-top:10px">${medidas}</div>
+    <h2 class="secao">Meu estilo de vida</h2>
+    <div class="card">${p.idade >= 12 ? `${linhaHabito('Atividade física', h.atividade)}${linhaHabito('Alimentação', h.alimentacao)}${linhaHabito('Sono', h.sono)}${linhaHabito('Estresse (menos é melhor)', h.estresse, true)}` : '<p class="dica-t">Cuide da rotina: sono, comida e brincadeira.</p>'}
+      <div class="kv" style="margin-top:8px"><span>Fuma</span><span>${p.tabagismo ? 'Sim' : 'Não'}</span>${p.idade >= 18 ? `<span>IMC</span><span>${p.imc}</span>` : ''}</div>
+      <p class="dica-t">Os hábitos mudam devagar, conforme o que você faz no dia a dia (comer bem, dormir, se mexer).</p></div>`;
 }
 
 function viewDiario() {
-  if (!S.diario.length) return '<p class="vazio">Nada por aqui ainda.</p>';
-  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const itens = [...S.diario].reverse().slice(0, 150).map((e) => `<div class="entrada ${e.tipo}"><div class="quando">${meses[e.mes]}/${e.ano}</div>${esc(e.texto)}</div>`).join('');
-  return `<h2 class="secao">Diário da unidade</h2>${itens}`;
+  let itens = S.diario;
+  if (modo() === 'paciente') { const p = minhaPessoa(); itens = itens.filter((e) => e.pessoaId === p.id || e.familiaId === p.familiaId || e.tipo === 'aprendizado'); }
+  if (!itens.length) return '<p class="vazio">Nada por aqui ainda.</p>';
+  const lis = [...itens].reverse().slice(0, 150).map((e) => `<div class="entrada ${e.tipo}"><div class="quando">${MESES_ABR[e.mes]}/${e.ano}</div>${esc(e.texto)}</div>`).join('');
+  return `<h2 class="secao">${modo() === 'paciente' ? 'Meu diário' : 'Diário da unidade'}</h2>${lis}`;
 }
 
-function viewIndicadores() {
-  const i = indicadores(S, cfg);
-  const c = cfg.cenario;
+function viewUnidade() {
+  const mundo = cfg.cenario.mundo, inf = S.infestacao, r = resumoEquipe(W);
+  const aberta = ubsAberta(W, S, cfg), med = ubsAberta(W, S, cfg, true);
+  const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+  const diasMedico = mundo.medicoDias.filter((d) => d < 5).map((d) => dias[d]).join(', ');
+  const fila = (tipo, nome) => {
+    const l = filaEspera(W, tipo);
+    return `<div class="card"><div class="rotulo"><strong>${nome}</strong><span>${l.length} aguardando</span></div>${l.length ? l.map((o) => `<div class="kv" style="font-size:13px"><span>${esc(achaPessoa(S, o.pid).nome)}</span><span>${Math.round((S.mundo.min - o.t0))} min</span></div>`).join('') : '<p class="dica-t">Ninguém na fila.</p>'}</div>`;
+  };
+  return `<h2 class="secao">Funcionamento</h2>
+    <div class="card"><div class="rotulo"><strong>${aberta ? '🟢 Aberta agora' : '🔴 Fechada agora'}</strong><span>${mundo.expediente[0]}h–${mundo.expediente[1]}h, dias úteis</span></div>
+      <p class="dica-t">Médico(a): ${diasMedico} ${med ? '· presente hoje' : '· <b>não atende hoje</b>'}.<br>Pessoas chamadas: ${r.chamados} · tarefas de campo: ${r.acs}.</p></div>
+    <h2 class="secao">Filas</h2>${fila('triagem', '📏 Triagem (técnico)')}${fila('enfermagem', '🩺 Enfermagem')}${fila('consulta', '🩺 Consulta médica')}
+    <h2 class="secao">Vigilância do território</h2>
+    <div class="card"><div class="rotulo"><strong>🦟 Índice de infestação do mosquito</strong><span>${inf}%</span></div>
+      <div class="barra ${inf >= 60 ? 'perigo' : inf >= 35 ? 'alerta' : ''}"><i style="width:${inf}%"></i></div>
+      <p class="dica-t">De novembro a abril, com calor e chuva, a infestação tende a subir. O agente comunitário organiza os mutirões.</p></div>`;
+}
+
+function viewDesempenho() {
+  const i = indicadores(S, cfg), c = cfg.cenario, m = S.metricas;
+  const espera = m.atendidos + m.triagens ? Math.round(m.esperaTotal / Math.max(1, m.atendidos + m.triagens + m.orientacoes)) : 0;
   return `<h2 class="secao">Cenário</h2>
-    <div class="card"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div>
-      <ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
-    <h2 class="secao">Desempenho</h2>
-    <div class="card"><div class="rotulo"><span>Liga da unidade</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div>
-      <p class="dica-t">Combina rastreamento, controle das doenças crônicas, internações e vínculo. Boa pontuação rende mais verba todo mês.</p></div>
-    <h2 class="secao">Indicadores</h2>
-    <div class="card">
+    <div class="card"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div><ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
+    <h2 class="secao">Seu trabalho</h2>
+    <div class="card"><div class="kv"><span>Consultas feitas</span><span>${m.atendidos}</span><span>Triagens</span><span>${m.triagens}</span><span>Orientações</span><span>${m.orientacoes}</span><span>Visitas domiciliares</span><span>${m.visitas}</span><span>Espera média</span><span>${espera} min</span></div></div>
+    <h2 class="secao">Desempenho da unidade</h2>
+    <div class="card"><div class="rotulo"><span>Liga</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div></div>
+    <div class="card" style="margin-top:10px">
       ${barraIndicador('Adultos com PA/glicemia medidas (12 meses)', i.rastreamento)}
       ${barraIndicador('Hipertensos diagnosticados e controlados', i.has, ` (${i.hasTotal})`)}
       ${barraIndicador('Diabéticos diagnosticados e controlados', i.dm, ` (${i.dmTotal})`)}
       ${barraIndicador('Depressão diagnosticada e em tratamento', i.dep, ` (${i.depTotal})`)}
       ${barraIndicador('Vínculo médio com as famílias', i.vinculoMedio)}
-      <div class="rotulo"><span>Internações nos últimos 12 meses</span><span>${i.internacoesAno}</span></div>
-    </div>
+      <div class="rotulo"><span>Internações nos últimos 12 meses</span><span>${i.internacoesAno}</span></div></div>
     <button class="btn" style="margin-top:14px" data-act="sobre"><span>ℹ️ Sobre o jogo e avisos</span></button>`;
 }
 
@@ -2418,145 +3079,165 @@ function renderVista() {
   const v = $('#vista');
   if (aba === 'mundo') return;
   const scroll = v.scrollTop;
-  v.innerHTML = { unidade: viewUnidade, diario: viewDiario, indicadores: viewIndicadores }[aba]();
+  const corpo = { saude: viewSaude, diario: viewDiario, unidade: viewUnidade, desempenho: viewDesempenho }[aba]();
+  v.innerHTML = corpo + (modo() === 'paciente' && aba === 'diario' ? '' : '') + (aba === 'saude' ? '<button class="btn" style="margin-top:14px" data-act="sobre"><span>ℹ️ Sobre o jogo e avisos</span></button>' : '');
   v.scrollTop = scroll;
 }
 
 /* ---------- Folhas (modais) ---------- */
-function folhaFamilias() {
-  const itens = S.familias.map((f) => `
-    <button class="pessoa" data-act="abrir-familia" data-id="${f.id}">
-      <span class="emoji">🏠</span>
-      <span class="info"><div class="nome">${esc(f.nome)}</div><div class="sub">${f.pessoas.map(emojiPessoa).join(' ')} · vínculo ${Math.round(f.vinculo)}%</div><div class="tags">${selosFamilia(f)}</div></span>
-      <span aria-hidden="true">›</span></button>`).join('');
-  return `<div class="folha-topo"><h2>👥 Famílias do território</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>${itens}`;
+function folhaCenarios() {
+  const cards = Object.entries(base.cenarios.cenarios).map(([id, c]) => `
+    <div class="card cenario"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div>
+      <p class="dica-t" style="margin:2px 0 6px">${esc(c.resumo)}</p>
+      <ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+      <button class="btn primario" style="margin-top:10px" data-act="cenario" data-id="${id}"><span>Escolher este cenário</span></button></div>`).join('');
+  return `<div class="folha-topo"><h2>Onde será a sua história?</h2>${S && S.jogador ? '<button class="fechar" data-act="fechar" aria-label="Fechar">✕</button>' : ''}</div>
+    <p class="dica-t" style="margin:0 0 10px">O mesmo jogo, realidades diferentes. ${S && S.jogador ? '<b>Atenção: começar outra história apaga o progresso atual.</b>' : ''}</p>${cards}`;
 }
 
-function folhaFamilia(id) {
-  const f = achaFamilia(S, id);
-  const jaVisitou = f.visTurno === S.turno;
-  const pessoas = f.pessoas.map((p) => `
-    <button class="pessoa" data-act="abrir-pessoa" data-id="${p.id}">
-      <span class="emoji">${emojiPessoa(p)}</span>
-      <span class="info"><div class="nome">${esc(p.nome)}</div><div class="sub">${p.idade} anos</div><div class="tags">${tagsPessoa(p)}</div></span>
-      <span aria-hidden="true">›</span></button>`).join('');
-  return `<div class="folha-topo"><h2>🏠 ${esc(f.nome)}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><div class="rotulo"><span>Vínculo com a unidade</span><span>${Math.round(f.vinculo)}%</span></div>
-      <div class="barra"><i style="width:${f.vinculo}%"></i></div>
-      <p class="dica-t">Adesão estimada ao tratamento: ${Math.round(adesao(f) * 100)}%. Com mais vínculo, a família procura a unidade mais cedo e segue melhor o tratamento.</p>
-      <button class="btn" style="margin-top:8px" data-act="visita" data-id="${f.id}" ${jaVisitou ? 'disabled' : ''}>
-        <span>🚶 Visita domiciliar</span><small>${jaVisitou ? 'já feita neste mês' : 'agente comunitário'}</small></button></div>
-    <h2 class="secao">Moradores</h2>${pessoas}`;
-}
-
-function linhaHabito(rotulo, v, inverso = false) {
-  const bom = inverso ? 100 - v : v;
-  return `<div class="hab"><div class="rotulo"><span>${rotulo}</span><span>${Math.round(v)}</span></div><div class="barra ${bom < 35 ? 'perigo' : bom < 60 ? 'alerta' : ''}"><i style="width:${bom}%"></i></div></div>`;
-}
-
-function folhaPessoa(id) {
-  const p = achaPessoa(S, id);
-  const f = familiaDe(S, p);
-  const c = p.conhecido;
-  const adulto = p.idade >= 18;
-  const chamado = W.ordens.find((o) => o.pid === p.id);
-
-  let medidas = '<p class="dica-t">Ainda sem medidas. Chame para a triagem para medir PA e glicemia.</p>';
-  if (c.medidas) {
-    const quando = S.turno - c.medidasTurno;
-    medidas = `<div class="kv"><span>Pressão arterial</span><span>${c.medidas.pas}/${c.medidas.pad} mmHg</span><span>Glicemia</span><span>${c.medidas.glic} mg/dL</span><span>Medido</span><span>${quando === 0 ? 'neste mês' : `há ${quando} mês(es)`}</span></div>`;
-  }
-  let habitos = '<p class="dica-t">Você ainda não conhece os hábitos desta pessoa. Peça uma visita domiciliar ou uma consulta.</p>';
-  if (c.habitos) {
-    const h = c.habitos;
-    habitos = `${linhaHabito('Atividade física', h.atividade)}${linhaHabito('Alimentação', h.alimentacao)}${linhaHabito('Sono', h.sono)}${linhaHabito('Estresse', h.estresse, true)}
-      <div class="kv" style="margin-top:8px"><span>Fuma</span><span>${h.tabagismo ? 'Sim' : 'Não'}</span>${adulto ? `<span>IMC</span><span>${h.imc}</span>` : ''}</div>
-      <p class="dica-t">Informação da última visita/consulta (pode ter mudado).</p>`;
-  }
-  const riscos = c.risco.map((r) => `<span class="selo warn">${cfg.cond[r].icone} risco: ${esc(cfg.cond[r].nome)}</span>`).join('');
-  const tratamentos = CONDS.filter((cid) => p.cond[cid].diag).map((cid) => {
-    const st = p.cond[cid];
-    return `<button class="btn ${st.trat ? '' : 'primario'}" data-act="tratar" data-id="${p.id}" data-cond="${cid}" data-ligar="${st.trat ? 0 : 1}">
-      <span>${cfg.cond[cid].icone} ${esc(cfg.cond[cid].nome)}: ${st.trat ? 'suspender tratamento' : 'iniciar tratamento'}</span><small>💊 1/mês</small></button>`;
+function folhaPersonagem() {
+  const pac = todasPessoas(S).map((p) => `
+    <div class="card pers"><div class="c-topo"><span class="emoji">${emojiPessoa(p)}</span>
+      <div class="c-id"><b>${esc(p.nome)}</b> <small>${p.idade} anos</small><div class="tags">${dicasDe(p).map((d) => `<span class="selo">${esc(d)}</span>`).join('')}</div></div></div>
+      <button class="btn primario" style="margin-top:8px" data-act="pers-paciente" data-id="${p.id}"><span>Viver a história de ${esc(p.nome.split(' ').pop())}</span></button></div>`).join('');
+  const mundo = cfg.cenario.mundo;
+  const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+  const prof = PAPEIS.map((id) => {
+    const r = cfg.papeis[id];
+    const extra = id === 'medico' && mundo.medicoDias.length < 5 ? `<li>Neste cenário você atende só ${mundo.medicoDias.map((d) => dias[d]).join(' e ')}</li>` : '';
+    return `<div class="card pers"><div class="c-topo"><span class="emoji">${r.icone}</span><div class="c-id"><b>${esc(r.nome)}</b></div></div>
+      <p class="dica-t" style="margin:6px 0">${esc(r.resumo)}</p><ul class="lista">${r.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}${extra}</ul>
+      <button class="btn primario" style="margin-top:8px" data-act="pers-prof" data-id="${id}"><span>Trabalhar como ${esc(r.nome.toLowerCase())}</span></button></div>`;
   }).join('');
-  const focos = Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo)
-    .filter(([k]) => adulto || p.idade >= 12 || ['alimentacao', 'atividade', 'sono'].includes(k))
-    .map(([k, nome]) => `<button class="btn" data-act="orientar" data-id="${p.id}" data-foco="${k}" ${p.internado ? 'disabled' : ''}><span>${esc(nome)}</span><small>agente comunitário</small></button>`).join('');
+  return `<div class="folha-topo"><h2>Quem você será?</h2></div>
+    <p class="dica-t" style="margin:0 0 8px">Você joga com <b>um único personagem</b> e vive o que ele viver. As doenças de cada pessoa são <b>surpresa</b>.</p>
+    <div class="abas-pers"><button class="${abaPers === 'paciente' ? 'on' : ''}" data-act="pers-aba" data-id="paciente">🧑 Paciente</button><button class="${abaPers === 'profissional' ? 'on' : ''}" data-act="pers-aba" data-id="profissional">🩺 Profissional</button></div>
+    ${abaPers === 'paciente' ? pac : prof}
+    <button class="btn" style="margin-top:12px" data-act="sortear"><span>🎲 Sortear outro bairro</span></button>
+    <button class="btn" data-act="trocar-cenario"><span>‹ Trocar de cenário</span></button>`;
+}
 
-  return `<button class="voltar" data-act="abrir-familia" data-id="${f.id}">‹ ${esc(f.nome)}</button>
-    <div class="folha-topo"><h2>${emojiPessoa(p)} ${esc(p.nome)} <small style="font-weight:500;color:var(--muted)">· ${p.idade} anos</small></h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="tags" style="margin:0 0 10px">${tagsPessoa(p)}${riscos}</div>
-    ${p.internado ? '<div class="card"><strong>🏥 Internado(a) neste mês.</strong><p class="dica-t">Na alta, a pessoa volta para acompanhamento na unidade.</p></div>' : ''}
-    <h2 class="secao">Avaliar na unidade</h2>
-    ${chamado ? `<div class="card"><strong>⏳ Chamado(a) para ${chamado.tipo === 'triagem' ? 'a triagem' : 'a consulta'}</strong><p class="dica-t">Vai quando a unidade estiver aberta. Moradores com pouco vínculo podem não comparecer.</p></div>` : `
-    <div class="linha-btn">
-      <button class="btn" data-act="triagem" data-id="${p.id}" ${adulto && !p.internado ? '' : 'disabled'}><span>📏 Triagem</span><small>PA e glicemia</small></button>
-      <button class="btn" data-act="consulta" data-id="${p.id}" ${p.internado ? 'disabled' : ''}><span>🩺 Consulta</span><small>médico(a)</small></button>
-    </div>`}
-    <div class="card" style="margin-top:10px">${medidas}</div>
-    ${tratamentos ? `<h2 class="secao">Tratamento</h2>${tratamentos}<p class="dica-t">Tratar consome insumos todo mês; se faltar, o controle se perde.</p>` : ''}
-    <h2 class="secao">Orientar hábitos em casa</h2>${focos}
-    <p class="dica-t">A orientação muda a vontade da pessoa de escolher hábitos saudáveis nos próximos dias.</p>
-    <h2 class="secao">O que você sabe sobre os hábitos</h2><div class="card">${habitos}</div>`;
+function folhaMenu() {
+  const lis = menu.ops.length ? menu.ops.map((o) => `<button class="btn" data-act="menu-op" data-op="${o.id}" ${o.desab ? 'disabled' : ''}><span>${o.ic} ${esc(o.rot)}</span>${o.desab ? `<small>${esc(o.desab)}</small>` : ''}</button>`).join('') : '<p class="vazio">Nada para fazer aqui.</p>';
+  return `<div class="folha-topo"><h2>${esc(menu.titulo)}</h2><button class="fechar" data-act="menu-fechar" aria-label="Fechar">✕</button></div>${lis}`;
+}
+
+function conhecidoDe(p) {
+  const c = p.conhecido;
+  let medidas = '<p class="dica-t">Sem medidas ainda.</p>';
+  if (c.medidas) { const q = S.turno - c.medidasTurno; medidas = `<div class="kv"><span>Pressão arterial</span><span>${c.medidas.pas}/${c.medidas.pad} mmHg</span><span>Glicemia</span><span>${c.medidas.glic} mg/dL</span><span>Medido</span><span>${q === 0 ? 'neste mês' : `há ${q} mês(es)`}</span></div>`; }
+  let hab = '<p class="dica-t">Hábitos ainda não conhecidos.</p>';
+  if (c.habitos) { const h = c.habitos; hab = `${linhaHabito('Atividade física', h.atividade)}${linhaHabito('Alimentação', h.alimentacao)}${linhaHabito('Sono', h.sono)}${linhaHabito('Estresse (menos é melhor)', h.estresse, true)}<div class="kv" style="margin-top:6px"><span>Fuma</span><span>${h.tabagismo ? 'Sim' : 'Não'}</span></div>`; }
+  return `<div class="tags" style="margin:0 0 8px">${tagsPessoa(p)}${c.risco.map((r) => `<span class="selo warn">${cfg.cond[r].icone} risco: ${esc(cfg.cond[r].nome)}</span>`).join('')}</div>
+    <div class="card">${medidas}</div><div class="card" style="margin-top:8px">${hab}</div>`;
+}
+
+function folhaAtendimento() {
+  const at = atendimentoAtual(W, S);
+  if (!at) return '<div class="folha-topo"><h2>Atendimento</h2><button class="fechar" data-act="fechar">✕</button></div><p class="vazio">Nenhum atendimento em andamento.</p>';
+  const p = achaPessoa(S, at.pid);
+  const nomeServ = { triagem: 'Triagem', enfermagem: 'Consulta de enfermagem', consulta: 'Consulta médica' }[at.tipo];
+  let corpo = '';
+  if (at.fase === 'chamando') corpo = '<p class="vazio">⏳ Aguardando a pessoa chegar…</p>';
+  if (at.fase === 'atendendo') corpo = '<p class="vazio">🩺 Atendendo… (o tempo continua correndo)</p>';
+  if (at.fase === 'pronto') {
+    if (at.tipo === 'triagem') corpo = '<button class="btn primario" data-act="atender"><span>📏 Aferir PA, glicemia e peso</span><small>10 min</small></button>';
+    else if (at.tipo === 'enfermagem') corpo = `<p class="dica-t">Escolha o foco da orientação (ou deixe automático):</p><button class="btn primario" data-act="atender"><span>🩺 Consulta de enfermagem (foco automático)</span><small>25 min</small></button>${Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo).map(([k, nome]) => `<button class="btn" data-act="atender" data-foco="${k}"><span>Foco: ${esc(nome)}</span></button>`).join('')}`;
+    else corpo = '<button class="btn primario" data-act="atender"><span>🩺 Consulta médica</span><small>30 min</small></button>';
+  }
+  if (at.fase === 'resultado') {
+    corpo = `<div class="card"><strong>Resultado</strong><p style="margin-top:4px">${esc(at.resultado || '')}</p></div>`;
+    if (at.tipo === 'consulta') {
+      corpo += CONDS.filter((id) => p.cond[id].diag).map((id) => `<button class="btn ${p.cond[id].trat ? '' : 'primario'}" data-act="tratar" data-id="${p.id}" data-cond="${id}" data-ligar="${p.cond[id].trat ? 0 : 1}"><span>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}: ${p.cond[id].trat ? 'suspender tratamento' : 'iniciar tratamento'}</span><small>💊 1/mês</small></button>`).join('');
+      corpo += '<button class="btn primario" style="margin-top:8px" data-act="concluir" data-destino="liberar"><span>✔ Concluir atendimento</span></button>';
+    } else {
+      corpo += '<p class="dica-t">Para onde encaminhar?</p>';
+      if (at.tipo === 'triagem') corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem</span></button>';
+      corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button><button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+    }
+  }
+  return `<div class="folha-topo"><h2>${nomeServ}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
+    <div class="c-topo" style="margin-bottom:8px"><span class="emoji">${emojiPessoa(p)}</span><div class="c-id"><b>${esc(p.nome)}</b> <small>${p.idade} anos</small></div></div>
+    ${corpo}<h2 class="secao">O que se sabe</h2>${conhecidoDe(p)}`;
+}
+
+function folhaFila() {
+  const servico = papel() === 'tecnico' ? 'triagem' : papel() === 'enfermeiro' ? 'enfermagem' : 'consulta';
+  const l = filaEspera(W, servico);
+  const itens = l.length ? l.map((o) => { const p = achaPessoa(S, o.pid); return `<div class="pessoa"><span class="emoji">${emojiPessoa(p)}</span><span class="info"><div class="nome">${esc(p.nome)}</div><div class="sub">${p.idade} anos · aguarda há ${Math.round(S.mundo.min - o.t0)} min</div></span><button class="btn peq" style="width:auto" data-act="chamar" data-id="${p.id}">Chamar</button></div>`; }).join('') : '<p class="vazio">Ninguém na sua fila.</p>';
+  return `<div class="folha-topo"><h2>📋 Fila de espera</h2><button class="fechar" data-act="fechar">✕</button></div>${itens}`;
+}
+
+function folhaTerritorio() {
+  const itens = S.familias.map((f) => {
+    const r = f.pessoas.some((p) => p.conhecido.suspeitas.length || CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat)) ? '<span class="selo warn">⚠ atenção</span>' : '';
+    return `<div class="pessoa"><span class="emoji">🏠</span><span class="info"><div class="nome">${esc(f.nome)}</div><div class="sub">vínculo ${Math.round(f.vinculo)}% · ${f.visTurno === S.turno ? 'visitada neste mês' : 'sem visita neste mês'}</div><div class="tags">${r}</div></span><button class="btn peq" style="width:auto" data-act="visitar" data-id="${f.id}" ${f.visTurno === S.turno ? 'disabled' : ''}>Visitar</button></div>`;
+  }).join('');
+  return `<div class="folha-topo"><h2>🏘️ Minhas famílias</h2><button class="fechar" data-act="fechar">✕</button></div>${itens}
+    <p class="dica-t">Tocar numa pessoa no mapa permite aferir a pressão, orientar e convidar para a unidade.</p>`;
 }
 
 function folhaRelatorio() {
-  const itens = (W.relatorio && W.relatorio.length)
-    ? W.relatorio.map((e) => `<div class="entrada ${e.tipo}">${esc(e.texto)}</div>`).join('')
-    : '<p class="vazio">Mês tranquilo: nada de especial aconteceu.</p>';
-  return `<div class="folha-topo"><h2>📋 Relatório do mês</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <p class="dica-t" style="margin:0 0 10px">Começou ${esc(rotuloData(S))}. O jogo está em pausa até você continuar.</p>${itens}
+  let itens = W.relatorio || [];
+  let extra = '';
+  if (modo() === 'paciente') {
+    const p = minhaPessoa();
+    itens = itens.filter((e) => e.pessoaId === p.id || e.tipo === 'aprendizado');
+    const mes = S.diario.filter((e) => e.mes === ((S.mes + 11) % 12) && (e.pessoaId === p.id || e.familiaId === p.familiaId));
+    const h = p.habitos;
+    extra = `<div class="card"><strong>Seu estilo de vida agora</strong>${p.idade >= 12 ? `${linhaHabito('Atividade física', h.atividade)}${linhaHabito('Alimentação', h.alimentacao)}${linhaHabito('Sono', h.sono)}${linhaHabito('Estresse (menos é melhor)', h.estresse, true)}` : ''}</div>`;
+    itens = [...mes.map((e) => ({ tipo: e.tipo, texto: e.texto })), ...itens];
+  } else {
+    const i = indicadores(S, cfg);
+    extra = `<div class="card"><div class="rotulo"><span>Liga da unidade</span><span>🏅 ${i.liga}</span></div></div>`;
+  }
+  const lis = itens.length ? itens.map((e) => `<div class="entrada ${e.tipo}">${esc(e.texto)}</div>`).join('') : '<p class="vazio">Mês tranquilo: nada de especial aconteceu.</p>';
+  return `<div class="folha-topo"><h2>📋 ${modo() === 'paciente' ? 'Seu mês' : 'Relatório do mês'}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
+    <p class="dica-t" style="margin:0 0 10px">Começou ${esc(rotuloData(S))}. O jogo está em pausa até você continuar.</p>${extra}${lis}
     <button class="btn primario" style="margin-top:14px" data-act="fechar"><span>Continuar</span></button>`;
 }
 
 function folhaIntro() {
+  const paciente = modo() === 'paciente';
+  const passos = paciente ? `
+    <div class="p"><span class="passo">1</span><div><b>Você é ${esc(minhaPessoa().nome)}</b><br>Veja as necessidades (fome, energia, humor…) no painel. Seus hábitos de verdade decidem sua saúde.</div></div>
+    <div class="p"><span class="passo">2</span><div><b>Dê ordens</b><br>Toque numa cama, sofá, fogão, chuveiro ou no chão. Com a <i>vontade própria</i> ligada, ele segue a rotina quando você não manda nada.</div></div>
+    <div class="p"><span class="passo">3</span><div><b>Cuide da saúde</b><br>Sentiu algo? Procure a unidade (tocando nos móveis dela). Se houver tratamento, tome o remédio todo dia.</div></div>
+    <div class="p"><span class="passo">4</span><div><b>Surpresas</b><br>Doenças podem aparecer sem sintoma. Medir a pressão e a glicemia ajuda a descobrir cedo.</div></div>`
+    : `
+    <div class="p"><span class="passo">1</span><div><b>Você é ${esc(cfg.papeis[papel()].nome.toLowerCase())}</b><br>${esc(cfg.papeis[papel()].resumo)}</div></div>
+    <div class="p"><span class="passo">2</span><div><b>${papel() === 'acs' ? 'Percorra o território' : 'Atenda a fila'}</b><br>${papel() === 'acs' ? 'Toque numa pessoa para aferir, orientar ou convidar; toque numa casa para visitar a família.' : 'Toque numa pessoa sentada na espera (⏳) para chamar. Depois escolha o atendimento e o encaminhamento.'}</div></div>
+    <div class="p"><span class="passo">3</span><div><b>A equipe trabalha sozinha</b><br>Os outros profissionais agem por conta própria. Você não controla ninguém além do seu personagem.</div></div>
+    <div class="p"><span class="passo">4</span><div><b>Resultados</b><br>No fim de cada mês você recebe um relatório. A aba Desempenho mostra a qualidade da unidade.</div></div>`;
   return `<div class="folha-topo"><h2>Como jogar</h2></div>
-    <div class="card"><p>Você é a equipe da <b>${esc(cfg.territorio.nomeUnidade)}</b>. As pessoas do bairro <b>vivem sua rotina sozinhas</b>: dormem, trabalham, comem, passeiam. Seus cuidados e os hábitos delas decidem quem adoece. <b>Objetivo:</b> manter todos saudáveis, evitar internações e se preparar para a dengue no verão.</p></div>
-    <div class="card passos">
-      <div class="p"><span class="passo">1</span><div><b>Toque num morador</b><br>Veja as necessidades (fome, energia, humor…) e o que ele está fazendo. Arraste o mapa e use dois dedos para dar zoom.</div></div>
-      <div class="p"><span class="passo">2</span><div><b>Dê ordens à equipe</b><br><i>🚶 Visita</i>: o agente comunitário (verde) caminha até a casa. <i>📏 Triagem</i> e <i>🩺 Consulta</i>: o morador vai à unidade em dia útil.</div></div>
-      <div class="p"><span class="passo">3</span><div><b>Trate e oriente</b><br>No <i>📋 Prontuário</i>, inicie o tratamento de quem tiver diagnóstico e oriente hábitos.</div></div>
-      <div class="p"><span class="passo">4</span><div><b>Controle o tempo</b><br>O dia corre devagar no expediente (7h–17h) e acelera à noite. ⏸ 1× 3× 8× no topo; <i>⏭ dia</i> pula até as 7h e <i>⏭ mês</i> até o fim do mês, quando você recebe um relatório.</div></div>
-    </div>
-    <p class="dica-t">Cada cenário tem desafios próprios: distâncias, dias de médico, recursos e hábitos locais. O botão <b>?</b> abre esta ajuda de novo.</p>
+    <div class="card passos">${passos}</div>
+    <p class="dica-t">⏸ 1× 3× 8× controlam o tempo (devagar no expediente, mais rápido à noite). <b>?</b> abre esta ajuda de novo.</p>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <button class="btn primario" style="margin-top:12px" data-act="comecar"><span>Entendi, vamos jogar!</span></button>`;
 }
 
-function folhaCenarios() {
-  const cards = Object.entries(base.cenarios.cenarios).map(([id, c]) => `
-    <div class="card cenario">
-      <div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div>
-      <p class="dica-t" style="margin:2px 0 6px">${esc(c.resumo)}</p>
-      <ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
-      <button class="btn primario" style="margin-top:10px" data-act="cenario" data-id="${id}"><span>Jogar neste cenário</span></button>
-    </div>`).join('');
-  return `<div class="folha-topo"><h2>Escolha o cenário</h2>${S ? '<button class="fechar" data-act="fechar" aria-label="Fechar">✕</button>' : ''}</div>
-    <p class="dica-t" style="margin:0 0 10px">O mesmo jogo, realidades diferentes. ${S ? '<b>Atenção: começar um cenário apaga o progresso atual.</b>' : ''}</p>${cards}`;
-}
-
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Protótipo v0.2 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real. As regras ficam em <code>data/*.json</code> e as fontes de cada condição estão listadas lá, <b>a validar com consultoria clínica</b>.</p>
-    <p class="dica-t">Fora do escopo desta versão: óbitos, gestação, puericultura, vacinação, outras doenças e os modos de profissional individuais.</p></div>
+    <div class="card"><p>Protótipo v0.4 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
-    <button class="btn perigo" style="margin-top:14px" data-act="trocar-cenario"><span>🔁 Novo jogo / trocar de cenário</span></button>`;
+    <button class="btn perigo" style="margin-top:14px" data-act="trocar-cenario"><span>🔁 Nova história / trocar de cenário</span></button>`;
 }
 
 function renderFolha() {
   const host = $('#folha-host');
   if (!folha) { host.innerHTML = ''; return; }
-  const corpo = { familias: folhaFamilias, familia: () => folhaFamilia(folha.id), pessoa: () => folhaPessoa(folha.id), relatorio: folhaRelatorio, intro: folhaIntro, cenarios: folhaCenarios, sobre: folhaSobre }[folha.tipo]();
+  const corpo = { cenarios: folhaCenarios, personagem: folhaPersonagem, menu: folhaMenu, atendimento: folhaAtendimento, fila: folhaFila, territorio: folhaTerritorio, relatorio: folhaRelatorio, intro: folhaIntro, sobre: folhaSobre }[folha.tipo]();
   const scroll = document.querySelector('.folha')?.scrollTop ?? 0;
-  host.innerHTML = `<div class="fundo" data-act="fundo"><div class="folha" role="dialog" aria-modal="true">${corpo}</div></div>`;
+  const leve = folha.tipo === 'menu' ? ' leve' : '';
+  host.innerHTML = `<div class="fundo${leve}" data-act="fundo"><div class="folha${folha.tipo === 'menu' ? ' menu-op' : ''}" role="dialog" aria-modal="true">${corpo}</div></div>`;
   const nova = document.querySelector('.folha');
   if (nova) nova.scrollTop = scroll;
 }
-
 function abrirFolha(f) { folha = f; renderFolha(); atualizaDica(); }
 function fecharFolha() {
   const tipo = folha && folha.tipo;
-  folha = null; confirmaReset = false;
+  folha = null; menu = null;
   renderFolha();
   if (tipo === 'relatorio' || tipo === 'intro') vel = velAntes || 1;
 }
@@ -2566,28 +3247,37 @@ function mostraAba(id) {
   const mundo = id === 'mundo';
   $('#mundo').hidden = !mundo;
   $('#vista').hidden = mundo;
-  if (!mundo) renderVista(); else { R.redimensiona(); montaCartao(true); }
+  if (!mundo) renderVista(); else { R.redimensiona(); montaPainel(true); }
   atualizaTopo(); atualizaDica();
 }
 
 /* ---------- Jogo ---------- */
-function iniciarJogo(cenarioId) {
-  cfg = montarCfg(base, cenarioId);
+function novoCenario(id) {
+  cfg = montarCfg(base, id);
   S = newGame(cfg);
   S.tempoReal = true;
   iniciarEstadoMundo(S);
+  W = null;
+  document.body.classList.add('sem-jogo');
+  abaPers = 'paciente';
+  abrirFolha({ tipo: 'personagem' });
+}
+function sortearBairro() { novoCenario(cfg.cenario.id); }
+
+function comecarComPersonagem(escolha) {
+  escolherPersonagem(S, escolha);
   W = criarMundo(S, cfg);
   document.body.classList.remove('sem-jogo');
-  sel = null; jaSelecionou = false; vel = 1; velAntes = 1;
-  R.selecionar(null);
+  jaDeuOrdem = false; vel = 1; velAntes = 1; assinaturaCartao = ''; ultimaChaveAtend = '';
+  montaTopo(); montaRodape();
+  const a = meuAgente();
+  R.selecionar(a.id);
   R.enquadrarUBS();
   salvar();
   mostraAba('mundo');
-  montaCartao(true);
-  atualizaTopo();
-  folha = null;
-  if (!jaViuIntro()) abrirFolha({ tipo: 'intro' }); else renderFolha();
-  if (!jaViuIntro()) { velAntes = 1; vel = 0; }
+  menu = null;
+  if (!jaViuIntro()) { vel = 0; abrirFolha({ tipo: 'intro' }); } else { folha = null; renderFolha(); }
+  setTimeout(() => R.seguirAlvo(a.x, a.y, 1), 0);
 }
 
 function aoVirarMes() {
@@ -2600,59 +3290,95 @@ function aoVirarMes() {
 
 function resultado(r) {
   toast(r.msg, r.ok);
+  if (r.ok) jaDeuOrdem = true;
   salvar();
   assinaturaCartao = '';
-  montaCartao(true);
-  if (folha && folha.tipo !== 'relatorio') renderFolha();
+  montaPainel(true);
   if (aba !== 'mundo') renderVista();
 }
 
-function selecionar(id) {
-  sel = id; jaSelecionou = jaSelecionou || !!id;
-  R.selecionar(id);
-  montaCartao(true);
-  atualizaCartao();
-  atualizaDica();
+function nomeObjeto(o) { return o.t === 'casa' ? 'Casa' : cfg.objetos[o.t] ? cfg.objetos[o.t].nome : 'Objeto'; }
+
+/** Toque no mapa: monta o menu de ações do que foi tocado. */
+function aoTocar(alvo) {
+  if (!S || !W || folha) return;
+  if (!alvo) { return; }
+  let titulo = '', a = alvo;
+  if (alvo.tipo === 'agente') {
+    const ag = W.agentes.find((x) => x.id === alvo.id);
+    if (!ag) return;
+    if (ag.jogador) { if (modo() === 'paciente') mostraAba('saude'); return; }
+    if (ag.k === 'staff') { toast(`${cfg.papeis[ag.papel].nome}: ${acaoAtual(W, S, ag)}`, true); return; }
+    const p = achaPessoa(S, ag.pid);
+    titulo = `${emojiPessoa(p)} ${p.nome}`;
+    if (modo() === 'paciente') titulo += ` · ${acaoAtual(W, S, ag).replace(/^[^\s]+\s/, '')}`;
+  } else if (alvo.tipo === 'obj') {
+    titulo = nomeObjeto(alvo.obj);
+  } else {
+    if (alvo.casa) { a = { tipo: 'obj', obj: { t: 'casa', casa: alvo.casa } }; titulo = 'Casa'; }
+    else titulo = alvo.lugar === 'ubs' ? 'Unidade de saúde' : 'Ir até aqui';
+  }
+  let ops = opcoesPara(W, S, cfg, a);
+  if (a.tipo === 'obj' && a.obj.t === 'casa' && modo() === 'paciente' && !ops.length) ops = [{ id: 'ir', rot: 'Ir até aqui', ic: '📍', desab: null }];
+  if (!ops.length) { toast(`${titulo}: nada a fazer`, true); return; }
+  menu = { titulo, ops, alvo: a, chao: alvo.tipo === 'chao' ? alvo : null };
+  abrirFolha({ tipo: 'menu' });
+}
+
+function menuUnidade() {
+  const obj = (W.porTipo.U || [])[0];
+  const alvo = { tipo: 'obj', obj };
+  const ops = opcoesPara(W, S, cfg, alvo);
+  menu = { titulo: '🏥 Unidade de saúde', ops, alvo };
+  abrirFolha({ tipo: 'menu' });
 }
 
 /* ---------- Eventos ---------- */
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]');
-  if (!el || !S && !['cenario'].includes(el.dataset.act)) return;
-  const { act, id } = el.dataset;
-  if (act === 'fundo') { if (ev.target === el && folha && !['intro', 'cenarios', 'relatorio'].includes(folha.tipo)) fecharFolha(); return; }
-  if (['aba', 'fechar', 'abrir-familia', 'abrir-pessoa'].includes(act)) limpaToast();
+  if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  if (act === 'fundo') { if (ev.target === el && folha && ['menu', 'fila', 'territorio', 'atendimento', 'sobre'].includes(folha.tipo)) fecharFolha(); return; }
+  if (!S && !['cenario'].includes(act)) return;
+  if (['aba', 'fechar'].includes(act)) limpaToast();
   switch (act) {
     case 'aba': mostraAba(id); break;
     case 'vel': vel = Number(el.dataset.v); atualizaTopo(); break;
-    case 'pular-dia': { const v0 = vel; const mes = pularDia(W, S, cfg); if (mes) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); montaCartao(true); break; }
-    case 'pular': { const v0 = vel; const mes = pularMes(W, S, cfg); if (mes) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
-    case 'abrir-familia': abrirFolha({ tipo: 'familia', id }); break;
-    case 'abrir-pessoa': abrirFolha({ tipo: 'pessoa', id }); break;
-    case 'familias': abrirFolha({ tipo: 'familias' }); break;
-    case 'centro': { const a = sel && W.agentes.find((x) => x.id === sel && x.vis); if (a) R.centralizar(a.x, a.y, Math.max(R.cam.z, 1)); else R.enquadrarUBS(); break; }
-    case 'paredes': { const baixas = R.alternaParedes(); toast(baixas ? 'Paredes abaixadas' : 'Paredes recortadas', true); break; }
-    case 'cartao-fechar': selecionar(null); break;
+    case 'pular-dia': { const v0 = vel; if (pularDia(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
+    case 'pular': { const v0 = vel; if (pularMes(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
+    case 'paredes': { const b = R.alternaParedes(); toast(b ? 'Paredes abaixadas' : 'Paredes recortadas', true); break; }
+    case 'centro': { S.jogador.seguir = true; const a = meuAgente(); R.seguirAlvo(a.x, a.y, 1); break; }
     case 'fechar': fecharFolha(); break;
+    case 'menu-fechar': fecharFolha(); break;
+    case 'menu-op': {
+      const alvo = menu.alvo, chao = menu.chao;
+      const r = comandar(W, S, cfg, el.dataset.op, alvo);
+      if (el.dataset.op === 'ir' || el.dataset.op === 'caminhar') { const c = chao || alvo; if (c && c.x !== undefined) R.marcar(c.x, c.y); }
+      fecharFolha(); resultado(r); break;
+    }
+    case 'cartao-cancelar': cancelarFila(W, S); R.marcar(null); assinaturaCartao = ''; montaPainel(true); toast('Ordens canceladas', true); break;
+    case 'cartao-vontade': { const v = alternaVontade(S); toast(v ? 'Vontade própria ligada: ele segue a rotina quando está livre' : 'Vontade própria desligada: ele só faz o que você mandar', true); assinaturaCartao = ''; montaPainel(true); break; }
+    case 'cartao-unidade': menuUnidade(); break;
+    case 'cartao-remedio': { const g = W.objs.find((o) => o.t === 'G' && o.casa === minhaPessoa().familiaId); resultado(comandar(W, S, cfg, 'remedio', { tipo: 'obj', obj: g })); break; }
+    case 'cartao-fumar': { const ag = meuAgente(); ag.fila.push({ k: 'acao', acao: 'fumar' }); resultado({ ok: true, msg: 'Ele vai fumar lá fora. (Fumar aumenta o risco de várias doenças.)' }); break; }
+    case 'cartao-mutirao': resultado(comandar(W, S, cfg, 'mutirao', { tipo: 'chao', x: 0, y: 0, rua: true })); break;
+    case 'abrir-fila': abrirFolha({ tipo: 'fila' }); break;
+    case 'abrir-territorio': abrirFolha({ tipo: 'territorio' }); break;
+    case 'abrir-atend': abrirFolha({ tipo: 'atendimento' }); break;
+    case 'visitar': resultado(comandar(W, S, cfg, 'acs_visita', { tipo: 'obj', obj: { t: 'casa', casa: id } })); fecharFolha(); break;
+    case 'chamar': { const r = comandar(W, S, cfg, 'chamar', { tipo: 'agente', id }); fecharFolha(); resultado(r); break; }
+    case 'atender': { const r = iniciarAtendimento(W, S, cfg, { foco: el.dataset.foco }); renderFolha(); resultado(r); break; }
+    case 'tratar': { const r = acaoTratamento(S, cfg, id, el.dataset.cond, el.dataset.ligar === '1'); renderFolha(); toast(r.msg, r.ok); break; }
+    case 'concluir': { const r = finalizarAtendimento(W, S, cfg, el.dataset.destino); fecharFolha(); resultado(r); break; }
     case 'sobre': abrirFolha({ tipo: 'sobre' }); break;
     case 'ajuda': velAntes = vel || 1; abrirFolha({ tipo: 'intro' }); break;
     case 'comecar': marcaIntro(); fecharFolha(); break;
     case 'trocar-cenario': abrirFolha({ tipo: 'cenarios' }); break;
-    case 'cenario': iniciarJogo(id); break;
-    case 'visita': resultado(ordenarVisita(W, S, cfg, id)); break;
-    case 'triagem': resultado(ordenarUnidade(W, S, cfg, id, 'triagem')); break;
-    case 'consulta': resultado(ordenarUnidade(W, S, cfg, id, 'consulta')); break;
-    case 'orientar': resultado(ordenarOrientar(W, S, cfg, id, el.dataset.foco)); break;
-    case 'mutirao': resultado(ordenarMutirao(W, S, cfg)); break;
-    case 'tratar': resultado(acaoTratamento(S, cfg, id, el.dataset.cond, el.dataset.ligar === '1')); break;
-    case 'obra': {
-      const b = cfg.game.predios[id], nivel = S.predios[id];
-      if (S.obra) { resultado({ ok: false, msg: 'Já existe uma obra em andamento — só uma por vez.' }); break; }
-      if (S.verba < b.custo[nivel]) { resultado({ ok: false, msg: 'Verba insuficiente.' }); break; }
-      S.verba -= b.custo[nivel]; S.obra = { id, meses: b.meses[nivel] };
-      resultado({ ok: true, msg: `Obra iniciada: ${b.nome} (nível ${nivel + 1}) — ${b.meses[nivel]} mês(es).` });
-      break;
-    }
+    case 'cenario': novoCenario(id); break;
+    case 'sortear': sortearBairro(); break;
+    case 'pers-aba': abaPers = id; renderFolha(); break;
+    case 'pers-paciente': comecarComPersonagem({ modo: 'paciente', pid: id }); break;
+    case 'pers-prof': comecarComPersonagem({ modo: 'profissional', papel: id }); break;
     default: break;
   }
 });
@@ -2663,17 +3389,26 @@ function quadro(t) {
   try {
     const dt = Math.min(0.1, (t - ultimo) / 1000);
     ultimo = t;
-    if (S && W) {
-      const pausado = folha && ['relatorio', 'intro', 'cenarios'].includes(folha.tipo);
-      if (vel > 0 && !pausado) {
-        if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes();
-      }
-      if (aba === 'mundo') R.desenha(t);
+    if (S && W && S.jogador) {
+      const pausado = folha && ['relatorio', 'intro', 'cenarios', 'personagem'].includes(folha.tipo);
+      if (vel > 0 && !pausado) { if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes(); }
+      const a = meuAgente();
+      if (aba === 'mundo') { if (S.jogador.seguir && a && a.vis) R.seguirAlvo(a.x, a.y, 0.1); R.desenha(t); }
       if (t - ultimoUI > 250) {
         ultimoUI = t;
-        atualizaTopo(); atualizaCartao(); atualizaDica();
-        if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, true); }
-        if (aba === 'mundo') montaCartao(false);
+        atualizaTopo(); atualizaPainel(); atualizaDica();
+        if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, m.tipo !== 'alerta'); }
+        if (aba === 'mundo') montaPainel(false);
+        // atendimento do profissional: abre sozinho quando precisa de decisão
+        if (clinico()) {
+          const at = atendimentoAtual(W, S);
+          const chave = at ? `${at.pid}${at.fase}` : '';
+          if (chave !== ultimaChaveAtend) {
+            ultimaChaveAtend = chave;
+            if (at && (at.fase === 'pronto' || at.fase === 'resultado')) abrirFolha({ tipo: 'atendimento' });
+            else if (folha && folha.tipo === 'atendimento') { if (at) renderFolha(); else fecharFolha(); }
+          }
+        }
       }
       if (t - ultimoSave > 8000) { ultimoSave = t; salvar(); }
     }
@@ -2695,16 +3430,18 @@ async function iniciar() {
   base = BASE_INLINE;
   montaTopo();
   let salvo = carregarSalvo();
-  R = criarRenderer($('#cv'), () => ({ S, W, cfg }), { aoTocar: (id) => selecionar(id) });
+  R = criarRenderer($('#cv'), () => ({ S, W, cfg }), { aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } });
   if (salvo) {
     try {
       cfg = montarCfg(base, salvo.cenario);
       S = salvo; W = criarMundo(S, cfg);
+      montaRodape();
+      R.selecionar(meuAgente().id);
       R.enquadrarUBS();
       mostraAba('mundo');
-      atualizaTopo();
+      jaDeuOrdem = true;
       if (!jaViuIntro()) abrirFolha({ tipo: 'intro' });
-    } catch (e) { // jogo salvo incompatível com esta versão: recomeça
+    } catch (e) {
       try { localStorage.removeItem(SAVE_KEY); } catch { /* ok */ }
       S = null; W = null; salvo = null;
     }
@@ -2718,7 +3455,7 @@ async function iniciar() {
   window.__jogoPronto = true;
   const diag = document.getElementById('diag');
   if (diag) diag.remove();
-  window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, selecionar };
+  window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, comandar: (id, a) => comandar(W, S, cfg, id, a), opcoesPara: (a) => opcoesPara(W, S, cfg, a) };
 }
 
 iniciar().catch((e) => telaErro(`${e && e.stack ? e.stack : e}`));

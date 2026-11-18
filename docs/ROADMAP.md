@@ -25,20 +25,10 @@ adaptados para cooperação contra a doença — **nunca PvP contra pacientes**.
 4. Regras em dados (JSON) com fonte citada; revisão por profissionais.
 5. Aviso educativo claro; cuidado com temas sensíveis.
 
-## Estado atual (v0.2)
-Mundo em tempo real com moradores autônomos, três cenários e equipe da UBS em movimento. Próximos passos de jogabilidade:
-- [ ] Modo paciente: controlar diretamente uma pessoa (necessidades, ordens, rotina) em vez da equipe.
-- [ ] Modo profissional individual: assumir o agente comunitário, o técnico, o enfermeiro ou o médico.
-- [ ] Mais animações (sentar, deitar, cozinhar), sons e sprites ilustrados; interior das casas com mais cômodos.
-- [ ] Cenário com mais gente (metrópole maior), transporte público e custo de deslocamento.
-- [ ] Eventos do mundo (surto de gripe, enchente, greve, falta de insumo) e clãs/campanhas cooperativas.
-
-## Próximos passos sugeridos
-- [ ] Validar parâmetros e textos com consultoria clínica (HAS, DM2, depressão, dengue).
-- [ ] Mais condições comuns e tratáveis: asma, anemia, infecções respiratórias, saúde bucal, vacinação, pré-natal, puericultura, quedas.
-- [ ] Papéis profissionais com mecânicas próprias (ACS: mapa/visitas; técnico: sinais vitais e medicação; enfermeiro: classificação de risco; médico: raciocínio clínico).
-- [ ] Modo paciente: uma pessoa ao longo da vida com rotina e escolhas.
-- [ ] Rede/clã: campanhas cooperativas, interconsulta, metas coletivas.
-- [ ] Determinantes sociais (renda, território, acesso) afetando risco e adesão.
-- [ ] Medir aprendizado (pré/pós-teste) com estudantes e leigos.
-- [ ] Fora do escopo da v0.1: óbitos, gestação, outras faixas de risco.
+## Estado atual (v0.4)
+Um único personagem controlado (paciente ou profissional), três cenários, mundo isométrico com ações visíveis e equipe autônoma. Próximos passos:
+- [ ] Mais cômodos e móveis, roupas e cabelos variados, animações de sentar/levantar suaves, sons.
+- [ ] Mais histórias de paciente: gestação, puericultura, vacinação, asma, anemia, quedas em idosos.
+- [ ] Gestor/coordenador da unidade (obras, escalas, insumos) como papel jogável.
+- [ ] Eventos do mundo (surto de gripe, enchente, falta de insumo) e campanhas cooperativas.
+- [ ] Validação clínica dos parâmetros e textos; teste de aprendizado com estudantes e leigos.

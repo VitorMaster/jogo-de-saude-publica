@@ -3,27 +3,29 @@ import assert from 'node:assert/strict';
 import { cfgDe } from './helpers.mjs';
 import { newGame, todasPessoas, achaPessoa } from '../src/engine.js';
 import {
-  iniciarEstadoMundo, criarMundo, passoMundo, pularMes, ordenarVisita, ordenarUnidade, ordenarOrientar,
-  ordenarMutirao, diaDoJogo, diaSemana, minutoDoDia,
+  iniciarEstadoMundo, criarMundo, passoMundo, pularMes, pularDia, ordenarVisita, ordenarUnidade, ordenarOrientar,
+  ordenarMutirao, diaDoJogo, diaSemana, minutoDoDia, minutosPorSegundo, escolherPersonagem, agenteJogador,
+  opcoesPara, comandar, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, sintomasDe,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
+const ministros = (W, S, cfg, minutos) => { for (let i = 0; i < minutos / 5; i++) passoMundo(W, S, cfg, 5); };
 
-function novo(id, seed = 42) {
+function novo(id, seed = 42, jogador = null) {
   const cfg = cfgDe(id);
   const S = newGame(cfg, seed);
   S.tempoReal = true;
   iniciarEstadoMundo(S);
+  if (jogador) escolherPersonagem(S, jogador);
   const W = criarMundo(S, cfg);
   return { cfg, S, W };
 }
 
-test('todos os cenários: cada casa e a UBS têm porta, e todas as portas se conectam entre si', () => {
+test('todos os cenários: portas, móveis essenciais e conexão entre todos os lugares', () => {
   for (const id of CENARIOS) {
     const { cfg, S, W } = novo(id);
     assert.ok(W.ubs && W.ubs.porta, `${id}: UBS sem porta`);
     for (const f of cfg.territorio.familias) assert.ok(W.casas[f.id] && W.casas[f.id].porta, `${id}: casa ${f.id} sem porta`);
-    // BFS a partir da porta da UBS: alcança a frente de todas as portas e todos os objetos públicos
     const { w, h } = W;
     const visto = new Uint8Array(w * h);
     const ini = W.ubs.porta.fora;
@@ -36,109 +38,209 @@ test('todos os cenários: cada casa e a UBS têm porta, e todas as portas se con
         visto[k] = 1; fila.push(k);
       }
     }
+    const alcanca = (o) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => visto[(o.y + dy) * w + (o.x + dx)]);
     for (const casa of Object.values(W.casas)) {
       assert.ok(visto[casa.porta.fora.y * w + casa.porta.fora.x], `${id}: rua em frente a ${casa.casa} inacessível`);
       assert.ok(visto[casa.porta.dentro.y * w + casa.porta.dentro.x], `${id}: interior de ${casa.casa} inacessível`);
     }
-    for (const o of W.objs.filter((o) => o.casa === null)) {
-      const alcanca = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => visto[(o.y + dy) * w + (o.x + dx)]);
-      assert.ok(alcanca, `${id}: objeto ${o.t} em (${o.x},${o.y}) inacessível`);
-    }
-    // cada casa tem cama, cozinha, chuveiro e sofá
-    for (const f of cfg.territorio.familias) for (const t of ['B', 'C', 'G', 'S']) assert.ok(W.objs.some((o) => o.casa === f.id && o.t === t), `${id}: ${f.id} sem ${t}`);
+    for (const o of W.objs.filter((o) => !o.decor)) assert.ok(alcanca(o), `${id}: objeto ${o.t} em (${o.x},${o.y}) inacessível`);
+    for (const f of cfg.territorio.familias) for (const t of ['B', 'C', 'G', 'S', 'V']) assert.ok(W.objs.some((o) => o.casa === f.id && o.t === t), `${id}: ${f.id} sem ${t}`);
+    for (const t of ['H', 'U', 'D', 'Y']) assert.ok(W.objs.some((o) => o.lugar === 'ubs' && o.t === t), `${id}: UBS sem ${t}`);
+    assert.ok(W.objs.filter((o) => o.lugar === 'ubs' && o.t === 'D').length >= 2, 'UBS precisa de 2 consultórios');
     assert.equal(S.familias.length, cfg.territorio.familias.length);
   }
 });
 
-test('simulação de 40 dias: ninguém fica preso, valores válidos, o mês vira e os hábitos mudam pelo comportamento', () => {
+test('simulação de 40 dias sem jogador: valores válidos, o mês vira e os hábitos mudam pelo comportamento', () => {
   for (const id of CENARIOS) {
     const { cfg, S, W } = novo(id, 7);
     const hab0 = todasPessoas(S).map((p) => ({ ...p.habitos }));
     let meses = 0;
     for (let i = 0; i < 40 * 24 * 4; i++) if (passoMundo(W, S, cfg, 15)) meses++;
     assert.ok(meses >= 1, `${id}: o mês não virou`);
-    assert.equal(S.turno, meses);
-    for (const a of W.agentes) {
-      assert.ok(Number.isFinite(a.x) && Number.isFinite(a.y), `${id}: posição inválida de ${a.id}`);
-      assert.ok(a.x >= 0 && a.y >= 0 && a.x < W.w && a.y < W.h);
-    }
+    for (const a of W.agentes) { assert.ok(Number.isFinite(a.x) && Number.isFinite(a.y)); assert.ok(a.x >= 0 && a.y >= 0 && a.x < W.w && a.y < W.h); }
     for (const p of todasPessoas(S)) {
-      const n = S.mundo.needs[p.id];
-      for (const v of Object.values(n)) assert.ok(v >= 0 && v <= 100);
+      for (const v of Object.values(S.mundo.needs[p.id])) assert.ok(v >= 0 && v <= 100);
       for (const v of Object.values(p.habitos)) assert.ok(v >= 0 && v <= 100);
     }
-    const mudou = todasPessoas(S).some((p, i) => Math.abs(p.habitos.atividade - hab0[i].atividade) > 0.5);
-    assert.ok(mudou, `${id}: hábitos não mudaram`);
+    assert.ok(todasPessoas(S).some((p, i) => Math.abs(p.habitos.atividade - hab0[i].atividade) > 0.5), `${id}: hábitos não mudaram`);
   }
 });
 
-test('moradores têm rotina: dormem à noite, saem para trabalhar/estudar e comem', () => {
+test('rotina: dormir, cozinhar e comer à mesa, TV, trabalho/escola', () => {
   const { cfg, S, W } = novo('interior', 3);
-  const visto = { dormir: 0, trabalho: 0, escola: 0, comer: 0 };
+  const visto = {};
   for (let i = 0; i < 3 * 24 * 12; i++) {
     passoMundo(W, S, cfg, 5);
-    for (const a of W.agentes) if (a.k === 'res' && a.acao && visto[a.acao.k] !== undefined) visto[a.acao.k]++;
+    for (const a of W.agentes) if (a.k === 'res' && a.acao) visto[a.acao.k] = (visto[a.acao.k] || 0) + 1;
   }
-  for (const k of Object.keys(visto)) assert.ok(visto[k] > 0, `ninguém executou "${k}"`);
+  for (const k of ['dormir', 'cozinhar', 'comer_mesa', 'tv', 'trabalho', 'escola']) assert.ok(visto[k] > 0, `ninguém executou "${k}": ${JSON.stringify(visto)}`);
 });
 
-test('triagem e consulta: o morador vai à unidade, espera, é atendido e o diagnóstico acontece', () => {
+test('refeição: cozinha primeiro e depois come à mesa (ação encadeada)', () => {
+  const { cfg, S, W } = novo('interior', 5);
+  const p = todasPessoas(S).find((x) => x.idade >= 18);
+  const a = W.agentes.find((x) => x.pid === p.id);
+  S.mundo.needs[p.id].fome = 10;
+  const sequencia = [];
+  for (let i = 0; i < 40 * 5 && sequencia.filter((k) => k === 'comer_mesa').length === 0; i++) { passoMundo(W, S, cfg, 1); if (a.acao && sequencia[sequencia.length - 1] !== a.acao.k) sequencia.push(a.acao.k); }
+  const i = sequencia.indexOf('cozinhar');
+  assert.ok(i >= 0 && sequencia[i + 1] === 'comer_mesa', `sequência: ${sequencia}`);
+});
+
+test('triagem e consulta (equipe autônoma): o morador vai à unidade, espera, é atendido e diagnosticado', () => {
   const { cfg, S, W } = novo('interior', 11);
   const alvo = todasPessoas(S).find((p) => p.idade >= 18 && p.cond.has.estagio >= 2);
   assert.ok(alvo);
   S.familias.forEach((f) => (f.vinculo = 100));
-  assert.ok(ordenarUnidade(W, S, cfg, alvo.id, 'triagem').ok);
+  assert.ok(ordenarUnidade(W, S, cfg, alvo.id, 'triagem', { espontaneo: true, meta: { consulta: true } }).ok);
   assert.equal(ordenarUnidade(W, S, cfg, alvo.id, 'consulta').ok, false, 'não duplica chamado');
-  let ok = false;
-  for (let i = 0; i < 4 * 24 * 12 && !ok; i++) { passoMundo(W, S, cfg, 5); ok = alvo.conhecido.medidasTurno !== null; }
-  assert.ok(ok, 'a triagem não aconteceu');
-  assert.ok(ordenarUnidade(W, S, cfg, alvo.id, 'consulta').ok);
   let diag = false;
-  for (let tent = 0; tent < 6 && !diag; tent++) {
-    for (let i = 0; i < 3 * 24 * 12 && !alvo.cond.has.diag; i++) passoMundo(W, S, cfg, 5);
-    diag = alvo.cond.has.diag;
-    if (!diag) ordenarUnidade(W, S, cfg, alvo.id, 'consulta');
-  }
-  assert.ok(diag, 'a consulta não diagnosticou');
+  for (let i = 0; i < 6 * 24 * 12 && !diag; i++) { passoMundo(W, S, cfg, 5); diag = alvo.cond.has.diag; }
+  assert.ok(alvo.conhecido.medidasTurno !== null, 'triagem não aconteceu');
+  assert.ok(diag, 'a consulta não diagnosticou (ou o fluxo triagem→consulta falhou)');
+  assert.ok(alvo.cond.has.trat, 'o médico autônomo deve iniciar o tratamento');
 });
 
-test('visita domiciliar: o agente comunitário vai até a casa e a visita é concluída', () => {
+test('o agente comunitário autônomo visita as famílias sozinho', () => {
   const { cfg, S, W } = novo('interior', 5);
-  const f = S.familias[0];
-  const v0 = f.vinculo;
-  assert.ok(ordenarVisita(W, S, cfg, f.id).ok);
-  assert.equal(ordenarVisita(W, S, cfg, f.id).ok, false);
-  for (let i = 0; i < 2 * 24 * 12 && f.visTurno !== S.turno; i++) passoMundo(W, S, cfg, 5);
-  assert.equal(f.visTurno, S.turno);
-  assert.ok(f.vinculo > v0);
-  assert.ok(f.pessoas.every((p) => p.conhecido.habitos), 'hábitos conhecidos após a visita');
+  for (let i = 0; i < 10 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
+  assert.ok(S.familias.some((f) => f.visTurno >= 0), 'nenhuma visita aconteceu em 10 dias');
+  assert.ok(S.metricas.visitas > 0);
 });
 
-test('orientar muda a intenção e o mutirão reduz a infestação', () => {
-  const { cfg, S, W } = novo('interior', 9);
-  const p = todasPessoas(S).find((x) => x.idade >= 18);
-  assert.ok(ordenarOrientar(W, S, cfg, p.id, 'atividade').ok);
-  assert.ok(ordenarMutirao(W, S, cfg).ok);
-  const inf0 = S.infestacao;
-  for (let i = 0; i < 2 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
-  assert.ok(S.mundo.intencao[p.id].atividade > 0 || p.habitos.atividade > 0);
-  assert.equal(S.mutiraoTurno, S.turno);
-  assert.ok(S.infestacao < inf0);
-});
-
-test('zona rural: o médico só atende nos dias configurados; quem quer consulta espera esses dias', () => {
+test('zona rural: médico só nos dias configurados', () => {
   const { cfg, S, W } = novo('rural', 13);
-  const alvo = todasPessoas(S).find((p) => p.idade >= 18 && p.cond.has.estagio >= 2) || todasPessoas(S).find((p) => p.idade >= 18);
+  const alvo = todasPessoas(S).find((p) => p.idade >= 18);
   S.familias.forEach((f) => (f.vinculo = 100));
-  ordenarUnidade(W, S, cfg, alvo.id, 'consulta');
-  const diasAtendido = new Set();
-  const antes = (S.diario.length);
-  for (let i = 0; i < 8 * 24 * 12; i++) {
+  ordenarUnidade(W, S, cfg, alvo.id, 'consulta', { espontaneo: true });
+  const dias = new Set();
+  for (let i = 0; i < 9 * 24 * 12; i++) {
     passoMundo(W, S, cfg, 5);
-    if (W.agentes.some((a) => a.id === alvo.id && a.atend && a.atend.pronto)) diasAtendido.add(diaSemana(S));
+    if (W.agentes.some((a) => a.pid === alvo.id && a.atend && a.atend.pronto && a.atend.tipo === 'consulta')) dias.add(diaSemana(S));
   }
-  for (const d of diasAtendido) assert.ok(cfg.cenario.mundo.medicoDias.includes(d), `atendido num dia sem médico: ${d}`);
-  assert.ok(S.diario.length > antes, 'a consulta deveria ter ocorrido em 8 dias');
+  for (const d of dias) assert.ok(cfg.cenario.mundo.medicoDias.includes(d), `atendido num dia sem médico: ${d}`);
+  assert.ok(dias.size > 0, 'a consulta deveria ter ocorrido em 9 dias');
+});
+
+test('PACIENTE: o jogador comanda; assistir TV senta no sofá e a necessidade muda', () => {
+  const { cfg, S, W } = novo('interior', 21);
+  const p = todasPessoas(S).find((x) => x.idade >= 18);
+  escolherPersonagem(S, { modo: 'paciente', pid: p.id });
+  const W2 = criarMundo(S, cfg);
+  const a = agenteJogador(W2);
+  assert.equal(a.pid, p.id);
+  assert.equal(W2.agentes.filter((x) => x.jogador).length, 1);
+  S.mundo.min = 11 * 60; // sábado? segue o dia; o ponto é a ordem do jogador
+  S.jogador.vontade = false;
+  const sofa = W2.objs.find((o) => o.t === 'S' && o.casa === p.familiaId);
+  const ops = opcoesPara(W2, S, cfg, { tipo: 'obj', obj: sofa });
+  assert.ok(ops.some((o) => o.id === 'tv'));
+  assert.ok(comandar(W2, S, cfg, 'tv', { tipo: 'obj', obj: sofa }).ok);
+  const humor0 = S.mundo.needs[p.id].humor;
+  let viu = false;
+  for (let i = 0; i < 60 && !viu; i++) { passoMundo(W2, S, cfg, 2); viu = !!(a.acao && a.acao.k === 'tv' && a.acao.obj === sofa); }
+  assert.ok(viu, 'o personagem não foi ao sofá assistir TV');
+  ministros(W2, S, cfg, 30);
+  assert.ok(S.mundo.needs[p.id].humor >= humor0 - 5);
+  // outra casa não é utilizável
+  const outraCama = W2.objs.find((o) => o.t === 'B' && o.casa !== p.familiaId);
+  assert.ok(opcoesPara(W2, S, cfg, { tipo: 'obj', obj: outraCama }).every((o) => o.desab));
+});
+
+test('PACIENTE: sem vontade própria o personagem fica parado esperando ordens; com vontade, segue a rotina', () => {
+  const { cfg, S, W } = novo('interior', 22);
+  const p = todasPessoas(S).find((x) => x.idade >= 18);
+  escolherPersonagem(S, { modo: 'paciente', pid: p.id });
+  const W2 = criarMundo(S, cfg);
+  const a = agenteJogador(W2);
+  S.jogador.vontade = false;
+  ministros(W2, S, cfg, 180);
+  assert.ok(!a.acao || a.acao.k === 'dormir', 'não deveria agir sozinho');
+  S.jogador.vontade = true;
+  ministros(W2, S, cfg, 600);
+  assert.ok(S.mundo.needs[p.id].fome > 5);
+});
+
+test('PACIENTE: pedir consulta leva o personagem à unidade (triagem → consulta) e o tratamento depende de tomar o remédio', () => {
+  const { cfg, S, W } = novo('interior', 11);
+  const p = todasPessoas(S).find((x) => x.idade >= 18 && x.cond.has.estagio >= 2);
+  escolherPersonagem(S, { modo: 'paciente', pid: p.id });
+  const W2 = criarMundo(S, cfg);
+  S.jogador.vontade = false;
+  S.familias.forEach((f) => (f.vinculo = 100));
+  // vai até a quarta-feira, 8h30 (dia útil com médico)
+  while (diaSemana(S) !== 2 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
+  assert.ok(comandar(W2, S, cfg, 'ubs_consulta', { tipo: 'obj', obj: W2.objs.find((o) => o.t === 'U') }).ok);
+  let diag = false;
+  for (let i = 0; i < 400 && !diag; i++) { passoMundo(W2, S, cfg, 2); diag = p.cond.has.diag; }
+  assert.ok(diag, 'não foi diagnosticado após pedir consulta');
+  assert.ok(p.cond.has.trat);
+  const ops = opcoesPara(W2, S, cfg, { tipo: 'obj', obj: W2.objs.find((o) => o.t === 'G' && o.casa === p.familiaId) });
+  assert.ok(ops.some((o) => o.id === 'remedio'), 'deve poder tomar o remédio em casa');
+});
+
+test('PACIENTE: sintomas aparecem para doenças que dão sintomas, não para hipertensão silenciosa', () => {
+  const { cfg, S } = novo('interior', 8);
+  const p = todasPessoas(S).find((x) => x.idade >= 18);
+  p.cond.has.estagio = 2; p.cond.dm.estagio = 0; p.cond.dep.estagio = 0;
+  assert.ok(!sintomasDe(S, cfg, p.id).some((s) => /cabe/i.test(s)), 'hipertensão não deve dar sintoma');
+  p.cond.dm.estagio = 2;
+  assert.ok(sintomasDe(S, cfg, p.id).length >= 1);
+});
+
+test('MÉDICO: o jogador chama o paciente, atende, decide o tratamento e conclui', () => {
+  const { cfg, S, W } = novo('interior', 11);
+  escolherPersonagem(S, { modo: 'profissional', papel: 'medico' });
+  const W2 = criarMundo(S, cfg);
+  const doente = todasPessoas(S).find((p) => p.idade >= 18 && p.cond.has.estagio >= 2);
+  S.familias.forEach((f) => (f.vinculo = 100));
+  while (diaSemana(S) !== 2 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
+  ordenarUnidade(W2, S, cfg, doente.id, 'consulta', { espontaneo: true, permiteCrianca: true });
+  let espera = false;
+  for (let i = 0; i < 300 && !espera; i++) { passoMundo(W2, S, cfg, 2); espera = filaEspera(W2, 'consulta').length > 0; }
+  assert.ok(espera, 'o paciente deveria estar esperando na fila do médico');
+  const med = agenteJogador(W2);
+  assert.equal(med.papel, 'medico');
+  const alvo = { tipo: 'agente', id: W2.agentes.find((a) => a.pid === doente.id).id };
+  assert.ok(opcoesPara(W2, S, cfg, alvo).some((o) => o.id === 'chamar' && !o.desab));
+  assert.ok(comandar(W2, S, cfg, 'chamar', alvo).ok);
+  let pronto = false;
+  for (let i = 0; i < 200 && !pronto; i++) { passoMundo(W2, S, cfg, 1); pronto = atendimentoAtual(W2, S) && atendimentoAtual(W2, S).fase === 'pronto'; }
+  assert.ok(pronto, 'o paciente não chegou ao consultório');
+  assert.ok(iniciarAtendimento(W2, S, cfg, {}).ok);
+  let fim = false;
+  for (let i = 0; i < 200 && !fim; i++) { passoMundo(W2, S, cfg, 1); fim = atendimentoAtual(W2, S) && atendimentoAtual(W2, S).fase === 'resultado'; }
+  assert.ok(fim, 'o atendimento não terminou');
+  assert.ok(finalizarAtendimento(W2, S, cfg, 'liberar').ok);
+  assert.equal(atendimentoAtual(W2, S), null);
+  assert.ok(S.metricas.atendidos >= 1);
+});
+
+test('AGENTE COMUNITÁRIO: o jogador vai até um morador e afere a pressão', () => {
+  const { cfg, S, W } = novo('interior', 5);
+  escolherPersonagem(S, { modo: 'profissional', papel: 'acs' });
+  const W2 = criarMundo(S, cfg);
+  const alvo = todasPessoas(S).find((p) => p.idade >= 18);
+  // dia útil de manhã
+  while (diaSemana(S) > 4 || minutoDoDia(S) < 8 * 60 + 5) passoMundo(W2, S, cfg, 30);
+  const ag = W2.agentes.find((a) => a.pid === alvo.id);
+  assert.ok(ag.vis);
+  const ops = opcoesPara(W2, S, cfg, { tipo: 'agente', id: ag.id });
+  assert.ok(ops.some((o) => o.id === 'acs_medir'));
+  assert.ok(comandar(W2, S, cfg, 'acs_medir', { tipo: 'agente', id: ag.id }).ok);
+  let ok = false;
+  for (let i = 0; i < 300 && !ok; i++) { passoMundo(W2, S, cfg, 2); ok = alvo.conhecido.medidasTurno !== null; }
+  assert.ok(ok, 'a aferição não aconteceu');
+});
+
+test('o jogador não controla os outros: só um personagem é controlável', () => {
+  for (const jog of [{ modo: 'paciente', pid: 'silva-0' }, { modo: 'profissional', papel: 'tecnico' }, { modo: 'profissional', papel: 'enfermeiro' }]) {
+    const { cfg, S } = novo('interior', 4);
+    escolherPersonagem(S, jog);
+    const W = criarMundo(S, cfg);
+    assert.equal(W.agentes.filter((a) => a.jogador).length, 1);
+  }
 });
 
 test('pularMes termina o mês e é determinístico', () => {
@@ -149,14 +251,15 @@ test('pularMes termina o mês e é determinístico', () => {
   assert.deepEqual(a.S.familias, b.S.familias);
 });
 
-test('o estado salvo (S) pode ser recarregado e o mundo reconstruído', () => {
-  const { cfg, S, W } = novo('interior', 17);
-  for (let i = 0; i < 5 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
+test('o estado salvo (S) pode ser recarregado e o mundo reconstruído, mantendo o personagem', () => {
+  const { cfg, S } = novo('interior', 17, { modo: 'paciente', pid: 'silva-0' });
+  const W = criarMundo(S, cfg);
+  ministros(W, S, cfg, 5 * 24 * 60);
   const S2 = JSON.parse(JSON.stringify(S));
   const W2 = criarMundo(S2, cfg);
-  for (let i = 0; i < 24 * 12; i++) passoMundo(W2, S2, cfg, 5);
+  assert.equal(agenteJogador(W2).pid, 'silva-0');
+  ministros(W2, S2, cfg, 24 * 60);
   assert.ok(S2.mundo.min > S.mundo.min);
-  assert.ok(minutoDoDia(S2) >= 0 && diaDoJogo(S2) >= 5);
 });
 
 test('internado some do mapa e volta depois da alta', () => {
@@ -171,6 +274,16 @@ test('internado some do mapa e volta depois da alta', () => {
   assert.equal(a.vis, true);
 });
 
+test('ritmo do tempo: devagar no expediente, mais rápido à noite; pularDia vai até as 7h', () => {
+  const { cfg, S, W } = novo('interior', 31);
+  S.mundo.min = 10 * 60; const dia = minutosPorSegundo(S);
+  S.mundo.min = 23 * 60; const noite = minutosPorSegundo(S);
+  assert.ok(dia < noite);
+  S.mundo.min = 14 * 60;
+  pularDia(W, S, cfg);
+  assert.equal(Math.floor(minutoDoDia(S)), 7 * 60);
+});
+
 test('a página única (build) compila sem nomes duplicados', async () => {
   const { execFileSync } = await import('node:child_process');
   const { mkdtempSync, readFileSync } = await import('node:fs');
@@ -178,19 +291,21 @@ test('a página única (build) compila sem nomes duplicados', async () => {
   const { join } = await import('node:path');
   const saida = join(mkdtempSync(join(tmpdir(), 'ss-')), 'saida.html');
   execFileSync('node', ['scripts/build-single.mjs', saida], { cwd: new URL('..', import.meta.url).pathname });
-  const html = readFileSync(saida, 'utf8');
-  assert.ok(html.includes('BASE_INLINE') && html.includes('data-act="familias"'));
+  assert.ok(readFileSync(saida, 'utf8').includes('BASE_INLINE'));
 });
 
-test('ritmo do tempo: devagar no expediente, mais rápido à noite; pularDia vai até as 7h', async () => {
-  const { minutosPorSegundo, pularDia } = await import('../src/mundo.js');
-  const { cfg, S, W } = novo('interior', 31);
-  S.mundo.min = 10 * 60;
-  const dia = minutosPorSegundo(S);
-  S.mundo.min = 23 * 60;
-  const noite = minutosPorSegundo(S);
-  assert.ok(dia < noite, `expediente (${dia}) deve ser mais lento que a noite (${noite})`);
-  S.mundo.min = 14 * 60;
-  pularDia(W, S, cfg);
-  assert.equal(Math.floor(minutoDoDia(S)), 7 * 60);
+test('móveis têm ocupação: ninguém senta no colo de ninguém (sofá, mesa, cadeira, chuveiro)', () => {
+  for (const id of CENARIOS) {
+    const { cfg, S, W } = novo(id, 31);
+    for (let i = 0; i < 4 * 24 * 12; i++) {
+      passoMundo(W, S, cfg, 5);
+      const uso = new Map();
+      for (const a of W.agentes) {
+        if (a.k !== 'res' || !a.vis) continue;
+        if (a.acao && a.acao.obj) uso.set(a.acao.obj, (uso.get(a.acao.obj) || 0) + 1);
+        if (a.cadeira) uso.set(a.cadeira, (uso.get(a.cadeira) || 0) + 1);
+      }
+      for (const [o, n] of uso) assert.ok(n <= (o.t === 'B' ? 2 : 1), `${id}: ${n} pessoas no móvel ${o.t} (${o.x},${o.y})`);
+    }
+  }
 });

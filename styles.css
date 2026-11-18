@@ -174,3 +174,18 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 .linha2 { margin-top: 6px; flex-wrap: nowrap; justify-content: space-between; }
 .topo .data { font-size: 12.5px; white-space: nowrap; margin: 0; opacity: .95; }
 .vel button { min-width: 30px; height: 30px; padding: 0 6px; font-size: 12px; }
+
+/* v0.4: personagem único, menus de ação, painel */
+.chip-fila { border: 0; background: var(--warn-soft); color: var(--warn); font-weight: 700; font-size: 12px; border-radius: 999px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+.alerta-sint { margin-top: 6px; background: var(--bad-soft); color: var(--bad); border-radius: 10px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.btn.peq.ligado { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.c-btns { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+.abas-pers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.abas-pers button { min-height: 42px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-weight: 700; cursor: pointer; }
+.abas-pers button.on { background: var(--brand); color: var(--brand-ink); border-color: transparent; }
+.pers + .pers { margin-top: 10px; }
+.fundo.leve { background: rgba(0,0,0,.18); }
+.folha.menu-op { max-height: 70%; }
+.folha.menu-op .btn { justify-content: flex-start; gap: 10px; }
+.folha.menu-op .btn small { margin-left: auto; color: var(--muted); white-space: normal; text-align: right; }
+.selo { margin: 2px 4px 2px 0; display: inline-block; }

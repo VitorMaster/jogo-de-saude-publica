@@ -1,8 +1,7 @@
 # Saúde Sim
 
-Simulador de saúde para o **público geral**, jogável no **celular**. Você cuida de uma unidade básica de saúde (UBS)
-e de um bairro cheio de gente que **vive a própria rotina** (dorme, trabalha, come, passeia) — como numa vida simulada.
-Os hábitos das pessoas e o seu cuidado decidem quem adoece.
+Simulador de saúde para o **público geral**, jogável no **celular**. Você escolhe **um personagem** — uma pessoa do bairro
+(paciente) ou um profissional da unidade de saúde — e vive o que ele viver. Os outros moradores e profissionais agem sozinhos.
 
 > Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.
 
@@ -15,36 +14,42 @@ node scripts/build-single.mjs saida.html   # gera uma página única autocontida
 ```
 
 Sem dependências: HTML + CSS + JavaScript (módulos ES) e dados em JSON.
-
-**Abrir sem servidor:** `dist/saude-sim.html` é o jogo inteiro em um único arquivo. Baixe e abra no navegador do celular ou do computador (módulos ES não funcionam abrindo `index.html` direto por `file://`; use `npm start` para isso).
+`dist/saude-sim.html` é o jogo inteiro em um único arquivo (abre direto no navegador, sem servidor).
 Se o jogo não abrir, uma tela de erro oferece recarregar ou apagar o progresso salvo.
 
-## O que existe na v0.3
+## Como se joga (v0.4)
 
-- **Visão isométrica** (estilo Sims): casas com paredes recortadas, móveis com volume, ruas, praça, roça, iluminação de dia e noite (janelas acesas) e plumbob na pessoa selecionada. Paredes que escondem alguém ficam translúcidas; o botão 🧱 abaixa todas.
-- **Personagens animados**: andam, sentam, deitam, cozinham, comem, digitam, tomam banho, fumam, se exercitam e capinam, com balões de ação e partículas (vapor, água, "zzz").
-- **Ritmo de tempo ajustável**: devagar no expediente (7h–17h) e mais rápido à noite; ⏸ 1× 3× 8×, "☀ dia" (pula até as 7h) e "📅 mês".
-- **Mundo em tempo real**: moradores caminham, entram em casa, vão ao trabalho, à escola, à praça e à lanchonete. Dia e noite, dias úteis e fins de semana.
-- **Necessidades estilo Sims** (fome, energia, higiene, disposição, humor) e rotina autônoma. O comportamento real vira **hábitos** (atividade, alimentação, sono, estresse), que alimentam o risco de doenças.
-- **Três cenários** com desafios diferentes:
-  - 🏙️ **Metrópole**: alta demanda, estresse, sedentarismo e lanchonetes;
-  - 🏘️ **Interior**: praça central, poucos recursos, dengue forte;
-  - 🌾 **Zona rural**: longas distâncias, médico só 2 dias por semana, poucos insumos, trabalho na roça.
-- **Equipe da UBS em movimento**: agente comunitário (visitas e orientação em casa, mutirões), técnico (triagem) e médico (consulta), com fila, horário de funcionamento e dias de médico.
-- **Doenças**: hipertensão, diabetes tipo 2, depressão (silenciosas até a complicação) e dengue como surto sazonal.
-- **Recursos**: insumos, verba, vínculo. Melhorias da unidade (mais médicos, mais agentes, farmácia, vigilância).
-- Controle de tempo (⏸ 1× 3× 8× e "pular mês"), relatório mensal, diário com lições, indicadores e "liga".
-- Salva sozinho no aparelho.
+1. **Escolha o cenário**: 🏙️ metrópole, 🏘️ cidade do interior ou 🌾 zona rural (distâncias, médico poucos dias, poucos insumos…).
+2. **Escolha quem você será** — e fique só com ele:
+   - **Paciente**: qualquer morador. Você vê as necessidades (fome, energia, higiene, disposição, humor), dá ordens tocando em móveis e no chão
+     (cama, sofá com TV, fogão, mesa, chuveiro, praça, academia, trabalho, escola, unidade de saúde) e decide se vai ao posto, se toma o remédio, se se cuida.
+     Há **vontade própria** (ele segue a rotina quando você não manda nada). As doenças são surpresa: algumas dão sintomas, outras (pressão alta) são silenciosas.
+   - **Agente comunitário**: percorre o território, afere pressão/glicemia, orienta hábitos, convida para a unidade, visita famílias e faz mutirões contra focos de dengue.
+   - **Técnico de enfermagem**: faz a triagem e encaminha (enfermagem, médico ou liberar).
+   - **Enfermeiro(a)**: consulta de enfermagem (rastreio e orientação de hábitos).
+   - **Médico(a)**: consulta, diagnóstico e decisão de tratamento; atende só nos dias de médico do cenário.
+3. **Tempo**: devagar no expediente (7h–17h), mais rápido à noite; ⏸ 1× 3× 8×, "☀ dia" e "📅 mês". A cada 30 dias, relatório do mês.
+
+## O que a simulação faz
+
+- **Mundo isométrico** estilo maquete: casas com cômodos (quarto, banheiro, cozinha, sala com TV de frente para o sofá, mesa de jantar), UBS com
+  recepção, triagem, consultórios e farmácia, escola, escritórios/comércio, lanchonete, praça, roça, ruas com postes, canteiros e sebes.
+  Dia e noite, janelas acesas, paredes translúcidas quando escondem alguém (🧱 abaixa todas).
+- **Ações com correspondência visual**: dormir (deitado na cama), cozinhar (fogão com vapor) e depois comer **sentado à mesa**, assistir TV (sentado no sofá de frente para a TV acesa),
+  banho (chuveiro com água), trabalhar (sentado ao computador), roça, academia, fumar, esperar na cadeira da unidade. Cada móvel tem ocupação (ninguém senta no colo de ninguém).
+- **Hábitos reais**: o que cada pessoa faz no dia a dia vira hábito (atividade, alimentação, sono, estresse) e alimenta o risco de hipertensão, diabetes, depressão; dengue como surto sazonal.
+- **Fila real na unidade**: demanda espontânea, retornos, convites do agente comunitário; triagem → enfermagem/consulta; tempo de espera; desistências.
+- **Profissionais autônomos** (quando não são o seu personagem): agente comunitário que visita famílias por prioridade, técnico, enfermeiro e médico que atendem a fila e iniciam tratamento.
 
 ## Onde editar as regras
 
 | Arquivo | Conteúdo |
 |---|---|
-| `data/cenarios.json` | mapas (por blocos e modelos de construção), famílias e ocupações, parâmetros de cada cenário |
-| `data/conditions.json` | doenças: fatores de risco (pesos), probabilidades, textos, lições e **fontes (a validar)** |
-| `data/game.json` | custos, economia, dengue, melhorias da unidade |
+| `data/cenarios.json` | mapas (modelos de construção e posições), famílias, ocupações, papéis profissionais, parâmetros de cada cenário |
+| `data/conditions.json` | doenças: fatores de risco, probabilidades, textos, lições e **fontes (a validar)** |
+| `data/game.json` | custos, economia, dengue |
 
-O mundo (`src/mundo.js`) e o motor de saúde (`src/engine.js`) não têm DOM e são determinísticos por semente; o desenho está em `src/render.js` e a interface em `src/main.js`.
+`src/mundo.js` (mundo, rotinas, fila, papéis) e `src/engine.js` (saúde) não usam DOM e são determinísticos por semente; `src/render.js` desenha; `src/main.js` é a interface.
 
 ## Aviso sobre a base científica
 

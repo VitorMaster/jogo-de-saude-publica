@@ -1,7 +1,7 @@
 // Desenho isométrico do mundo (canvas 2D): terreno, paredes recortadas, móveis com volume, personagens animados,
 // partículas, iluminação de dia/noite e câmera por toque. Nenhuma regra de jogo mora aqui.
 import { achaPessoa } from './engine.js';
-import { minutoDoDia, bolhaDe, ubsAberta } from './mundo.js';
+import { minutoDoDia, bolhaDe, ubsAberta, ACOES_INFO } from './mundo.js';
 
 // Compatibilidade: navegadores de celular mais antigos não têm roundRect.
 if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
@@ -63,11 +63,13 @@ function preparaMapa(W) {
 const ehTerreno = (W, x, y, ch) => x >= 0 && y >= 0 && x < W.w && y < W.h && W.terr[y * W.w + x] === ch;
 
 export function criarRenderer(canvas, getEstado, hooks) {
-  const ctx = canvas.getContext('2d');
+  const ctxPrincipal = canvas.getContext('2d');
+  let ctx = ctxPrincipal;
   const cam = { x: 0, y: 0, z: 1 };
   let largura = 300, altura = 300, dpr = 1;
   let selecionado = null;
   let paredesBaixas = false;
+  let marcador = null;
   const ponteiros = new Map();
   let arraste = null;
   const rs = new Map(); // estado visual de cada agente (posição suavizada, fase da caminhada, direção)
@@ -89,7 +91,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     cam.y = L.y1 - L.y0 < mA * 2 ? (L.y0 + L.y1) / 2 : Math.max(L.y0 + mA - 60, Math.min(L.y1 - mA + 60, cam.y));
   }
   function redimensiona() {
-    dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    dpr = Math.min(2, window.devicePixelRatio || 1);
     largura = canvas.clientWidth || 300;
     altura = canvas.clientHeight || 300;
     canvas.width = Math.round(largura * dpr); canvas.height = Math.round(altura * dpr);
@@ -161,6 +163,8 @@ export function criarRenderer(canvas, getEstado, hooks) {
         ctx.stroke();
       } else if (ch === '#' || ch === '+' || ch === '_') {
         losango(ctx, i, j, '#d9c7a8');
+      } else if (preparaDecor(W).pavers.has(k)) {
+        losango(ctx, i, j, (i + j) % 2 ? '#dcd5c3' : '#d2cbb8', 'rgba(0,0,0,.08)');
       } else { // grama
         losango(ctx, i, j, mistura('#7fbf6a', '#5fa653', r * 0.7));
         if (r > 0.55) {
@@ -188,7 +192,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
   function desenhaParede(W, i, j) {
     const { alt, cor, l } = paredeInfo(W, i, j);
     caixa(ctx, i, j, i + 1, j + 1, 0, alt, cor, { esq: claro(cor, 0.05), dir: escuro(cor, 0.2), topo: alt > 20 ? '#f8fafc' : claro(cor, 0.3) });
-    if (alt <= 40 || !l) return;
+    if (alt <= 40 || !l || cam.z < 0.42) return;
     const rodape = l.modelo === 'ubs' ? '#0f9f94' : escuro(cor, 0.3);
     poli(ctx, [proj(i, j + 1, 0), proj(i + 1, j + 1, 0), proj(i + 1, j + 1, 5), proj(i, j + 1, 5)], rodape);
     poli(ctx, [proj(i + 1, j, 0), proj(i + 1, j + 1, 0), proj(i + 1, j + 1, 5), proj(i + 1, j, 5)], escuro(rodape, 0.2));
@@ -230,21 +234,27 @@ export function criarRenderer(canvas, getEstado, hooks) {
         caixa(ctx, i + 0.2, j + 0.18, i + 0.8, j + 0.4, 13, 17, '#ffffff');
         break;
       }
-      case 'S': {
-        caixa(ctx, i + 0.15, j + 0.05, i + 0.85, j + 0.3, 0, 12, '#5b4636');
-        const brilho = uso ? 0.5 + 0.5 * Math.sin(agora / 140) : 0;
-        caixa(ctx, i + 0.2, j + 0.08, i + 0.8, j + 0.2, 12, 30, '#1b1f27', { esq: uso ? mistura('#8fd3ff', '#ffffff', brilho * 0.5) : '#232a35', topo: '#2a3140' });
-        if (uso) poli(ctx, [proj(i, j + 0.4), proj(i + 1, j + 0.4), proj(i + 1, j + 1.2), proj(i, j + 1.2)], `rgba(140,210,255,${0.1 + brilho * 0.08})`);
-        caixa(ctx, i + 0.1, j + 0.48, i + 0.9, j + 0.95, 0, 9, '#5f86ad');
-        caixa(ctx, i + 0.1, j + 0.82, i + 0.9, j + 0.95, 9, 17, '#4f7399');
-        caixa(ctx, i + 0.06, j + 0.48, i + 0.16, j + 0.95, 0, 15, '#4f7399');
-        caixa(ctx, i + 0.84, j + 0.48, i + 0.94, j + 0.95, 0, 15, '#4f7399');
+      case 'S': { // sofá voltado para o norte (de frente para a TV); encosto baixo atrás (ao sul)
+        caixa(ctx, i + 0.08, j + 0.2, i + 0.92, j + 0.92, 0, 8, '#6b8fb8');
+        caixa(ctx, i + 0.14, j + 0.24, i + 0.86, j + 0.66, 8, 12, '#86a8cc');
+        caixa(ctx, i + 0.08, j + 0.78, i + 0.92, j + 0.94, 8, 20, '#5a7ea6');
+        caixa(ctx, i + 0.04, j + 0.2, i + 0.16, j + 0.94, 0, 16, '#527499');
+        caixa(ctx, i + 0.84, j + 0.2, i + 0.96, j + 0.94, 0, 16, '#527499');
         break;
       }
-      case 'm': {
+      case 'V': { // televisão sobre um móvel, com a tela voltada para o sofá (ao sul)
+        const ligada = W.agentes.some((a) => a.vis && a.acao && a.acao.k === 'tv' && a.acao.obj && a.acao.obj.casa === o.casa);
+        caixa(ctx, i + 0.1, j + 0.3, i + 0.9, j + 0.7, 0, 10, '#6a4b34');
+        const brilho = ligada ? 0.5 + 0.5 * Math.sin(agora / 160) : 0;
+        caixa(ctx, i + 0.14, j + 0.42, i + 0.86, j + 0.52, 10, 34, '#1a1d24', { esq: ligada ? mistura('#7fd0ff', '#ffffff', brilho * 0.45) : '#242a34', topo: '#2a3140' });
+        if (ligada) poli(ctx, [proj(i, j + 0.55), proj(i + 1, j + 0.55), proj(i + 1.1, j + 2.2), proj(i - 0.1, j + 2.2)], `rgba(130,205,255,${0.09 + brilho * 0.07})`);
+        break;
+      }
+      case 'm': { // mesa de jantar
         for (const [dx, dy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) caixa(ctx, i + dx - 0.04, j + dy - 0.04, i + dx + 0.04, j + dy + 0.04, 0, 12, '#6b4a2a', { borda: null });
-        caixa(ctx, i + 0.08, j + 0.1, i + 0.92, j + 0.9, 12, 15, '#a97c50');
-        const [px, py] = proj(i + 0.5, j + 0.5, 17); elipse(ctx, px, py, 7, 3, '#ffffff'); elipse(ctx, px, py - 1, 4, 1.8, '#ef8d6a');
+        caixa(ctx, i + 0.06, j + 0.1, i + 0.94, j + 0.9, 12, 15, '#b08455');
+        const comendo = W.agentes.some((a) => a.vis && a.acao && a.acao.k === 'comer_mesa' && a.acao.obj === o);
+        for (const [dx, dy] of [[0.3, 0.5], [0.7, 0.5]]) { const [px, py] = proj(i + dx, j + dy, 16); elipse(ctx, px, py, 5.5, 2.6, '#ffffff'); elipse(ctx, px, py - 1, 3.4, 1.6, comendo ? '#d97a4a' : '#9bd17a'); }
         break;
       }
       case 'G': {
@@ -328,12 +338,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
       }
       case 'T': {
         const [bx, by] = proj(i + 0.5, j + 0.6);
-        elipse(ctx, bx + 6, by + 2, 20, 8, 'rgba(0,0,0,.18)');
-        caixa(ctx, i + 0.42, j + 0.5, i + 0.58, j + 0.66, 0, 24, '#7a5230', { borda: null });
-        const balanco = Math.sin(agora / 1200 + i * 2 + j) * 1.2;
-        const cores = ['#2f7d32', '#3e9142', '#55a84d'];
-        [[0, -30, 22], [-9, -42, 17], [9, -42, 17], [0, -54, 15]].forEach(([dx, dy, r], n) => elipse(ctx, bx + dx + balanco * (n / 2), by + dy, r, r * 0.9, cores[n % 3]));
-        elipse(ctx, bx - 5 + balanco, by - 56, 7, 5, 'rgba(255,255,255,.18)');
+        ctx.drawImage(arvoreSprite(), bx - 60, by - 112);
         break;
       }
       default: break;
@@ -391,7 +396,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
       return;
     }
     elipse(ctx, 0, 1, 12, 5, 'rgba(0,0,0,.25)');
-    const sentado = pose === 'sentar' || pose === 'digitar';
+    const sentado = pose === 'sentar' || pose === 'digitar' || !!o.sentado;
     const quadril = sentado ? -11 : -17;
     // pernas
     ctx.lineCap = 'round';
@@ -482,31 +487,29 @@ export function criarRenderer(canvas, getEstado, hooks) {
     poli(ctx, [[x, yy - 12], [x + 6 * f, yy], [x, yy - 2]], 'rgba(255,255,255,.4)');
   }
 
-  /** Decide pose, posição visual e direção para o agente. */
+  /** Decide pose, posição visual e direção a partir da ação que a pessoa realmente está executando. */
   function poseDe(W, a) {
     let pose = a.path.length ? 'andar' : 'parado';
-    let alvoX = a.x, alvoY = a.y, dirFixa = null, cadeira = null, ordem = 0;
+    let alvoX = a.x, alvoY = a.y, dirFixa = null, cadeira = null, ordem = 0, sentado = false;
     const virar = (ox, oy) => { dirFixa = dirDe(ox - a.x, oy - a.y); };
-    if (a.k === 'res' && a.espera && !a.path.length) {
-      const h = (W.porTipo.H || []).find((o) => Math.abs(o.x - a.x) + Math.abs(o.y - a.y) === 1);
+    if (a.k === 'res' && a.espera && !a.path.length && !a.atend) {
+      const h = a.cadeira;
       if (h) { pose = 'sentar'; alvoX = h.x; alvoY = h.y; dirFixa = 1; ordem = 0.35; }
-    } else if (a.acao && !a.path.length) {
-      const k = a.acao.k, o = a.acao.obj;
-      if (o) {
-        if (k === 'dormir' || k === 'descansar') { pose = 'deitar'; alvoX = o.x; alvoY = o.y; dirFixa = 0; ordem = 0.4; }
-        else if (k === 'tv') { pose = 'sentar'; alvoX = o.x; alvoY = o.y + 0.28; dirFixa = 2; ordem = 0.45; }
-        else if (k === 'praca') { pose = 'sentar'; alvoX = o.x; alvoY = o.y + 0.1; dirFixa = 1; ordem = 0.45; }
-        else if (k === 'banho') { pose = 'banho'; alvoX = o.x; alvoY = o.y; dirFixa = 1; ordem = 0.5; }
-        else if (k === 'comer') { pose = a.acao.restante > 10 ? 'cozinhar' : 'comer'; virar(o.x, o.y); }
-        else if (k === 'lanche') { pose = 'comer'; virar(o.x, o.y); }
-        else if (k === 'trabalho' || k === 'escola') { pose = 'digitar'; virar(o.x, o.y); cadeira = { x: a.x, y: a.y }; }
-        else if (k === 'roca') { pose = 'enxada'; virar(o.x, o.y); }
-        else if (k === 'academia') { pose = 'exercitar'; virar(o.x, o.y); }
-      } else if (k === 'fumar') pose = 'fumar';
-      else if (k === 'conversar') pose = 'falar';
+    } else if (a.acao && !a.path.length && ACOES_INFO[a.acao.k]) {
+      const info = ACOES_INFO[a.acao.k], o = a.acao.obj;
+      pose = info.pose;
+      if (info.onde === 'objeto' && o) {
+        alvoX = o.x; alvoY = o.y; ordem = 0.45;
+        if (pose === 'deitar') { dirFixa = 0; ordem = 0.4; const outros = W.agentes.filter((x) => x !== a && x.vis && x.acao && x.acao.obj === o && x.id < a.id).length; if (outros) { alvoX += 0.28; alvoY += 0.38; ordem = 0.41; } }
+        else if (a.acao.k === 'tv') { const v = (W.porTipo.V || []).find((x) => x.casa === o.casa); dirFixa = v ? dirDe(v.x - o.x, v.y - o.y) : 2; alvoY = o.y + 0.05; }
+        else dirFixa = 1;
+      } else if (info.onde === 'frente' && o) {
+        virar(o.x, o.y);
+        if (info.cadeira) { cadeira = { x: a.x, y: a.y }; sentado = true; }
+      }
     }
     if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') pose = 'digitar';
-    return { pose, alvoX, alvoY, dirFixa, cadeira, ordem };
+    return { pose, alvoX, alvoY, dirFixa, cadeira, ordem, sentado };
   }
 
   /* ---------- Iluminação ---------- */
@@ -558,15 +561,173 @@ export function criarRenderer(canvas, getEstado, hooks) {
     }
   }
 
+  /* ---------- Cenário: decoração, céu e base (maquete) ---------- */
+  const terrEm = (W, x, y) => (x >= 0 && y >= 0 && x < W.w && y < W.h ? W.terr[y * W.w + x] : null);
+
+  function preparaDecor(W) {
+    const rv = preparaMapa(W);
+    if (rv.decor) return rv;
+    const decor = [], pavers = new Set();
+    const ocupados = new Set(W.objs.map((o) => o.y * W.w + o.x));
+    const livre = (x, y) => terrEm(W, x, y) === ',' && !ocupados.has(y * W.w + x);
+    const pisavel = (x, y) => { const c = terrEm(W, x, y); return (c === ',' || c === 'c') && !ocupados.has(y * W.w + x); };
+    for (const l of W.lugares) {
+      if (l.porta) {
+        const dx = l.porta.fora.x - l.porta.x, dy = l.porta.fora.y - l.porta.y;
+        let x = l.porta.fora.x, y = l.porta.fora.y;
+        for (let n = 0; n < 8; n++) {
+          const ch = terrEm(W, x, y);
+          if (ch === null || ch === '.' || ch === 'c') break;
+          if (ch === ',') pavers.add(y * W.w + x);
+          x += dx; y += dy;
+        }
+        const lado = dy !== 0 ? [2, 0] : [0, 2];
+        const q = { x: l.porta.fora.x + lado[0], y: l.porta.fora.y + lado[1] };
+        if (pisavel(q.x, q.y)) decor.push({ t: l.casa ? 'correio' : 'placa', modelo: l.modelo, x: q.x, y: q.y });
+      }
+      for (let y = l.y - 1; y <= l.y + l.h; y++) for (let x = l.x - 1; x <= l.x + l.w; x++) {
+        if (x >= l.x && x < l.x + l.w && y >= l.y && y < l.y + l.h) continue;
+        if (!livre(x, y)) continue;
+        if (l.porta && Math.abs(x - l.porta.fora.x) <= 1 && Math.abs(y - l.porta.fora.y) <= 1) continue;
+        if (pavers.has(y * W.w + x)) continue;
+        if (ruido(x, y, 7) > 0.42) decor.push({ t: ruido(x, y, 8) > 0.6 ? 'arbusto' : 'flores', x, y });
+      }
+    }
+    for (let y = 0; y < W.h; y++) for (let x = 0; x < W.w; x++) {
+      const k = y * W.w + x, c = W.terr[k];
+      if (c === 'c' && !ocupados.has(k) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => terrEm(W, x + a, y + b) === '.') && (x * 3 + y * 5) % 8 === 0) decor.push({ t: 'poste', x, y });
+      else if (c === ',' && livre(x, y) && ruido(x, y, 9) > 0.965 && !pavers.has(k)) decor.push({ t: 'flores', x, y });
+      if ((x === 0 || y === 0 || x === W.w - 1 || y === W.h - 1) && pisavel(x, y)) decor.push({ t: 'sebe', x, y });
+    }
+    rv.decor = decor; rv.pavers = pavers;
+    return rv;
+  }
+
+  function desenhaDecor(d, noite, agora) {
+    const [bx, by] = proj(d.x + 0.5, d.y + 0.5);
+    switch (d.t) {
+      case 'arbusto':
+        elipse(ctx, bx + 4, by + 3, 14, 5, 'rgba(0,0,0,.16)');
+        elipse(ctx, bx - 5, by - 5, 9, 8, '#3f8f42'); elipse(ctx, bx + 6, by - 5, 9, 8, '#4aa04b'); elipse(ctx, bx, by - 11, 9, 8, '#58b256');
+        elipse(ctx, bx - 3, by - 13, 3, 2.4, 'rgba(255,255,255,.25)');
+        break;
+      case 'flores': {
+        for (let n = 0; n < 5; n++) {
+          const fx = bx + (ruido(d.x, d.y, n) - 0.5) * 30, fy = by + (ruido(d.x, d.y, n + 9) - 0.5) * 12;
+          ctx.strokeStyle = '#3a7d3a'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 6); ctx.stroke();
+          ctx.fillStyle = ['#ff8fb1', '#ffd84d', '#ffffff', '#b99bff'][(d.x + d.y + n) % 4]; ctx.beginPath(); ctx.arc(fx, fy - 7, 2.6, 0, 7); ctx.fill();
+        }
+        break;
+      }
+      case 'sebe': caixa(ctx, d.x + 0.05, d.y + 0.05, d.x + 0.95, d.y + 0.95, 0, 11, '#3f8a43', { topo: '#58b256', borda: 'rgba(0,0,0,.12)' }); break;
+      case 'poste': {
+        caixa(ctx, d.x + 0.45, d.y + 0.45, d.x + 0.55, d.y + 0.55, 0, 54, '#4b5563', { borda: null });
+        const [lx, ly] = proj(d.x + 0.5, d.y + 0.5, 56);
+        elipse(ctx, lx, ly, 5, 3, noite ? '#fff3b0' : '#e5e7eb');
+        if (noite) { const g = ctx.createRadialGradient(lx, ly + 20, 2, lx, ly + 20, 46); g.addColorStop(0, 'rgba(255,230,150,.38)'); g.addColorStop(1, 'rgba(255,230,150,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lx, ly + 20, 46, 0, 7); ctx.fill(); }
+        break;
+      }
+      case 'correio': {
+        caixa(ctx, d.x + 0.45, d.y + 0.45, d.x + 0.55, d.y + 0.55, 0, 18, '#7a5a3a', { borda: null });
+        caixa(ctx, d.x + 0.3, d.y + 0.3, d.x + 0.7, d.y + 0.7, 18, 28, '#3b82c4');
+        break;
+      }
+      case 'placa': {
+        caixa(ctx, d.x + 0.44, d.y + 0.44, d.x + 0.56, d.y + 0.56, 0, 40, '#6b7280', { borda: null });
+        const cor = { ubs: '#16a34a', escola: '#e3a70b', lanche: '#e4572e', trabalho: '#3b6fb6' }[d.modelo] || '#16a34a';
+        const [sx, sy] = proj(d.x + 0.5, d.y + 0.5, 50);
+        rr(ctx, sx - 17, sy - 13, 34, 26, 6, cor);
+        ctx.font = `15px ${FONTE_EMOJI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+        ctx.fillText({ ubs: '✚', escola: '📚', lanche: '🍔', trabalho: '💼' }[d.modelo] || '✚', sx, sy + 1);
+        break;
+      }
+      default: break;
+    }
+  }
+
+  function desenhaCeu(agora) {
+    const g = ctx.createLinearGradient(0, 0, 0, altura);
+    g.addColorStop(0, '#8fcbee'); g.addColorStop(0.6, '#d8eefa'); g.addColorStop(1, '#eef8ee');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, largura, altura);
+    // sol suave e nuvens com paralaxe
+    const sol = ctx.createRadialGradient(largura * 0.85, altura * 0.12, 4, largura * 0.85, altura * 0.12, 120);
+    sol.addColorStop(0, 'rgba(255,245,200,.9)'); sol.addColorStop(1, 'rgba(255,245,200,0)');
+    ctx.fillStyle = sol; ctx.fillRect(0, 0, largura, altura);
+    for (let n = 0; n < 6; n++) {
+      const base = n * 190 + 40, x = ((base + agora * 0.006 * (0.6 + n * 0.1) - cam.x * 0.08) % (largura + 300)) - 150;
+      const y = 40 + ((n * 83) % 150) - cam.y * 0.04;
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.beginPath(); ctx.ellipse(x, y, 50, 14, 0, 0, 7); ctx.ellipse(x - 28, y + 4, 30, 11, 0, 0, 7); ctx.ellipse(x + 30, y + 5, 34, 11, 0, 0, 7); ctx.fill();
+    }
+  }
+
+  function desenhaBase(W) {
+    const e = 40;
+    const A = proj(0, W.h), B = proj(W.w, W.h), C = proj(W.w, 0);
+    ctx.save();
+    ctx.shadowColor = 'rgba(30,45,60,.35)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 36;
+    poli(ctx, [A, B, [B[0], B[1] + e], [A[0], A[1] + e]], '#8e5d3d');
+    ctx.restore();
+    poli(ctx, [A, B, [B[0], B[1] + e], [A[0], A[1] + e]], '#9a6743');
+    poli(ctx, [C, B, [B[0], B[1] + e], [C[0], C[1] + e]], '#6f4730');
+    // camadas de terra
+    ctx.strokeStyle = 'rgba(40,22,10,.25)'; ctx.lineWidth = 2;
+    for (const f of [0.35, 0.7]) {
+      ctx.beginPath(); ctx.moveTo(A[0], A[1] + e * f); ctx.lineTo(B[0], B[1] + e * f); ctx.lineTo(C[0], C[1] + e * f); ctx.stroke();
+    }
+    // faixa de grama na borda
+    poli(ctx, [A, B, [B[0], B[1] + 7], [A[0], A[1] + 7]], '#5aa24c');
+    poli(ctx, [C, B, [B[0], B[1] + 7], [C[0], C[1] + 7]], '#437f3a');
+  }
+
+  /* ---------- Cache: o terreno estático vira uma imagem; a árvore, um sprite ---------- */
+  function construirCache(S, W, cfg) {
+    const rv = preparaDecor(W);
+    if (rv.cache) return rv.cache;
+    const pad = 140, minX = -W.h * HW - pad, minY = -pad, larg = (W.w + W.h) * HW + pad * 2, alt = (W.w + W.h) * HH + pad * 2 + 60;
+    const escala = Math.min(1.4, Math.sqrt(9e6 / (larg * alt)));
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(larg * escala); cv.height = Math.ceil(alt * escala);
+    const c2 = cv.getContext('2d');
+    const anterior = ctx;
+    ctx = c2;
+    ctx.setTransform(escala, 0, 0, escala, -minX * escala, -minY * escala);
+    desenhaBase(W);
+    desenhaChao(S, W, cfg, 0, W.w - 1, 0, W.h - 1);
+    const fixos = rv.decor.filter((d) => d.t === 'sebe' || d.t === 'flores' || d.t === 'arbusto').sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    for (const d of fixos) desenhaDecor(d, false, 0);
+    ctx = anterior;
+    rv.cache = { cv, minX, minY, escala };
+    return rv.cache;
+  }
+
+  let spriteArvore = null;
+  function arvoreSprite() {
+    if (spriteArvore) return spriteArvore;
+    const cv = document.createElement('canvas'); cv.width = 120; cv.height = 140;
+    const c2 = cv.getContext('2d');
+    const anterior = ctx; ctx = c2;
+    ctx.translate(60, 112);
+    elipse(ctx, 6, 2, 20, 8, 'rgba(0,0,0,.18)');
+    caixa(ctx, -0.08, -0.1, 0.08, 0.06, 0, 24, '#7a5230', { borda: null });
+    const cores = ['#2f7d32', '#3e9142', '#55a84d'];
+    [[0, -30, 22], [-9, -42, 17], [9, -42, 17], [0, -54, 15]].forEach(([dx, dy, r], n) => elipse(ctx, dx, dy, r, r * 0.9, cores[n % 3]));
+    elipse(ctx, -5, -56, 7, 5, 'rgba(255,255,255,.18)');
+    ctx = anterior;
+    spriteArvore = cv;
+    return cv;
+  }
+
   /* ---------- Quadro ---------- */
   function desenha(agora) {
     const { S, W, cfg } = E();
     if (!S || !W) return;
     if (canvas.clientWidth !== largura || canvas.clientHeight !== altura) redimensiona();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#6fae60'; ctx.fillRect(0, 0, largura, altura);
+    desenhaCeu(agora);
     ctx.save();
     ctx.translate(largura / 2, altura / 2); ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
+    { const ch = construirCache(S, W, cfg); ctx.drawImage(ch.cv, ch.minX, ch.minY, ch.cv.width / ch.escala, ch.cv.height / ch.escala); }
 
     const xa = cam.x - largura / cam.z / 2 - 80, xb = cam.x + largura / cam.z / 2 + 80;
     const ya = cam.y - altura / cam.z / 2 - 140, yb = cam.y + altura / cam.z / 2 + 60;
@@ -577,9 +738,9 @@ export function criarRenderer(canvas, getEstado, hooks) {
     }
     i0 = Math.max(0, Math.floor(i0) - 1); i1 = Math.min(W.w - 1, Math.ceil(i1) + 1); j0 = Math.max(0, Math.floor(j0) - 1); j1 = Math.min(W.h - 1, Math.ceil(j1) + 1);
 
-    desenhaChao(S, W, cfg, i0, i1, j0, j1);
-
     const els = [];
+    const horaNoite = (() => { const h = minutoDoDia(S) / 60; return h >= 18.5 || h < 6; })();
+    for (const d of preparaDecor(W).decor) { if (d.t === 'sebe' || d.t === 'flores' || d.t === 'arbusto') continue; if (d.x < i0 - 1 || d.x > i1 + 1 || d.y < j0 - 1 || d.y > j1 + 1) continue; els.push({ k: d.x + d.y + (d.t === 'sebe' ? 1 : 0.7), f: () => desenhaDecor(d, horaNoite, agora) }); }
     const vivos = new Set();
     for (const a of W.agentes) {
       if (!a.vis) continue;
@@ -601,8 +762,8 @@ export function criarRenderer(canvas, getEstado, hooks) {
       if (a.k === 'res') st.estilo.humor = S.mundo.needs[a.pid].humor;
       els.push({ k: st.px + st.py + 1 + (pz.ordem || 0) + 0.02, f: () => {
         if (pz.cadeira) { const [cx, cy] = proj(pz.cadeira.x + 0.5, pz.cadeira.y + 0.5); desenhaCadeira(cx, cy + 3, dirUsar === 1 || dirUsar === 3); }
-        const yy = sy + (pz.pose === 'sentar' ? -5 : pz.pose === 'digitar' ? 2 : 6);
-        desenhaPessoa(st.estilo, { dir: dirUsar, fase: st.fase, pose: pz.pose, t: agora }, sx, yy);
+        const yy = sy + (pz.pose === 'sentar' ? -4 : pz.sentado || pz.pose === 'digitar' ? 2 : 6);
+        desenhaPessoa(st.estilo, { dir: dirUsar, fase: st.fase, pose: pz.pose, t: agora, sentado: pz.sentado }, sx, yy);
         if (pz.pose === 'fumar') for (let n = 0; n < 3; n++) { const f = ((agora / 1500) + n / 3) % 1; ctx.fillStyle = `rgba(220,220,220,${0.55 * (1 - f)})`; ctx.beginPath(); ctx.arc(sx + 6 + Math.sin(f * 7 + n) * 3, yy - 38 - f * 22, 2 + f * 3, 0, 7); ctx.fill(); }
         if (pz.pose === 'deitar') for (let n = 0; n < 3; n++) { const f = ((agora / 2200) + n / 3) % 1; ctx.fillStyle = `rgba(80,120,200,${1 - f})`; ctx.font = `bold ${9 + n * 2}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('z', sx + 12 + f * 14, yy - 30 - f * 26); }
       } });
@@ -632,6 +793,12 @@ export function criarRenderer(canvas, getEstado, hooks) {
     }
     els.sort((p, q) => p.k - q.k);
     for (const e of els) e.f();
+    if (marcador) {
+      const [mx, my] = proj(marcador.x + 0.5, marcador.y + 0.5);
+      const r = 12 + Math.sin(agora / 220) * 2;
+      ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(mx, my, r * 1.4, r * 0.7, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.25)'; ctx.fill();
+    }
 
     desenhaRotulos(S, W, cfg);
 
@@ -655,8 +822,10 @@ export function criarRenderer(canvas, getEstado, hooks) {
   }
 
   /* ---------- Entrada (toque / mouse) ---------- */
-  function agenteEm(px, py) {
+  function alvoEm(px, py) {
+    const { W } = E();
     const m = paraMundo(px, py);
+    // 1) pessoas
     let melhor = null, dMin = 1e9;
     for (const [id, st] of rs) {
       if (st.sx === undefined) continue;
@@ -664,7 +833,22 @@ export function criarRenderer(canvas, getEstado, hooks) {
       const d = Math.hypot(st.sx - m.x, (st.sy - 22 * esc - m.y) * 0.8);
       if (d < 26 * Math.max(0.8, esc) && d < dMin) { dMin = d; melhor = id; }
     }
-    return melhor;
+    if (melhor) return { tipo: 'agente', id: melhor };
+    // 2) móveis e objetos (o mais à frente que contém o ponto)
+    let objeto = null, prof = -1;
+    for (const o of W.objs) {
+      if (o.decor) continue;
+      const [sx, sy] = proj(o.x + 0.5, o.y + 0.5);
+      const alto = o.t === 'T' ? 60 : o.t === 'V' || o.t === 'G' || o.t === 'C' || o.t === 'Y' ? 40 : 26;
+      if (Math.abs(m.x - sx) < 26 && m.y > sy - alto && m.y < sy + 14 && o.x + o.y > prof) { prof = o.x + o.y; objeto = o; }
+    }
+    if (objeto && objeto.t !== 'T') return { tipo: 'obj', obj: objeto };
+    // 3) chão
+    const ti = Math.floor((m.y / HH + m.x / HW) / 2), tj = Math.floor((m.y / HH - m.x / HW) / 2);
+    if (ti < 0 || tj < 0 || ti >= W.w || tj >= W.h) return null;
+    const rv = preparaMapa(W), ln = rv.lugarDe[tj * W.w + ti];
+    const c = W.terr[tj * W.w + ti];
+    return { tipo: 'chao', x: ti, y: tj, casa: ln >= 0 ? W.lugares[ln].casa : null, lugar: ln >= 0 ? W.lugares[ln].modelo : null, rua: c === '.' || c === 'c' };
   }
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -688,14 +872,14 @@ export function criarRenderer(canvas, getEstado, hooks) {
       cam.x += antes.x - depois.x; cam.y += antes.y - depois.y;
       limitaCamera();
     } else if (ponteiros.size === 1 && arraste) {
-      if (!arraste.moveu && Math.hypot(e.offsetX - arraste.x0, e.offsetY - arraste.y0) > 7) arraste.moveu = true;
+      if (!arraste.moveu && Math.hypot(e.offsetX - arraste.x0, e.offsetY - arraste.y0) > 7) { arraste.moveu = true; if (hooks.aoArrastar) hooks.aoArrastar(); }
       if (arraste.moveu) { cam.x -= (e.offsetX - ant.x) / cam.z; cam.y -= (e.offsetY - ant.y) / cam.z; limitaCamera(); }
     }
   });
   const soltar = (e) => {
     const tinha = ponteiros.has(e.pointerId);
     ponteiros.delete(e.pointerId);
-    if (tinha && arraste && !arraste.moveu && ponteiros.size === 0 && e.type === 'pointerup') hooks.aoTocar(agenteEm(e.offsetX, e.offsetY));
+    if (tinha && arraste && !arraste.moveu && ponteiros.size === 0 && e.type === 'pointerup') hooks.aoTocar(alvoEm(e.offsetX, e.offsetY));
     if (ponteiros.size === 0) arraste = null;
   };
   canvas.addEventListener('pointerup', soltar);
@@ -714,6 +898,10 @@ export function criarRenderer(canvas, getEstado, hooks) {
   return {
     desenha, redimensiona, enquadrarUBS, centralizar, cam,
     selecionar(id) { selecionado = id; },
+    estadoVisual(id) { const st = rs.get(id); return st ? { px: st.px, py: st.py, sx: st.sx, sy: st.sy, pose: st.pz && st.pz.pose, dir: st.dir, fase: st.fase } : null; },
+    paraTela(tx, ty, z = 0) { const [sx, sy] = proj(tx + 0.5, ty + 0.5, z); return [(sx - cam.x) * cam.z + largura / 2, (sy - cam.y) * cam.z + altura / 2]; },
+    marcar(x, y) { marcador = x === null ? null : { x, y }; },
+    seguirAlvo(tx, ty, k = 0.12) { const [sx, sy] = proj(tx + 0.5, ty + 0.5); cam.x += (sx - cam.x) * k; cam.y += (sy - 10 - cam.y) * k; limitaCamera(); },
     alternaParedes() { paredesBaixas = !paredesBaixas; return paredesBaixas; },
     zoom(f) { cam.z *= f; limitaCamera(); },
     get selecionado() { return selecionado; },

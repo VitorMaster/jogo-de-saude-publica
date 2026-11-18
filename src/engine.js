@@ -37,7 +37,7 @@ function novaPessoa(s, cfg, tpl, famId, idx) {
   const h = (k, lo = 20, hi = 90) => { const [a, b] = hb[k] || [lo, hi]; return Math.round(a + rnd(s) * (b - a)); };
   return {
     id: `${famId}-${idx}`, familiaId: famId, nome: tpl.nome, idade: tpl.idade, sexo: tpl.sexo,
-    ocupacao: tpl.ocupacao || 'casa',
+    ocupacao: tpl.ocupacao || 'casa', profissao: tpl.profissao || '',
     habitos: { atividade: h('atividade'), alimentacao: h('alimentacao'), sono: h('sono'), estresse: h('estresse', 15, 85) },
     tabagismo: adulto && rnd(s) < (cfg.game.tabagismo ?? 0.16),
     imc: adulto ? Math.round((20 + rnd(s) * 14) * 10) / 10 : 17,
@@ -84,7 +84,7 @@ function gerarTerritorio(s, cfg) {
 export function newGame(cfg, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
   const G = cfg.game;
   const s = {
-    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null,
+    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0 },
     mes: G.inicio.mes, ano: G.inicio.ano, turno: 0,
     tempo: 0, tempoMax: 0, insumos: G.inicio.insumos, verba: G.inicio.verba,
     infestacao: G.inicio.infestacao, mutiraoTurno: -99,
@@ -365,7 +365,7 @@ export function avancarMes(s, cfg) {
     precisam++;
     if (s.insumos < 1) { faltou++; continue; }
     s.insumos -= 1;
-    if (rnd(s) < adesao(f)) st.ctrl = true; else naoAderiu++;
+    if (rnd(s) < (typeof p.adesaoOverride === 'number' ? p.adesaoOverride : adesao(f))) st.ctrl = true; else naoAderiu++;
   }
   if (faltou > 0) add('alerta', `💊 Faltou medicamento/insumo para ${faltou} tratamento(s) neste mês. Melhore a farmácia da unidade.`);
   if (naoAderiu > 0) add('info', `${naoAderiu} tratamento(s) não foram seguidos direito — vínculo e orientação aumentam a adesão.`);
