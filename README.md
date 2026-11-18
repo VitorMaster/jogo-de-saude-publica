@@ -1,8 +1,8 @@
 # Saúde Sim
 
-Simulador de saúde para o **público geral**, jogável no **celular** (PWA, funciona offline).
-Você cuida de uma unidade básica de saúde (UBS) e das famílias do seu território — gente de todas as
-idades — e aprende, jogando, como o cuidado, os hábitos e o acesso mudam a saúde das pessoas.
+Simulador de saúde para o **público geral**, jogável no **celular**. Você cuida de uma unidade básica de saúde (UBS)
+e de um bairro cheio de gente que **vive a própria rotina** (dorme, trabalha, come, passeia) — como numa vida simulada.
+Os hábitos das pessoas e o seu cuidado decidem quem adoece.
 
 > Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.
 
@@ -10,40 +10,37 @@ idades — e aprende, jogando, como o cuidado, os hábitos e o acesso mudam a sa
 
 ```bash
 npm start        # http://localhost:8080  (abra no celular na mesma rede)
-npm test         # testes do motor de simulação
+npm test         # testes do motor e do mundo
+node scripts/build-single.mjs saida.html   # gera uma página única autocontida
 ```
 
 Sem dependências: HTML + CSS + JavaScript (módulos ES) e dados em JSON.
-No celular, abra a URL e use "Adicionar à tela inicial".
 
-## O que existe na v0.1
+## O que existe na v0.2
 
-- **Território** com 6 famílias (18 pessoas, de bebês a idosos), com hábitos, genética oculta e vínculo.
-- **Doenças silenciosas e surpresa**: hipertensão, diabetes tipo 2 e depressão evoluem de
-  risco → doença → complicação conforme hábitos, idade, genética e o seu cuidado. Você só descobre medindo e consultando.
-- **Dengue** como surto sazonal: infestação do mosquito, mutirões, vigilância; mais grave em crianças pequenas, idosos e quem tem comorbidades.
-- **Recursos limitados** (inspirados em jogos de gestão em tempo real): horas de equipe, insumos, verba, vínculo.
-  Faltar remédio, ter pouco vínculo e demorar para agir têm consequências.
-- **Melhorias da unidade** com obras que levam meses (uma por vez).
-- **Indicadores** e uma "liga" da unidade; bom desempenho rende mais verba.
-- **Diário** com "💡 lições" explicando o *porquê* dos eventos.
+- **Mundo em tempo real** (mapa visto de cima): moradores caminham, entram em casa, vão ao trabalho, à escola, à praça e à lanchonete. Dia e noite, dias úteis e fins de semana.
+- **Necessidades estilo Sims** (fome, energia, higiene, disposição, humor) e rotina autônoma. O comportamento real vira **hábitos** (atividade, alimentação, sono, estresse), que alimentam o risco de doenças.
+- **Três cenários** com desafios diferentes:
+  - 🏙️ **Metrópole**: alta demanda, estresse, sedentarismo e lanchonetes;
+  - 🏘️ **Interior**: praça central, poucos recursos, dengue forte;
+  - 🌾 **Zona rural**: longas distâncias, médico só 2 dias por semana, poucos insumos, trabalho na roça.
+- **Equipe da UBS em movimento**: agente comunitário (visitas e orientação em casa, mutirões), técnico (triagem) e médico (consulta), com fila, horário de funcionamento e dias de médico.
+- **Doenças**: hipertensão, diabetes tipo 2, depressão (silenciosas até a complicação) e dengue como surto sazonal.
+- **Recursos**: insumos, verba, vínculo. Melhorias da unidade (mais médicos, mais agentes, farmácia, vigilância).
+- Controle de tempo (⏸ 1× 3× 8× e "pular mês"), relatório mensal, diário com lições, indicadores e "liga".
 - Salva sozinho no aparelho.
 
 ## Onde editar as regras
 
-Tudo que é regra fica em `data/` — revisável por profissionais de saúde sem programar:
-
 | Arquivo | Conteúdo |
 |---|---|
+| `data/cenarios.json` | mapas (por blocos e modelos de construção), famílias e ocupações, parâmetros de cada cenário |
 | `data/conditions.json` | doenças: fatores de risco (pesos), probabilidades, textos, lições e **fontes (a validar)** |
-| `data/game.json` | custos das ações, economia, dengue, melhorias da unidade |
-| `data/territorio.json` | famílias e moradores |
+| `data/game.json` | custos, economia, dengue, melhorias da unidade |
 
-O motor (`src/engine.js`) não tem DOM e é determinístico por semente; a interface está em `src/main.js`.
+O mundo (`src/mundo.js`) e o motor de saúde (`src/engine.js`) não têm DOM e são determinísticos por semente; o desenho está em `src/render.js` e a interface em `src/main.js`.
 
 ## Aviso sobre a base científica
 
-Os parâmetros desta versão são **plausíveis e calibrados para jogabilidade** (ritmo acelerado),
-não estimativas epidemiológicas validadas. As fontes listadas em `conditions.json` (Cadernos de Atenção Básica,
-diretrizes das sociedades, manuais do MS) são pontos de partida e **precisam de revisão por consultoria clínica**
-antes de qualquer afirmação científica. Veja `docs/ROADMAP.md`.
+Os parâmetros são **plausíveis e calibrados para jogabilidade** (tempo acelerado), não estimativas epidemiológicas validadas.
+As fontes em `conditions.json` são pontos de partida e **precisam de revisão por consultoria clínica**. Veja `docs/ROADMAP.md`.

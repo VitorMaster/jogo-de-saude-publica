@@ -31,13 +31,15 @@ export function riskZ(p, c, id) {
 
 /* ---------- Criação do jogo ---------- */
 
-function novaPessoa(s, tpl, famId, idx) {
+function novaPessoa(s, cfg, tpl, famId, idx) {
   const adulto = tpl.idade >= 18;
-  const h = () => Math.round(20 + rnd(s) * 70);
+  const hb = cfg.game.habitosBase || {};
+  const h = (k, lo = 20, hi = 90) => { const [a, b] = hb[k] || [lo, hi]; return Math.round(a + rnd(s) * (b - a)); };
   return {
     id: `${famId}-${idx}`, familiaId: famId, nome: tpl.nome, idade: tpl.idade, sexo: tpl.sexo,
-    habitos: { atividade: h(), alimentacao: h(), sono: h(), estresse: Math.round(15 + rnd(s) * 70) },
-    tabagismo: adulto && rnd(s) < 0.16,
+    ocupacao: tpl.ocupacao || 'casa',
+    habitos: { atividade: h('atividade'), alimentacao: h('alimentacao'), sono: h('sono'), estresse: h('estresse', 15, 85) },
+    tabagismo: adulto && rnd(s) < (cfg.game.tabagismo ?? 0.16),
     imc: adulto ? Math.round((20 + rnd(s) * 14) * 10) / 10 : 17,
     genetica: { has: rnd(s), dm: rnd(s), dep: rnd(s) },
     cond: Object.fromEntries(CONDS.map((id) => [id, { estagio: 0, diag: false, trat: false, ctrl: false }])),
@@ -68,7 +70,7 @@ function gerarTerritorio(s, cfg) {
         vinculo: rint(s, ft.vinculo[0], ft.vinculo[1]),
         visTurno: -99, pessoas: [],
       };
-      ft.membros.forEach((m, i) => f.pessoas.push(novaPessoa(s, m, ft.id, i)));
+      ft.membros.forEach((m, i) => f.pessoas.push(novaPessoa(s, cfg, m, ft.id, i)));
       return f;
     });
     for (const f of familias) for (const p of f.pessoas) for (const id of CONDS) p.cond[id].estagio = estagioInicial(s, cfg, p, id);
@@ -82,7 +84,7 @@ function gerarTerritorio(s, cfg) {
 export function newGame(cfg, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
   const G = cfg.game;
   const s = {
-    v: 1, seed, rng: seed >>> 0 || 1,
+    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null,
     mes: G.inicio.mes, ano: G.inicio.ano, turno: 0,
     tempo: 0, tempoMax: 0, insumos: G.inicio.insumos, verba: G.inicio.verba,
     infestacao: G.inicio.infestacao, mutiraoTurno: -99,
@@ -123,6 +125,7 @@ const falha = (msg) => ({ ok: false, msg });
 const sucesso = (msg, extra = {}) => ({ ok: true, msg, ...extra });
 
 function gasta(s, custo) {
+  if (s.tempoReal) return true; // no mundo em tempo real o custo é o tempo (deslocamento, fila) de quem executa
   if (s.tempo < custo) return false;
   s.tempo -= custo;
   return true;
@@ -397,12 +400,14 @@ export function avancarMes(s, cfg) {
     }
   }
 
-  // 4. hábitos e peso
+  // 4. hábitos e peso (no mundo em tempo real, os hábitos vêm do comportamento diário dos personagens)
   for (const f of s.familias) for (const p of f.pessoas) {
     if (p.idade < 12) continue;
-    const t = f.vinculo > 60 ? 0.5 : -0.3;
-    for (const k of ['atividade', 'alimentacao', 'sono']) p.habitos[k] = clamp(p.habitos[k] + rfloat(s, -3, 3) + t, 0, 100);
-    p.habitos.estresse = clamp(p.habitos.estresse + rfloat(s, -3, 3), 0, 100);
+    if (!s.tempoReal) {
+      const t = f.vinculo > 60 ? 0.5 : -0.3;
+      for (const k of ['atividade', 'alimentacao', 'sono']) p.habitos[k] = clamp(p.habitos[k] + rfloat(s, -3, 3) + t, 0, 100);
+      p.habitos.estresse = clamp(p.habitos.estresse + rfloat(s, -3, 3), 0, 100);
+    }
     if (p.cond.dep.estagio >= 2 && !p.cond.dep.ctrl) {
       p.habitos.atividade = clamp(p.habitos.atividade - 1.5, 0, 100);
       p.habitos.alimentacao = clamp(p.habitos.alimentacao - 1, 0, 100);

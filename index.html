@@ -11,9 +11,22 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div id="app" aria-live="polite"></div>
+<body class="sem-jogo">
+<!--CONTEUDO-->
+  <div id="app">
+    <header id="topo" class="topo"></header>
+    <main id="vista" class="vista" hidden></main>
+    <section id="mundo" class="mundo">
+      <canvas id="cv" aria-label="Mapa do bairro"></canvas>
+      <div id="dica" class="dica-mundo" hidden></div>
+      <div class="ferr"><button data-act="familias" aria-label="Famílias">👥</button><button data-act="centro" aria-label="Centralizar">🎯</button></div>
+      <div id="cartao" class="cartao" hidden></div>
+    </section>
+    <nav id="rodape" class="rodape"></nav>
+  </div>
+  <div id="folha-host"></div>
   <div id="toast" role="status"></div>
+<!--/CONTEUDO-->
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

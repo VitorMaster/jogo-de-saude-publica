@@ -1,0 +1,1250 @@
+{
+  "padrao": "interior",
+  "terreno": {
+    ".": {
+      "nome": "Rua",
+      "cor": "#5f6b73"
+    },
+    ",": {
+      "nome": "Grama",
+      "cor": "#8cc17a"
+    },
+    "c": {
+      "nome": "Calçada",
+      "cor": "#c9d1cf"
+    },
+    "F": {
+      "nome": "Roça",
+      "cor": "#b98a52"
+    },
+    "W": {
+      "nome": "Água",
+      "cor": "#4f9bd1"
+    }
+  },
+  "pisos": {
+    "casa": "#ecd9b8",
+    "ubs": "#dcefee",
+    "escola": "#f1e7b8",
+    "trabalho": "#d9dee8",
+    "lanche": "#f6d9c6"
+  },
+  "objetos": {
+    "B": {
+      "nome": "Cama",
+      "icone": "🛏️"
+    },
+    "C": {
+      "nome": "Chuveiro",
+      "icone": "🚿"
+    },
+    "G": {
+      "nome": "Cozinha",
+      "icone": "🍳"
+    },
+    "S": {
+      "nome": "Sofá e TV",
+      "icone": "📺"
+    },
+    "m": {
+      "nome": "Mesa",
+      "icone": "🍽️"
+    },
+    "H": {
+      "nome": "Cadeiras de espera",
+      "icone": "🪑"
+    },
+    "U": {
+      "nome": "Balcão de triagem",
+      "icone": "🗂️"
+    },
+    "Y": {
+      "nome": "Farmácia",
+      "icone": "💊"
+    },
+    "D": {
+      "nome": "Consultório",
+      "icone": "🩺"
+    },
+    "E": {
+      "nome": "Carteira escolar",
+      "icone": "📚"
+    },
+    "O": {
+      "nome": "Posto de trabalho",
+      "icone": "💼"
+    },
+    "L": {
+      "nome": "Lanchonete",
+      "icone": "🍔"
+    },
+    "P": {
+      "nome": "Banco da praça",
+      "icone": "🪑"
+    },
+    "A": {
+      "nome": "Academia ao ar livre",
+      "icone": "🏋️"
+    },
+    "R": {
+      "nome": "Plantação",
+      "icone": "🌽"
+    },
+    "T": {
+      "nome": "Árvore",
+      "icone": "🌳"
+    }
+  },
+  "modelos": {
+    "casa": {
+      "piso": "casa",
+      "linhas": [
+        "#######",
+        "#B_B_C#",
+        "#_____#",
+        "#Sm_G_#",
+        "###+###"
+      ]
+    },
+    "apto": {
+      "piso": "casa",
+      "linhas": [
+        "#####",
+        "#BCG#",
+        "#___#",
+        "#S_m#",
+        "##+##"
+      ]
+    },
+    "ubs": {
+      "piso": "ubs",
+      "linhas": [
+        "#############",
+        "#H_H_U#Y___D#",
+        "#_____+_____#",
+        "#H____#___D_#",
+        "#___________#",
+        "######+######"
+      ]
+    },
+    "escola": {
+      "piso": "escola",
+      "linhas": [
+        "#########",
+        "#EE_E_EE#",
+        "#_______#",
+        "#_______#",
+        "####+####"
+      ]
+    },
+    "trabalho": {
+      "piso": "trabalho",
+      "linhas": [
+        "#########",
+        "#OO_O_OO#",
+        "#_______#",
+        "#_______#",
+        "####+####"
+      ]
+    },
+    "lanche": {
+      "piso": "lanche",
+      "linhas": [
+        "#######",
+        "#L_L_L#",
+        "#_____#",
+        "###+###"
+      ]
+    }
+  },
+  "cenarios": {
+    "metropole": {
+      "nome": "Metrópole",
+      "icone": "🏙️",
+      "resumo": "Bairro denso de uma grande cidade.",
+      "desafios": [
+        "Muita demanda e uma equipe enxuta",
+        "Estresse alto, sedentarismo e lanchonetes por perto",
+        "Famílias em apartamentos pequenos"
+      ],
+      "game": {
+        "inicio": {
+          "insumos": 18,
+          "verba": 40,
+          "infestacao": 20
+        },
+        "insumosBase": 8,
+        "economia": {
+          "verbaBase": 24
+        },
+        "dengue": {
+          "ataque": 0.1
+        },
+        "tabagismo": 0.2,
+        "habitosBase": {
+          "atividade": [
+            10,
+            65
+          ],
+          "alimentacao": [
+            15,
+            70
+          ],
+          "sono": [
+            20,
+            70
+          ],
+          "estresse": [
+            35,
+            90
+          ]
+        }
+      },
+      "mundo": {
+        "medicoDias": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "expediente": [
+          7,
+          17
+        ],
+        "trabalho": "O",
+        "almoco": "lanchonete",
+        "velocidade": 1.4,
+        "estresse": 18
+      },
+      "mapa": {
+        "w": 46,
+        "h": 24,
+        "base": "c",
+        "retangulos": [
+          {
+            "c": ".",
+            "x": 0,
+            "y": 10,
+            "w": 46,
+            "h": 3
+          },
+          {
+            "c": ".",
+            "x": 20,
+            "y": 0,
+            "w": 3,
+            "h": 24
+          },
+          {
+            "c": ",",
+            "x": 24,
+            "y": 18,
+            "w": 22,
+            "h": 6
+          }
+        ],
+        "carimbos": [
+          {
+            "m": "ubs",
+            "x": 1,
+            "y": 4
+          },
+          {
+            "m": "apto",
+            "x": 15,
+            "y": 5,
+            "casa": "silva"
+          },
+          {
+            "m": "apto",
+            "x": 24,
+            "y": 5,
+            "casa": "oliveira"
+          },
+          {
+            "m": "apto",
+            "x": 30,
+            "y": 5,
+            "casa": "pereira"
+          },
+          {
+            "m": "trabalho",
+            "x": 36,
+            "y": 5
+          },
+          {
+            "m": "apto",
+            "x": 1,
+            "y": 13,
+            "flip": true,
+            "casa": "costa"
+          },
+          {
+            "m": "apto",
+            "x": 7,
+            "y": 13,
+            "flip": true,
+            "casa": "souza"
+          },
+          {
+            "m": "apto",
+            "x": 13,
+            "y": 13,
+            "flip": true,
+            "casa": "santos"
+          },
+          {
+            "m": "escola",
+            "x": 24,
+            "y": 13,
+            "flip": true
+          },
+          {
+            "m": "lanche",
+            "x": 34,
+            "y": 13,
+            "flip": true
+          }
+        ],
+        "objetos": [
+          {
+            "t": "P",
+            "x": 27,
+            "y": 20
+          },
+          {
+            "t": "P",
+            "x": 29,
+            "y": 20
+          },
+          {
+            "t": "A",
+            "x": 33,
+            "y": 20
+          },
+          {
+            "t": "A",
+            "x": 35,
+            "y": 20
+          },
+          {
+            "t": "T",
+            "x": 30,
+            "y": 19
+          },
+          {
+            "t": "T",
+            "x": 39,
+            "y": 19
+          },
+          {
+            "t": "T",
+            "x": 42,
+            "y": 22
+          },
+          {
+            "t": "T",
+            "x": 26,
+            "y": 22
+          },
+          {
+            "t": "T",
+            "x": 9,
+            "y": 20
+          },
+          {
+            "t": "T",
+            "x": 15,
+            "y": 21
+          }
+        ]
+      },
+      "territorio": {
+        "nomeUnidade": "UBS Vila Nova",
+        "familias": [
+          {
+            "id": "silva",
+            "nome": "Família Silva",
+            "vinculo": [
+              25,
+              45
+            ],
+            "membros": [
+              {
+                "nome": "João",
+                "idade": 49,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Maria",
+                "idade": 47,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Lucas",
+                "idade": 17,
+                "sexo": "M",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "oliveira",
+            "nome": "Família Oliveira",
+            "vinculo": [
+              25,
+              45
+            ],
+            "membros": [
+              {
+                "nome": "Carla",
+                "idade": 33,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Rafael",
+                "idade": 35,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Bia",
+                "idade": 7,
+                "sexo": "F",
+                "ocupacao": "escola"
+              },
+              {
+                "nome": "Davi",
+                "idade": 2,
+                "sexo": "M",
+                "ocupacao": "casa"
+              }
+            ]
+          },
+          {
+            "id": "pereira",
+            "nome": "Família Pereira",
+            "vinculo": [
+              20,
+              40
+            ],
+            "membros": [
+              {
+                "nome": "Marcos",
+                "idade": 44,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Juliana",
+                "idade": 41,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Gabriel",
+                "idade": 15,
+                "sexo": "M",
+                "ocupacao": "escola"
+              },
+              {
+                "nome": "Laura",
+                "idade": 12,
+                "sexo": "F",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "costa",
+            "nome": "Casal Costa",
+            "vinculo": [
+              30,
+              50
+            ],
+            "membros": [
+              {
+                "nome": "Ana",
+                "idade": 28,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Thiago",
+                "idade": 30,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              }
+            ]
+          },
+          {
+            "id": "souza",
+            "nome": "Família Souza",
+            "vinculo": [
+              20,
+              40
+            ],
+            "membros": [
+              {
+                "nome": "Seu Antônio",
+                "idade": 66,
+                "sexo": "M",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Dona Lúcia",
+                "idade": 63,
+                "sexo": "F",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Camila",
+                "idade": 37,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Enzo",
+                "idade": 9,
+                "sexo": "M",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "santos",
+            "nome": "Dona Rosa",
+            "vinculo": [
+              15,
+              30
+            ],
+            "membros": [
+              {
+                "nome": "Dona Rosa",
+                "idade": 71,
+                "sexo": "F",
+                "ocupacao": "aposentado"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "interior": {
+      "nome": "Cidade do interior",
+      "icone": "🏘️",
+      "resumo": "Cidade média, com praça central e vizinhança próxima.",
+      "desafios": [
+        "Equipe pequena e poucos recursos",
+        "Boa relação com a comunidade, mas hábitos tradicionais",
+        "Dengue forte no verão"
+      ],
+      "game": {
+        "inicio": {
+          "insumos": 14,
+          "verba": 30,
+          "infestacao": 25
+        },
+        "insumosBase": 6,
+        "dengue": {
+          "ataque": 0.12
+        },
+        "habitosBase": {
+          "atividade": [
+            25,
+            85
+          ],
+          "alimentacao": [
+            35,
+            85
+          ],
+          "sono": [
+            35,
+            90
+          ],
+          "estresse": [
+            20,
+            70
+          ]
+        }
+      },
+      "mundo": {
+        "medicoDias": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "expediente": [
+          8,
+          16
+        ],
+        "trabalho": "O",
+        "almoco": "casa",
+        "velocidade": 1.2,
+        "estresse": 0
+      },
+      "mapa": {
+        "w": 45,
+        "h": 22,
+        "base": ",",
+        "retangulos": [
+          {
+            "c": ".",
+            "x": 0,
+            "y": 13,
+            "w": 45,
+            "h": 2
+          },
+          {
+            "c": ".",
+            "x": 22,
+            "y": 0,
+            "w": 2,
+            "h": 22
+          },
+          {
+            "c": "c",
+            "x": 15,
+            "y": 8,
+            "w": 14,
+            "h": 5
+          }
+        ],
+        "carimbos": [
+          {
+            "m": "ubs",
+            "x": 2,
+            "y": 7
+          },
+          {
+            "m": "casa",
+            "x": 31,
+            "y": 8,
+            "casa": "silva"
+          },
+          {
+            "m": "casa",
+            "x": 38,
+            "y": 8,
+            "casa": "oliveira"
+          },
+          {
+            "m": "casa",
+            "x": 2,
+            "y": 15,
+            "flip": true,
+            "casa": "pereira"
+          },
+          {
+            "m": "casa",
+            "x": 10,
+            "y": 15,
+            "flip": true,
+            "casa": "souza"
+          },
+          {
+            "m": "apto",
+            "x": 17,
+            "y": 15,
+            "flip": true,
+            "casa": "santos"
+          },
+          {
+            "m": "escola",
+            "x": 25,
+            "y": 15,
+            "flip": true
+          },
+          {
+            "m": "trabalho",
+            "x": 35,
+            "y": 15,
+            "flip": true
+          }
+        ],
+        "objetos": [
+          {
+            "t": "P",
+            "x": 17,
+            "y": 10
+          },
+          {
+            "t": "P",
+            "x": 27,
+            "y": 10
+          },
+          {
+            "t": "A",
+            "x": 18,
+            "y": 9
+          },
+          {
+            "t": "A",
+            "x": 26,
+            "y": 9
+          },
+          {
+            "t": "T",
+            "x": 20,
+            "y": 9
+          },
+          {
+            "t": "T",
+            "x": 25,
+            "y": 12
+          },
+          {
+            "t": "T",
+            "x": 16,
+            "y": 12
+          },
+          {
+            "t": "T",
+            "x": 14,
+            "y": 2
+          },
+          {
+            "t": "T",
+            "x": 30,
+            "y": 3
+          },
+          {
+            "t": "T",
+            "x": 41,
+            "y": 4
+          },
+          {
+            "t": "T",
+            "x": 6,
+            "y": 20
+          },
+          {
+            "t": "T",
+            "x": 28,
+            "y": 20
+          },
+          {
+            "t": "T",
+            "x": 40,
+            "y": 20
+          }
+        ]
+      },
+      "territorio": {
+        "nomeUnidade": "UBS Esperança",
+        "familias": [
+          {
+            "id": "silva",
+            "nome": "Família Silva",
+            "vinculo": [
+              40,
+              60
+            ],
+            "membros": [
+              {
+                "nome": "Seu João",
+                "idade": 58,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Dona Maria",
+                "idade": 56,
+                "sexo": "F",
+                "ocupacao": "casa"
+              },
+              {
+                "nome": "Lucas",
+                "idade": 24,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              }
+            ]
+          },
+          {
+            "id": "oliveira",
+            "nome": "Família Oliveira",
+            "vinculo": [
+              40,
+              60
+            ],
+            "membros": [
+              {
+                "nome": "Carla",
+                "idade": 34,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Rafael",
+                "idade": 36,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Bia",
+                "idade": 6,
+                "sexo": "F",
+                "ocupacao": "escola"
+              },
+              {
+                "nome": "Davi",
+                "idade": 2,
+                "sexo": "M",
+                "ocupacao": "casa"
+              }
+            ]
+          },
+          {
+            "id": "pereira",
+            "nome": "Família Pereira",
+            "vinculo": [
+              35,
+              55
+            ],
+            "membros": [
+              {
+                "nome": "Marcos",
+                "idade": 45,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Juliana",
+                "idade": 41,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Gabriel",
+                "idade": 15,
+                "sexo": "M",
+                "ocupacao": "escola"
+              },
+              {
+                "nome": "Laura",
+                "idade": 12,
+                "sexo": "F",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "souza",
+            "nome": "Família Souza",
+            "vinculo": [
+              30,
+              50
+            ],
+            "membros": [
+              {
+                "nome": "Seu Antônio",
+                "idade": 67,
+                "sexo": "M",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Dona Lúcia",
+                "idade": 64,
+                "sexo": "F",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Camila",
+                "idade": 38,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Enzo",
+                "idade": 9,
+                "sexo": "M",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "santos",
+            "nome": "Dona Rosa",
+            "vinculo": [
+              25,
+              40
+            ],
+            "membros": [
+              {
+                "nome": "Dona Rosa",
+                "idade": 72,
+                "sexo": "F",
+                "ocupacao": "aposentado"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "rural": {
+      "nome": "Zona rural",
+      "icone": "🌾",
+      "resumo": "Sítios espalhados, estrada de terra e unidade distante.",
+      "desafios": [
+        "Longas distâncias: as visitas e idas à unidade demoram",
+        "Médico só 2 dias por semana",
+        "Poucos insumos e reposição lenta; água armazenada favorece a dengue"
+      ],
+      "game": {
+        "inicio": {
+          "insumos": 9,
+          "verba": 25,
+          "infestacao": 30
+        },
+        "insumosBase": 4,
+        "economia": {
+          "verbaBase": 16
+        },
+        "dengue": {
+          "ataque": 0.14
+        },
+        "tabagismo": 0.22,
+        "habitosBase": {
+          "atividade": [
+            40,
+            95
+          ],
+          "alimentacao": [
+            45,
+            95
+          ],
+          "sono": [
+            40,
+            95
+          ],
+          "estresse": [
+            15,
+            65
+          ]
+        }
+      },
+      "mundo": {
+        "medicoDias": [
+          1,
+          3
+        ],
+        "expediente": [
+          8,
+          16
+        ],
+        "trabalho": "R",
+        "almoco": "casa",
+        "velocidade": 0.8,
+        "estresse": -8
+      },
+      "mapa": {
+        "w": 60,
+        "h": 26,
+        "base": ",",
+        "retangulos": [
+          {
+            "c": ".",
+            "x": 0,
+            "y": 11,
+            "w": 60,
+            "h": 2
+          },
+          {
+            "c": "F",
+            "x": 3,
+            "y": 16,
+            "w": 22,
+            "h": 8
+          },
+          {
+            "c": "F",
+            "x": 36,
+            "y": 16,
+            "w": 15,
+            "h": 8
+          }
+        ],
+        "carimbos": [
+          {
+            "m": "casa",
+            "x": 3,
+            "y": 6,
+            "casa": "silva"
+          },
+          {
+            "m": "casa",
+            "x": 16,
+            "y": 6,
+            "casa": "oliveira"
+          },
+          {
+            "m": "ubs",
+            "x": 25,
+            "y": 5
+          },
+          {
+            "m": "escola",
+            "x": 41,
+            "y": 6
+          },
+          {
+            "m": "casa",
+            "x": 51,
+            "y": 6,
+            "casa": "souza"
+          },
+          {
+            "m": "casa",
+            "x": 27,
+            "y": 14,
+            "flip": true,
+            "casa": "pereira"
+          },
+          {
+            "m": "casa",
+            "x": 52,
+            "y": 14,
+            "flip": true,
+            "casa": "costa"
+          }
+        ],
+        "objetos": [
+          {
+            "t": "R",
+            "x": 6,
+            "y": 18
+          },
+          {
+            "t": "R",
+            "x": 10,
+            "y": 20
+          },
+          {
+            "t": "R",
+            "x": 15,
+            "y": 18
+          },
+          {
+            "t": "R",
+            "x": 20,
+            "y": 22
+          },
+          {
+            "t": "R",
+            "x": 23,
+            "y": 19
+          },
+          {
+            "t": "R",
+            "x": 39,
+            "y": 18
+          },
+          {
+            "t": "R",
+            "x": 43,
+            "y": 21
+          },
+          {
+            "t": "R",
+            "x": 48,
+            "y": 19
+          },
+          {
+            "t": "T",
+            "x": 12,
+            "y": 3
+          },
+          {
+            "t": "T",
+            "x": 33,
+            "y": 3
+          },
+          {
+            "t": "T",
+            "x": 48,
+            "y": 3
+          },
+          {
+            "t": "T",
+            "x": 30,
+            "y": 22
+          },
+          {
+            "t": "T",
+            "x": 55,
+            "y": 22
+          },
+          {
+            "t": "T",
+            "x": 1,
+            "y": 14
+          }
+        ]
+      },
+      "territorio": {
+        "nomeUnidade": "Posto de Saúde Boa Vista",
+        "familias": [
+          {
+            "id": "silva",
+            "nome": "Família Silva",
+            "vinculo": [
+              50,
+              70
+            ],
+            "membros": [
+              {
+                "nome": "Seu João",
+                "idade": 55,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Dona Maria",
+                "idade": 52,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Lucas",
+                "idade": 20,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              }
+            ]
+          },
+          {
+            "id": "oliveira",
+            "nome": "Família Oliveira",
+            "vinculo": [
+              45,
+              65
+            ],
+            "membros": [
+              {
+                "nome": "Carla",
+                "idade": 31,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Rafael",
+                "idade": 33,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Bia",
+                "idade": 8,
+                "sexo": "F",
+                "ocupacao": "escola"
+              },
+              {
+                "nome": "Davi",
+                "idade": 3,
+                "sexo": "M",
+                "ocupacao": "casa"
+              }
+            ]
+          },
+          {
+            "id": "souza",
+            "nome": "Família Souza",
+            "vinculo": [
+              40,
+              60
+            ],
+            "membros": [
+              {
+                "nome": "Seu Antônio",
+                "idade": 69,
+                "sexo": "M",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Dona Lúcia",
+                "idade": 66,
+                "sexo": "F",
+                "ocupacao": "aposentado"
+              },
+              {
+                "nome": "Camila",
+                "idade": 40,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Enzo",
+                "idade": 10,
+                "sexo": "M",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "pereira",
+            "nome": "Família Pereira",
+            "vinculo": [
+              45,
+              65
+            ],
+            "membros": [
+              {
+                "nome": "Marcos",
+                "idade": 47,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Juliana",
+                "idade": 44,
+                "sexo": "F",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Gabriel",
+                "idade": 16,
+                "sexo": "M",
+                "ocupacao": "escola"
+              }
+            ]
+          },
+          {
+            "id": "costa",
+            "nome": "Casal Costa",
+            "vinculo": [
+              50,
+              70
+            ],
+            "membros": [
+              {
+                "nome": "Ana",
+                "idade": 27,
+                "sexo": "F",
+                "ocupacao": "casa"
+              },
+              {
+                "nome": "Thiago",
+                "idade": 29,
+                "sexo": "M",
+                "ocupacao": "trabalho"
+              },
+              {
+                "nome": "Sofia",
+                "idade": 1,
+                "sexo": "F",
+                "ocupacao": "casa"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

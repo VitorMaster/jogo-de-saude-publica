@@ -25,6 +25,14 @@ adaptados para cooperação contra a doença — **nunca PvP contra pacientes**.
 4. Regras em dados (JSON) com fonte citada; revisão por profissionais.
 5. Aviso educativo claro; cuidado com temas sensíveis.
 
+## Estado atual (v0.2)
+Mundo em tempo real com moradores autônomos, três cenários e equipe da UBS em movimento. Próximos passos de jogabilidade:
+- [ ] Modo paciente: controlar diretamente uma pessoa (necessidades, ordens, rotina) em vez da equipe.
+- [ ] Modo profissional individual: assumir o agente comunitário, o técnico, o enfermeiro ou o médico.
+- [ ] Mais animações (sentar, deitar, cozinhar), sons e sprites ilustrados; interior das casas com mais cômodos.
+- [ ] Cenário com mais gente (metrópole maior), transporte público e custo de deslocamento.
+- [ ] Eventos do mundo (surto de gripe, enchente, greve, falta de insumo) e clãs/campanhas cooperativas.
+
 ## Próximos passos sugeridos
 - [ ] Validar parâmetros e textos com consultoria clínica (HAS, DM2, depressão, dengue).
 - [ ] Mais condições comuns e tratáveis: asma, anemia, infecções respiratórias, saúde bucal, vacinação, pré-natal, puericultura, quedas.
