@@ -94,9 +94,13 @@ export function construirMapa(cfg) {
   }
   for (const o of m.objetos || []) objs.push({ t: o.t, x: o.x, y: o.y, casa: null, lugar: 'publico' });
 
+  // decoração de fundo (prédios, igreja, celeiro, lago…): ocupa terreno e bloqueia a passagem
+  const decoracao = (cfg.cenario.decoracao || []).map((d) => ({ ...d }));
+  const bloqDecor = new Set();
+  for (const d of decoracao) for (let y = d.y; y < d.y + d.h; y++) for (let x = d.x; x < d.x + d.w; x++) bloqDecor.add(idx(x, y));
   // árvores decorativas: moldura do mapa e áreas de grama, sempre longe de ruas, portas e prédios
-  const ocupado = new Set(objs.map((o) => idx(o.x, o.y)));
-  const gramado = (x, y) => x >= 0 && y >= 0 && x < w && y < h && terr[idx(x, y)] === ',';
+  const ocupado = new Set([...objs.map((o) => idx(o.x, o.y)), ...bloqDecor]);
+  const gramado = (x, y) => x >= 0 && y >= 0 && x < w && y < h && terr[idx(x, y)] === ',' && !bloqDecor.has(idx(x, y));
   const planta = (x, y) => { const k = idx(x, y); if (!ocupado.has(k) && (terr[k] === ',' || terr[k] === 'c')) { ocupado.add(k); objs.push({ t: 'T', x, y, casa: null, lugar: 'decor', decor: true }); } };
   for (let x = 3; x < w - 2; x += 4) { planta(x, 1); planta(x, h - 2); }
   for (let y = 3; y < h - 2; y += 4) { planta(1, y); planta(w - 2, y); }
@@ -110,10 +114,11 @@ export function construirMapa(cfg) {
   const bloq = new Uint8Array(w * h);
   for (let k = 0; k < w * h; k++) if (!CAMINHAVEL.has(terr[k])) bloq[k] = 1;
   for (const o of objs) bloq[idx(o.x, o.y)] = 1;
+  for (const k of bloqDecor) bloq[k] = 1;
 
   const porTipo = {};
   for (const o of objs) (porTipo[o.t] = porTipo[o.t] || []).push(o);
-  return { w, h, terr, piso, objs, casas, ubs, lugares, bloq, porTipo };
+  return { w, h, terr, piso, objs, casas, ubs, lugares, bloq, porTipo, decoracao };
 }
 
 const caminhavel = (W, x, y) => x >= 0 && y >= 0 && x < W.w && y < W.h && !W.bloq[y * W.w + x];
@@ -267,6 +272,7 @@ export const ACOES = {
   cozinhar: { ic: '🍳', rot: 'Cozinhando', obj: 'G', casa: true, dur: 14, pose: 'cozinhar', onde: 'frente', ef: (n, dt) => { n.fome += 0.5 * dt; } },
   comer_mesa: { ic: '🍽️', rot: 'Fazendo a refeição', obj: 'm', casa: true, dur: 14, pose: 'comer', onde: 'frente', cadeira: true, ef: (n, dt) => { n.fome += 3.4 * dt; }, fimC: (c, p, int, M, a) => { if (a.refeicao && a.refeicao.saudavel === false) c.fast++; else c.saudavel++; } },
   lanche: { ic: '🍔', rot: 'Comendo um lanche', obj: 'L', dur: 20, pose: 'comer', onde: 'frente', ef: (n, dt) => { n.fome += 4.5 * dt; n.humor += 0.4 * dt; }, fimC: (c) => { c.fast++; } },
+  ler: { ic: '📖', rot: 'Lendo', obj: 'N', casa: true, dur: 45, pose: 'ler', onde: 'objeto', ef: (n, dt) => { n.humor += 0.25 * dt; n.disp -= 0.02 * dt; }, cont: 'sedMin' },
   tv: { ic: '📺', rot: 'Assistindo TV', obj: 'S', casa: true, dur: 60, pose: 'sentar', onde: 'objeto', ef: (n, dt) => { n.humor += 0.18 * dt; n.disp -= 0.04 * dt; }, cont: 'sedMin' },
   praca: { ic: '🌳', rot: 'Descansando na praça', obj: 'P', dur: 40, pose: 'sentar', onde: 'objeto', ef: (n, dt) => { n.humor += 0.3 * dt; n.disp += 0.05 * dt; } },
   academia: { ic: '🏋️', rot: 'Exercitando-se', obj: 'A', dur: 40, pose: 'exercitar', onde: 'frente', ef: (n, dt) => { n.disp += 0.8 * dt; n.humor += 0.2 * dt; }, cont: 'exMin' },
@@ -275,7 +281,7 @@ export const ACOES = {
   escola: { ic: '📚', rot: 'Estudando', obj: 'E', dur: 120, pose: 'digitar', onde: 'frente', cadeira: true, ef: (n, dt) => { n.humor += 0.02 * dt; }, cont: 'trabMin' },
   fumar: { ic: '🚬', rot: 'Fumando', dur: 6, local: 'porta', pose: 'fumar', onde: 'local', ef: (n, dt) => { n.humor += 0.8 * dt; } },
   conversar: { ic: '💬', rot: 'Conversando', dur: 25, local: 'rua', pose: 'falar', onde: 'local', ef: (n, dt) => { n.humor += 0.3 * dt; n.disp += 0.05 * dt; } },
-  caminhar: { ic: '🚶', rot: 'Caminhando pelo bairro', dur: 1, local: 'rua', pose: 'parado', onde: 'local', ef: (n, dt) => { n.disp += 0.4 * dt; n.humor += 0.2 * dt; }, andarExercicio: true },
+  caminhar: { ic: '🚶', rot: 'Fazendo uma caminhada', dur: 1, local: 'rua', pose: 'parado', onde: 'local', ef: (n, dt) => { n.disp += 0.5 * dt; n.humor += 0.2 * dt; }, andarExercicio: true },
   remedio: { ic: '💊', rot: 'Tomando o remédio', obj: 'G', casa: true, dur: 2, pose: 'comer', onde: 'frente', fimC: (c, p, int, M) => { const r = M.remedios[p.id]; if (!r.hoje) { r.hoje = true; r.dias += 1; } } },
   esperar: { ic: '⏳', rot: 'Esperando', dur: 5, pose: 'parado', onde: 'local' },
 };
@@ -366,6 +372,7 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
   if (temPraca) op.push(['praca', 0.25 + (1 - ativ) * 0.3]);
   if (temAcad && p.idade >= 14) op.push(['academia', (0.05 + ativ * 0.6 + int.atividade * 0.6) * fatorEx]);
   if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.5) * fatorEx]);
+  if (p.idade >= 6 && objetosDe(W, 'N', p.familiaId).length) op.push(['ler', 0.3 + (1 - ativ) * 0.4 + (p.idade >= 60 ? 0.5 : 0) + (p.ocupacao === 'escola' ? 0.2 : 0)]);
   if (temLanche && mundo.almoco === 'lanchonete' && m >= 17 * 60 && p.idade >= 14) op.push(['lanche', 0.1 + ((100 - p.habitos.alimentacao) / 100) * 0.8 - int.alimentacao * 0.4]);
   if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['caminhar', 0.5 * fatorEx], ['conversar', temPraca ? 0 : 0.5 * fatorEx]]) };
   return { k: escolhe(M, op.map(([k, w]) => [k, Math.max(0.02, w)])) };
@@ -412,6 +419,36 @@ function pontoAleatorio(W, M, a) {
   return null;
 }
 
+/** Primeiro ponto caminhável (ao ar livre) perto de (x, y). */
+function pontoLivreEm(W, x, y) {
+  for (let r = 0; r <= 5; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    const nx = Math.round(x) + dx, ny = Math.round(y) + dy;
+    if (nx < 1 || ny < 1 || nx >= W.w - 1 || ny >= W.h - 1) continue;
+    const k = ny * W.w + nx, c = W.terr[k];
+    if (!W.bloq[k] && (c === '.' || c === ',' || c === 'c')) return { x: nx, y: ny };
+  }
+  return null;
+}
+
+/** Percurso de uma caminhada de verdade: um circuito em volta da praça (ou do quarteirão) e de volta para casa. */
+function planejarCaminhada(W, a, p) {
+  const refs = [...(W.porTipo.P || []), ...(W.porTipo.K || []), ...(W.porTipo.A || [])];
+  const centro = refs.length ? { x: refs.reduce((s, o) => s + o.x, 0) / refs.length, y: refs.reduce((s, o) => s + o.y, 0) / refs.length } : { x: a.x, y: a.y };
+  const raio = refs.length ? 5 : 7;
+  const pontos = [];
+  const n = 5;
+  const inicio = hash(p.id) % 360;
+  for (let i = 0; i < n; i++) {
+    const ang = ((inicio + (360 / n) * i) * Math.PI) / 180;
+    const q = pontoLivreEm(W, centro.x + Math.cos(ang) * raio, centro.y + Math.sin(ang) * raio * 0.8);
+    if (q && !pontos.some((o) => o.x === q.x && o.y === q.y)) pontos.push(q);
+  }
+  const casa = W.casas[p.familiaId].porta.fora;
+  pontos.push({ x: casa.x, y: casa.y });
+  return pontos;
+}
+
 /** Começa a executar uma decisão (ou comando): escolhe o objeto/local e calcula a rota. */
 function iniciarDecisao(W, S, cfg, a, p, d) {
   if (d.k === 'ubs') {
@@ -428,7 +465,11 @@ function iniciarDecisao(W, S, cfg, a, p, d) {
   if (!d.continua) {
     a.proximos = d.proximos ? [...d.proximos] : [];
     if (d.k === 'cozinhar') a.proximos.push({ k: 'comer_mesa' });
-    if (d.k === 'caminhar') a.proximos.push({ k: 'caminhar' }, { k: 'caminhar' });
+    if (d.k === 'caminhar') {
+      const rota = planejarCaminhada(W, a, p);
+      d = { ...d, alvo: rota[0] };
+      a.proximos = rota.slice(1).map((q) => ({ k: 'caminhar', alvo: q }));
+    }
   }
   if (d.k === 'cozinhar') a.refeicao = { saudavel: d.saudavel !== false };
   const semLocal = () => { a.pend = null; a.proximos = []; a.acao = { k: d.k, restante: Math.min(30, dur), sem: true }; };
@@ -461,7 +502,7 @@ function iniciarDecisao(W, S, cfg, a, p, d) {
     return;
   }
   if (def.local === 'rua') {
-    const q = pontoAleatorio(W, S.mundo, a);
+    const q = d.alvo || pontoAleatorio(W, S.mundo, a);
     a.pend = { k: d.k, dur, andar: true };
     if (!q || !partir(W, S, cfg, a, p, [q])) semLocal();
   }
@@ -942,6 +983,47 @@ export function opcoesPara(W, S, cfg, alvo) {
   return ops;
 }
 
+/** Menu de ações do paciente (por indicação: o jogo escolhe o móvel e o caminho). */
+export function acoesPaciente(W, S, cfg) {
+  const ag = agenteJogador(W);
+  if (!ag || ag.k !== 'res') return [];
+  const p = achaPessoa(S, ag.pid), casa = p.familiaId;
+  const tem = (t, c) => objetosDe(W, t, c).length > 0;
+  const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat);
+  const aberta = ubsAberta(W, S, cfg), med = ubsAberta(W, S, cfg, true);
+  const falta = (ok, motivo) => (ok ? null : motivo);
+  const grupos = [];
+  const g = (nome, itens) => grupos.push({ nome, itens });
+  const it = (id, rot, ic, desab) => ({ id, rot, ic, desab: desab || null });
+  g('Necessidades', [
+    it('dormir', 'Dormir', '💤', falta(tem('B', casa), 'Sem cama em casa')),
+    it('descansar', 'Descansar um pouco', '🛏️', falta(tem('B', casa), 'Sem cama em casa')),
+    it('banho', 'Tomar banho', '🚿', falta(tem('C', casa), 'Sem chuveiro em casa')),
+    it('cozinhar_saudavel', 'Cozinhar e comer (saudável)', '🥗', falta(tem('G', casa), 'Sem cozinha em casa')),
+    it('cozinhar_rapido', 'Comer algo rápido (frito/pronto)', '🍟', falta(tem('G', casa), 'Sem cozinha em casa')),
+    ...(emTrat ? [it('remedio', 'Tomar o remédio', '💊', S.mundo.remedios[p.id].hoje ? 'Já tomou hoje' : null)] : []),
+  ]);
+  g('Lazer', [
+    it('tv', 'Assistir TV', '📺', falta(tem('S', casa), 'Sem sofá em casa')),
+    it('ler', 'Sentar para ler', '📖', falta(tem('N', casa), 'Sem poltrona em casa')),
+    it('caminhar', 'Fazer uma caminhada', '🚶'),
+    it('praca', 'Sentar na praça', '🌳', falta(tem('P', null), 'Não há praça aqui')),
+    it('academia', 'Exercitar-se na academia', '🏋️', p.idade < 14 ? 'Só a partir de 14 anos' : falta(tem('A', null), 'Não há academia aqui')),
+    it('lanche', 'Comer um lanche na lanchonete', '🍔', p.idade < 10 ? 'Só a partir de 10 anos' : falta(tem('L', null), 'Não há lanchonete aqui')),
+    ...(p.tabagismo ? [it('fumar', 'Fumar um cigarro', '🚬')] : []),
+  ]);
+  const ob = [];
+  if (p.ocupacao === 'trabalho') ob.push(cfg.cenario.mundo.trabalho === 'R' ? it('roca', 'Trabalhar na roça (2h)', '🌽', falta(tem('R', null), 'Sem roça aqui')) : it('trabalho', 'Trabalhar (2h)', '💼', falta(tem('O', null), 'Sem local de trabalho')));
+  if (p.ocupacao === 'escola') ob.push(it('escola', 'Estudar na escola (2h)', '📚', falta(tem('E', null), 'Sem escola')));
+  if (ob.length) g('Obrigações', ob);
+  g('Saúde', [
+    it('ubs_triagem', 'Pedir triagem (pressão e glicemia)', '📏', p.idade < 18 ? 'Triagem é para adultos' : aberta ? null : 'Unidade fechada agora'),
+    it('ubs_consulta', 'Pedir consulta médica', '🩺', med ? null : aberta ? 'Sem médico hoje' : 'Unidade fechada agora'),
+  ]);
+  g('Ir para', [it('ir_casa', 'Voltar para casa', '🏠'), it('ir_ubs', 'Ir até a unidade de saúde', '🏥'), ...(tem('P', null) ? [it('ir_praca', 'Ir até a praça', '🌳')] : [])]);
+  return grupos;
+}
+
 /** Aplica a opção escolhida. Devolve { ok, msg }. */
 export function comandar(W, S, cfg, opId, alvo) {
   const j = S.jogador, ag = agenteJogador(W);
@@ -952,11 +1034,15 @@ export function comandar(W, S, cfg, opId, alvo) {
   if (id === 'ir_casa') { const q = W.casas[achaPessoa(S, ag.pid).familiaId].porta.dentro; ag.fila.push({ k: 'ir', x: q.x, y: q.y }); return { ok: true, msg: 'Indo para casa.' }; }
   if (j.modo === 'paciente') {
     const p = achaPessoa(S, ag.pid);
-    const obj = alvo.obj;
+    const obj = alvo && alvo.obj;
     const objDaCasa = (t) => objetosDe(W, t, p.familiaId)[0];
     const empilha = (cmd) => { ag.fila.push(cmd); return { ok: true, msg: 'Ordem na fila.' }; };
     switch (id) {
       case 'caminhar': return empilha({ k: 'acao', acao: 'caminhar' });
+      case 'ler': return empilha({ k: 'acao', acao: 'ler', obj: objDaCasa('N') });
+      case 'fumar': return empilha({ k: 'acao', acao: 'fumar' });
+      case 'ir_ubs': { const q = W.ubs.porta.fora; return empilha({ k: 'ir', x: q.x, y: q.y }); }
+      case 'ir_praca': { const r = (W.porTipo.K || W.porTipo.P || [])[0] || (W.porTipo.P || [])[0]; if (!r) return { ok: false, msg: 'Não há praça aqui.' }; return empilha({ k: 'ir', x: r.x, y: r.y + 1 }); }
       case 'dormir': return empilha({ k: 'acao', acao: 'dormir', obj: obj && obj.t === 'B' ? obj : undefined });
       case 'descansar': return empilha({ k: 'acao', acao: 'descansar', obj: obj && obj.t === 'B' ? obj : undefined });
       case 'tv': return empilha({ k: 'acao', acao: 'tv', obj: objDaCasa('S') });
@@ -981,7 +1067,13 @@ export function comandar(W, S, cfg, opId, alvo) {
   // profissional
   if (id === 'mutirao') { if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' }; ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' }; }
   if (id === 'chamar') { ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
-  const o = alvo.id ? W.agentes.find((x) => x.id === alvo.id) : null;
+  if (id === 'chamar_proximo') {
+    const prox = filaEspera(W, servicoDe(j.papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    if (!prox) return { ok: false, msg: 'Ninguém na sua fila agora.' };
+    ag.fila.push({ k: 'chamar', pid: prox.pid });
+    return { ok: true, msg: 'Chamando o próximo da fila…' };
+  }
+  const o = alvo && alvo.id ? W.agentes.find((x) => x.id === alvo.id) : null;
   if (id === 'acs_visita') { ag.fila.push({ k: 'x', tipo: 'visita', fam: alvo.obj.casa }); return { ok: true, msg: 'Indo visitar a família.' }; }
   if (id.startsWith('acs_') && o) {
     const acao = id.replace('acs_', '');

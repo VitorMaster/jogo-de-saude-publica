@@ -25,9 +25,9 @@ adaptados para cooperação contra a doença — **nunca PvP contra pacientes**.
 4. Regras em dados (JSON) com fonte citada; revisão por profissionais.
 5. Aviso educativo claro; cuidado com temas sensíveis.
 
-## Estado atual (v0.4)
-Um único personagem controlado (paciente ou profissional), três cenários, mundo isométrico com ações visíveis e equipe autônoma. Próximos passos:
-- [ ] Mais cômodos e móveis, roupas e cabelos variados, animações de sentar/levantar suaves, sons.
+## Estado atual (v0.5)
+Um único personagem controlado (paciente ou profissional), três cenários, mundo 3D com ações visíveis, menu por ações e equipe autônoma. Próximos passos:
+- [ ] Mais cômodos e móveis (casas com mais ambientes), roupas e cabelos variados, transições de sentar/levantar mais suaves, sons.
 - [ ] Mais histórias de paciente: gestação, puericultura, vacinação, asma, anemia, quedas em idosos.
 - [ ] Gestor/coordenador da unidade (obras, escalas, insumos) como papel jogável.
 - [ ] Eventos do mundo (surto de gripe, enchente, falta de insumo) e campanhas cooperativas.

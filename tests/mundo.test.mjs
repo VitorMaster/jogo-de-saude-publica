@@ -5,7 +5,7 @@ import { newGame, todasPessoas, achaPessoa } from '../src/engine.js';
 import {
   iniciarEstadoMundo, criarMundo, passoMundo, pularMes, pularDia, ordenarVisita, ordenarUnidade, ordenarOrientar,
   ordenarMutirao, diaDoJogo, diaSemana, minutoDoDia, minutosPorSegundo, escolherPersonagem, agenteJogador,
-  opcoesPara, comandar, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, sintomasDe,
+  opcoesPara, comandar, acoesPaciente, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, sintomasDe,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
@@ -44,7 +44,7 @@ test('todos os cenários: portas, móveis essenciais e conexão entre todos os l
       assert.ok(visto[casa.porta.dentro.y * w + casa.porta.dentro.x], `${id}: interior de ${casa.casa} inacessível`);
     }
     for (const o of W.objs.filter((o) => !o.decor)) assert.ok(alcanca(o), `${id}: objeto ${o.t} em (${o.x},${o.y}) inacessível`);
-    for (const f of cfg.territorio.familias) for (const t of ['B', 'C', 'G', 'S', 'V']) assert.ok(W.objs.some((o) => o.casa === f.id && o.t === t), `${id}: ${f.id} sem ${t}`);
+    for (const f of cfg.territorio.familias) for (const t of ['B', 'C', 'G', 'S', 'V', 'X', 'N']) assert.ok(W.objs.some((o) => o.casa === f.id && o.t === t), `${id}: ${f.id} sem ${t}`);
     for (const t of ['H', 'U', 'D', 'Y']) assert.ok(W.objs.some((o) => o.lugar === 'ubs' && o.t === t), `${id}: UBS sem ${t}`);
     assert.ok(W.objs.filter((o) => o.lugar === 'ubs' && o.t === 'D').length >= 2, 'UBS precisa de 2 consultórios');
     assert.equal(S.familias.length, cfg.territorio.familias.length);
@@ -198,7 +198,7 @@ test('MÉDICO: o jogador chama o paciente, atende, decide o tratamento e conclui
   while (diaSemana(S) !== 2 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
   ordenarUnidade(W2, S, cfg, doente.id, 'consulta', { espontaneo: true, permiteCrianca: true });
   let espera = false;
-  for (let i = 0; i < 300 && !espera; i++) { passoMundo(W2, S, cfg, 2); espera = filaEspera(W2, 'consulta').length > 0; }
+  for (let i = 0; i < 400 && !espera; i++) { passoMundo(W2, S, cfg, 2); espera = W2.ordens.some((o) => o.pid === doente.id && o.estado === 'espera' && o.tipo === 'consulta'); }
   assert.ok(espera, 'o paciente deveria estar esperando na fila do médico');
   const med = agenteJogador(W2);
   assert.equal(med.papel, 'medico');
@@ -306,6 +306,43 @@ test('móveis têm ocupação: ninguém senta no colo de ninguém (sofá, mesa, 
         if (a.cadeira) uso.set(a.cadeira, (uso.get(a.cadeira) || 0) + 1);
       }
       for (const [o, n] of uso) assert.ok(n <= (o.t === 'B' ? 2 : 1), `${id}: ${n} pessoas no móvel ${o.t} (${o.x},${o.y})`);
+    }
+  }
+});
+
+test('PACIENTE: menu por ações — cada ação possível funciona sem tocar em nada (ler, caminhar, dormir, banho…)', () => {
+  const { cfg, S, W } = novo('interior', 12);
+  const p = todasPessoas(S).find((x) => x.idade >= 18 && x.ocupacao === 'trabalho');
+  escolherPersonagem(S, { modo: 'paciente', pid: p.id });
+  const W2 = criarMundo(S, cfg);
+  S.jogador.vontade = false;
+  const a = agenteJogador(W2);
+  const grupos = acoesPaciente(W2, S, cfg);
+  const ids = grupos.flatMap((g) => g.itens.filter((i) => !i.desab).map((i) => i.id));
+  for (const esperado of ['dormir', 'banho', 'cozinhar_saudavel', 'tv', 'ler', 'caminhar', 'ir_casa']) assert.ok(ids.includes(esperado), `faltou a ação ${esperado}`);
+  // ler: senta na poltrona da própria casa
+  S.mundo.min = 20 * 60;
+  assert.ok(comandar(W2, S, cfg, 'ler', { tipo: 'auto' }).ok);
+  let leu = false;
+  for (let i = 0; i < 200 && !leu; i++) { passoMundo(W2, S, cfg, 1); leu = !!(a.acao && a.acao.k === 'ler' && a.acao.obj && a.acao.obj.t === 'N' && a.acao.obj.casa === p.familiaId); }
+  assert.ok(leu, 'o personagem não foi ler na poltrona');
+  // caminhada de verdade: percorre vários pontos diferentes
+  a.fila = []; a.acao = null; a.proximos = []; a.path = [];
+  assert.ok(comandar(W2, S, cfg, 'caminhar', { tipo: 'auto' }).ok);
+  const visitados = new Set();
+  let andou = 0;
+  for (let i = 0; i < 400; i++) { const x0 = a.x, y0 = a.y; passoMundo(W2, S, cfg, 1); andou += Math.hypot(a.x - x0, a.y - y0); visitados.add(`${Math.round(a.x / 4)},${Math.round(a.y / 4)}`); if (!a.acao && !a.path.length && !a.proximos.length && i > 20) break; }
+  assert.ok(andou > 20, `a caminhada deveria percorrer um trecho longo (andou ${andou.toFixed(1)} tiles)`);
+  assert.ok(visitados.size >= 4, 'a caminhada deveria passar por várias regiões');
+});
+
+test('a decoração de fundo não bloqueia nada importante e fica em terreno livre', () => {
+  for (const id of CENARIOS) {
+    const { cfg, W } = novo(id);
+    assert.ok((W.decoracao || []).length > 0, `${id}: sem decoração`);
+    for (const d of W.decoracao) for (let y = d.y; y < d.y + d.h; y++) for (let x = d.x; x < d.x + d.w; x++) {
+      assert.ok(W.terr[y * W.w + x] === ',' || W.terr[y * W.w + x] === 'c', `${id}: decoração ${d.t} sobre terreno ${W.terr[y * W.w + x]}`);
+      assert.ok(!W.objs.some((o) => !o.decor && o.x === x && o.y === y), `${id}: decoração ${d.t} sobre móvel`);
     }
   }
 });

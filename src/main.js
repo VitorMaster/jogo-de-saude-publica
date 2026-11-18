@@ -6,7 +6,7 @@ import {
 import {
   montarCfg, iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, pularMes, pularDia, minutosPorSegundo,
   rotuloRelogio, diaDoMes, ubsAberta, agenteJogador, acaoAtual, opcoesPara, comandar, cancelarFila, alternaVontade,
-  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, resumoEquipe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
+  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 
@@ -166,6 +166,7 @@ function montaPainel(forcar = false) {
         ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar" aria-label="Cancelar ordens">✕ ${ag.fila.length} na fila</button>` : ''}</div>
       ${sint.length ? `<div class="alerta-sint">🤒 Você está sentindo: ${esc(sint.join(', '))}</div>` : ''}
       <div class="necs">${Object.keys(ROTULO_NEC).map((k) => barraNec(k)).join('')}</div>
+      <div class="c-btns um"><button class="btn primario" data-act="abrir-acoes">🎬 Fazer algo…</button></div>
       <div class="c-btns">
         <button class="btn peq" data-act="cartao-unidade">🏥 Unidade</button>
         ${emTrat ? '<button class="btn peq" data-act="cartao-remedio">💊 Remédio</button>' : ''}
@@ -177,7 +178,8 @@ function montaPainel(forcar = false) {
     el.innerHTML = `<div class="c-topo"><span class="emoji">${EMOJI_PAPEL[papel()]}</span>
         <div class="c-id"><b>${esc(cfg.papeis[papel()].nome)}</b><div class="c-acao" id="c-acao"></div></div>
         ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar">✕ ${ag.fila.length} na fila</button>` : ''}</div>
-      <div class="c-btns" style="grid-template-columns:repeat(${papel() === 'acs' ? 2 : 2},1fr)">
+      <div class="c-btns um"><button class="btn primario" data-act="abrir-acoes">🎬 Ações…</button></div>
+      <div class="c-btns" style="grid-template-columns:repeat(2,1fr)">
         ${papel() === 'acs' ? '<button class="btn peq" data-act="abrir-territorio">🏘️ Minhas famílias</button><button class="btn peq" data-act="cartao-mutirao">🧹 Mutirão</button>'
     : `<button class="btn peq" data-act="abrir-fila">📋 Fila de espera</button><button class="btn peq" data-act="abrir-atend" ${at ? '' : 'disabled'}>🩺 Atendimento atual</button>`}
       </div>`;
@@ -201,7 +203,7 @@ function atualizaPainel() {
 function dicaDoMomento() {
   if (modo() === 'paciente') {
     const p = minhaPessoa();
-    if (!jaDeuOrdem) return 'Toque num <b>móvel</b> (cama, sofá, fogão…) ou no <b>chão</b> para dar ordens ao seu personagem. Com a <b>vontade própria</b> ligada, ele segue a rotina sozinho.';
+    if (!jaDeuOrdem) return 'Toque em <b>🎬 Fazer algo…</b> para escolher o que ele faz (dormir, ler, caminhar…).';
     const sint = sintomasDe(S, cfg, p.id);
     if (sint.length && !p.conhecido.medidas) return `Você está sentindo <b>${esc(sint[0])}</b>. Pode ser algo sério: pense em procurar a unidade (toque nos móveis dela).`;
     if (p.idade >= 18 && p.conhecido.medidasTurno === null && S.turno >= 0 && S.mundo.min > 3 * 1440) return 'Você nunca mediu pressão e glicemia. Muita doença é <b>silenciosa</b>: considere pedir uma <b>triagem</b> na unidade.';
@@ -312,6 +314,29 @@ function renderVista() {
 }
 
 /* ---------- Folhas (modais) ---------- */
+function folhaAcoes() {
+  let corpo = '';
+  if (modo() === 'paciente') {
+    corpo = acoesPaciente(W, S, cfg).map((g) => `<h2 class="secao">${esc(g.nome)}</h2>${g.itens.map((i) => `<button class="btn" data-act="acao-op" data-op="${i.id}" ${i.desab ? 'disabled' : ''}><span>${i.ic} ${esc(i.rot)}</span>${i.desab ? `<small>${esc(i.desab)}</small>` : ''}</button>`).join('')}`).join('');
+  } else if (papel() === 'acs') {
+    corpo = `<button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
+      <button class="btn" data-act="abrir-pessoas"><span>🧑 Atender uma pessoa (aferir, orientar, convidar)</span></button>
+      <button class="btn" data-act="cartao-mutirao"><span>🧹 Mutirão contra focos do mosquito</span></button>`;
+  } else {
+    corpo = `<button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
+      <button class="btn" data-act="abrir-fila"><span>📋 Ver a fila e escolher quem chamar</span></button>
+      <button class="btn" data-act="abrir-atend" ${atendimentoAtual(W, S) ? '' : 'disabled'}><span>🩺 Voltar ao atendimento atual</span></button>`;
+  }
+  return `<div class="folha-topo"><h2>🎬 ${modo() === 'paciente' ? 'O que você quer fazer?' : 'O que fazer agora?'}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>${corpo}`;
+}
+
+function folhaPessoas() {
+  const a = meuAgente();
+  const lista = W.agentes.filter((x) => x.k === 'res' && x.vis).map((x) => ({ x, d: Math.hypot(x.x - a.x, x.y - a.y) })).sort((p, q) => p.d - q.d);
+  const itens = lista.map(({ x, d }) => { const p = achaPessoa(S, x.pid); return `<button class="pessoa" data-act="pessoa-menu" data-id="${x.id}"><span class="emoji">${emojiPessoa(p)}</span><span class="info"><div class="nome">${esc(p.nome)}</div><div class="sub">${p.idade} anos · ${esc(acaoAtual(W, S, x))} · ${Math.round(d)} passos</div></span><span aria-hidden="true">›</span></button>`; }).join('');
+  return `<div class="folha-topo"><h2>🧑 Atender uma pessoa</h2><button class="fechar" data-act="fechar">✕</button></div>${itens || '<p class="vazio">Ninguém por perto.</p>'}`;
+}
+
 function folhaCenarios() {
   const cards = Object.entries(base.cenarios.cenarios).map(([id, c]) => `
     <div class="card cenario"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div>
@@ -454,7 +479,7 @@ function folhaSobre() {
 function renderFolha() {
   const host = $('#folha-host');
   if (!folha) { host.innerHTML = ''; return; }
-  const corpo = { cenarios: folhaCenarios, personagem: folhaPersonagem, menu: folhaMenu, atendimento: folhaAtendimento, fila: folhaFila, territorio: folhaTerritorio, relatorio: folhaRelatorio, intro: folhaIntro, sobre: folhaSobre }[folha.tipo]();
+  const corpo = { acoes: folhaAcoes, pessoas: folhaPessoas, cenarios: folhaCenarios, personagem: folhaPersonagem, menu: folhaMenu, atendimento: folhaAtendimento, fila: folhaFila, territorio: folhaTerritorio, relatorio: folhaRelatorio, intro: folhaIntro, sobre: folhaSobre }[folha.tipo]();
   const scroll = document.querySelector('.folha')?.scrollTop ?? 0;
   const leve = folha.tipo === 'menu' ? ' leve' : '';
   host.innerHTML = `<div class="fundo${leve}" data-act="fundo"><div class="folha${folha.tipo === 'menu' ? ' menu-op' : ''}" role="dialog" aria-modal="true">${corpo}</div></div>`;
@@ -565,7 +590,7 @@ document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act, id = el.dataset.id;
-  if (act === 'fundo') { if (ev.target === el && folha && ['menu', 'fila', 'territorio', 'atendimento', 'sobre'].includes(folha.tipo)) fecharFolha(); return; }
+  if (act === 'fundo') { if (ev.target === el && folha && ['menu', 'fila', 'territorio', 'atendimento', 'sobre', 'acoes', 'pessoas'].includes(folha.tipo)) fecharFolha(); return; }
   if (!S && !['cenario'].includes(act)) return;
   if (['aba', 'fechar'].includes(act)) limpaToast();
   switch (act) {
@@ -573,6 +598,8 @@ document.addEventListener('click', (ev) => {
     case 'vel': vel = Number(el.dataset.v); atualizaTopo(); break;
     case 'pular-dia': { const v0 = vel; if (pularDia(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
     case 'pular': { const v0 = vel; if (pularMes(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
+    case 'girar-dir': R.girar(-1); break;
+    case 'girar-esq': R.girar(1); break;
     case 'paredes': { const b = R.alternaParedes(); toast(b ? 'Paredes abaixadas' : 'Paredes recortadas', true); break; }
     case 'centro': { S.jogador.seguir = true; const a = meuAgente(); R.seguirAlvo(a.x, a.y, 1); break; }
     case 'fechar': fecharFolha(); break;
@@ -589,6 +616,23 @@ document.addEventListener('click', (ev) => {
     case 'cartao-remedio': { const g = W.objs.find((o) => o.t === 'G' && o.casa === minhaPessoa().familiaId); resultado(comandar(W, S, cfg, 'remedio', { tipo: 'obj', obj: g })); break; }
     case 'cartao-fumar': { const ag = meuAgente(); ag.fila.push({ k: 'acao', acao: 'fumar' }); resultado({ ok: true, msg: 'Ele vai fumar lá fora. (Fumar aumenta o risco de várias doenças.)' }); break; }
     case 'cartao-mutirao': resultado(comandar(W, S, cfg, 'mutirao', { tipo: 'chao', x: 0, y: 0, rua: true })); break;
+    case 'abrir-acoes': abrirFolha({ tipo: 'acoes' }); break;
+    case 'abrir-pessoas': abrirFolha({ tipo: 'pessoas' }); break;
+    case 'pessoa-menu': { const ag = W.agentes.find((x) => x.id === id); const p = achaPessoa(S, ag.pid); menu = { titulo: `${emojiPessoa(p)} ${p.nome}`, ops: opcoesPara(W, S, cfg, { tipo: 'agente', id }), alvo: { tipo: 'agente', id } }; abrirFolha({ tipo: 'menu' }); break; }
+    case 'prof-chamar-prox': { const r = comandar(W, S, cfg, 'chamar_proximo', { tipo: 'auto' }); fecharFolha(); resultado(r); break; }
+    case 'acao-op': {
+      const op = el.dataset.op;
+      const r = comandar(W, S, cfg, op, { tipo: 'auto' });
+      const a = meuAgente();
+      if (r.ok) {
+        if (op === 'ir_casa') { const q = W.casas[minhaPessoa().familiaId].porta.dentro; R.marcar(q.x, q.y); }
+        else if (op === 'ir_ubs') { R.marcar(W.ubs.porta.fora.x, W.ubs.porta.fora.y); }
+        else if (op === 'ir_praca') { const r2 = (W.porTipo.K || W.porTipo.P || [])[0]; if (r2) R.marcar(r2.x, r2.y + 1); }
+        S.jogador.seguir = true;
+      }
+      void a;
+      fecharFolha(); resultado(r); break;
+    }
     case 'abrir-fila': abrirFolha({ tipo: 'fila' }); break;
     case 'abrir-territorio': abrirFolha({ tipo: 'territorio' }); break;
     case 'abrir-atend': abrirFolha({ tipo: 'atendimento' }); break;

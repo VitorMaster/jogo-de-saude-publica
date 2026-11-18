@@ -19,7 +19,7 @@
     <section id="mundo" class="mundo">
       <canvas id="cv" aria-label="Mapa do bairro"></canvas>
       <div id="dica" class="dica-mundo" hidden></div>
-      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="paredes" aria-label="Paredes">🧱</button></div>
+      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="girar-dir" aria-label="Girar a câmera">⟳</button><button data-act="girar-esq" aria-label="Girar a câmera">⟲</button><button data-act="paredes" aria-label="Paredes">🧱</button></div>
       <div id="cartao" class="cartao" hidden></div>
     </section>
     <nav id="rodape" class="rodape"></nav>
@@ -27,6 +27,7 @@
   <div id="folha-host"></div>
   <div id="toast" role="status"></div>
 <!--/CONTEUDO-->
+  <script src="vendor/three.min.js"></script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

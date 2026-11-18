@@ -42,10 +42,12 @@ const diag = `(function () {
     }
   }, 4000);
 })();`;
+const three = ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>');
 const html = `<title>Saúde Sim</title>
 <style>\n${css}\n</style>
 ${corpo}
 <script>\n${diag}\n</script>
+<script>\n${three}\n</script>
 <script>\ndocument.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}\n</script>
 `;
 const saida = process.argv[2] || 'dist/saude-sim.html';
