@@ -16,6 +16,9 @@ node scripts/build-single.mjs saida.html   # gera uma página única autocontida
 
 Sem dependências: HTML + CSS + JavaScript (módulos ES) e dados em JSON.
 
+**Abrir sem servidor:** `dist/saude-sim.html` é o jogo inteiro em um único arquivo. Baixe e abra no navegador do celular ou do computador (módulos ES não funcionam abrindo `index.html` direto por `file://`; use `npm start` para isso).
+Se o jogo não abrir, uma tela de erro oferece recarregar ou apagar o progresso salvo.
+
 ## O que existe na v0.3
 
 - **Visão isométrica** (estilo Sims): casas com paredes recortadas, móveis com volume, ruas, praça, roça, iluminação de dia e noite (janelas acesas) e plumbob na pessoa selecionada. Paredes que escondem alguém ficam translúcidas; o botão 🧱 abaixa todas.

@@ -3,6 +3,15 @@
 import { achaPessoa } from './engine.js';
 import { minutoDoDia, bolhaDe, ubsAberta } from './mundo.js';
 
+// Compatibilidade: navegadores de celular mais antigos não têm roundRect.
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    const raio = Math.max(0, Math.min(Array.isArray(r) ? r[0] : r || 0, w / 2, h / 2));
+    this.moveTo(x + raio, y); this.arcTo(x + w, y, x + w, y + h, raio); this.arcTo(x + w, y + h, x, y + h, raio);
+    this.arcTo(x, y + h, x, y, raio); this.arcTo(x, y, x + w, y, raio); this.closePath();
+  };
+}
+
 const HW = 32, HH = 16; // meia-largura e meia-altura do losango do tile
 const FONTE_EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 const proj = (x, y, z = 0) => [(x - y) * HW, (x + y) * HH - z];

@@ -27,6 +27,26 @@ const $ = (sel_) => document.querySelector(sel_);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (v) => (v === null ? '—' : `${Math.round(v * 100)}%`);
 
+/* ---------- Falhas: mostra o motivo e permite recomeçar ---------- */
+let errosSeguidos = 0;
+function telaErro(msg) {
+  if (document.getElementById('tela-erro')) return;
+  const d = document.createElement('div');
+  d.id = 'tela-erro';
+  d.innerHTML = `<div class="folha" style="margin:auto;max-width:420px;border-radius:18px">
+    <h2>Algo deu errado ao abrir o jogo</h2>
+    <p class="dica-t" style="margin:8px 0">Tente recarregar. Se continuar, apague o progresso salvo e comece de novo.</p>
+    <pre style="white-space:pre-wrap;font-size:11px;background:var(--card);padding:8px;border-radius:8px;max-height:120px;overflow:auto">${esc(msg)}</pre>
+    <button class="btn primario" style="margin-top:10px" id="erro-reload"><span>Recarregar</span></button>
+    <button class="btn perigo" id="erro-limpar"><span>Apagar progresso e recomeçar</span></button></div>`;
+  d.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);display:flex;padding:16px;overflow:auto';
+  document.body.appendChild(d);
+  document.getElementById('erro-reload').onclick = () => location.reload();
+  document.getElementById('erro-limpar').onclick = () => { try { localStorage.removeItem(SAVE_KEY); } catch { /* ok */ } location.reload(); };
+}
+window.addEventListener('error', (e) => { if (!S) telaErro(`${e.message || e.error}`); });
+window.addEventListener('unhandledrejection', (e) => { if (!S) telaErro(`${e.reason && e.reason.message ? e.reason.message : e.reason}`); });
+
 /* ---------- Persistência ---------- */
 function salvar() { try { if (S) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* sem armazenamento: segue o jogo */ } }
 function carregarSalvo() {
@@ -485,21 +505,27 @@ document.addEventListener('click', (ev) => {
 /* ---------- Laço principal ---------- */
 let ultimo = 0, ultimoUI = 0, ultimoSave = 0;
 function quadro(t) {
-  const dt = Math.min(0.1, (t - ultimo) / 1000);
-  ultimo = t;
-  if (S && W) {
-    const pausado = folha && ['relatorio', 'intro', 'cenarios'].includes(folha.tipo);
-    if (vel > 0 && !pausado) {
-      if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes();
+  try {
+    const dt = Math.min(0.1, (t - ultimo) / 1000);
+    ultimo = t;
+    if (S && W) {
+      const pausado = folha && ['relatorio', 'intro', 'cenarios'].includes(folha.tipo);
+      if (vel > 0 && !pausado) {
+        if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes();
+      }
+      if (aba === 'mundo') R.desenha(t);
+      if (t - ultimoUI > 250) {
+        ultimoUI = t;
+        atualizaTopo(); atualizaCartao(); atualizaDica();
+        if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, true); }
+        if (aba === 'mundo') montaCartao(false);
+      }
+      if (t - ultimoSave > 8000) { ultimoSave = t; salvar(); }
     }
-    if (aba === 'mundo') R.desenha(t);
-    if (t - ultimoUI > 250) {
-      ultimoUI = t;
-      atualizaTopo(); atualizaCartao(); atualizaDica();
-      if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, true); }
-      if (aba === 'mundo') montaCartao(false);
-    }
-    if (t - ultimoSave > 8000) { ultimoSave = t; salvar(); }
+    errosSeguidos = 0;
+  } catch (e) {
+    errosSeguidos++;
+    if (errosSeguidos === 3) telaErro(`${e && e.stack ? e.stack : e}`);
   }
   requestAnimationFrame(quadro);
 }
@@ -513,17 +539,23 @@ async function carregarBase() {
 async function iniciar() {
   base = await carregarBase();
   montaTopo();
-  const salvo = carregarSalvo();
-  const cfgInicial = montarCfg(base, salvo ? salvo.cenario : base.cenarios.padrao);
-  if (salvo) { cfg = cfgInicial; S = salvo; W = criarMundo(S, cfg); }
+  let salvo = carregarSalvo();
   R = criarRenderer($('#cv'), () => ({ S, W, cfg }), { aoTocar: (id) => selecionar(id) });
   if (salvo) {
-    R.enquadrarUBS();
-    mostraAba('mundo');
-    if (!jaViuIntro()) abrirFolha({ tipo: 'intro' });
-  } else {
-    // primeiro acesso: escolher cenário
-    cfg = cfgInicial;
+    try {
+      cfg = montarCfg(base, salvo.cenario);
+      S = salvo; W = criarMundo(S, cfg);
+      R.enquadrarUBS();
+      mostraAba('mundo');
+      atualizaTopo();
+      if (!jaViuIntro()) abrirFolha({ tipo: 'intro' });
+    } catch (e) { // jogo salvo incompatível com esta versão: recomeça
+      try { localStorage.removeItem(SAVE_KEY); } catch { /* ok */ }
+      S = null; W = null; salvo = null;
+    }
+  }
+  if (!salvo) {
+    cfg = montarCfg(base, base.cenarios.padrao);
     document.body.classList.add('sem-jogo');
     abrirFolha({ tipo: 'cenarios' });
   }
@@ -531,4 +563,4 @@ async function iniciar() {
   window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, selecionar };
 }
 
-iniciar();
+iniciar().catch((e) => telaErro(`${e && e.stack ? e.stack : e}`));
