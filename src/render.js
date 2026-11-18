@@ -124,7 +124,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
   cena.add(hemi);
   const sol = new THREE.DirectionalLight(0xfff2d8, 0.95);
   sol.castShadow = true;
-  sol.shadow.mapSize.set(2048, 2048);
+  sol.shadow.mapSize.set(1024, 1024);
   Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 140 });
   sol.shadow.bias = -0.0012; sol.shadow.normalBias = 0.07;
   cena.add(sol); cena.add(sol.target);
@@ -1186,6 +1186,8 @@ export function criarRenderer(canvas, getEstado, hooks) {
     alternaParedes() { paredesBaixas = !paredesBaixas; quadranteAtual = -1; return paredesBaixas; },
     zoom(f) { orbita.dist = lim(orbita.dist / f, 7, 85); cam.z = 26 / orbita.dist; },
     estadoVisual(id) { const p = agentes3d.get(id); return p ? { x: p.pos.x, z: p.pos.z, y: p.pos.y, pose: p.situacao && p.situacao.pose, yaw: p.yaw } : null; },
+    girar2: null,
+    modo: '3d',
     get selecionado() { return selecionado; },
   };
 }

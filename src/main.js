@@ -9,6 +9,7 @@ import {
   iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
 } from './mundo.js';
 import { criarRenderer } from './render.js';
+import { criarRenderer2D } from './render2d.js';
 
 const SAVE_KEY = 'saude-sim-save-v3';
 const INTRO_KEY = 'saude-sim-intro-v3';
@@ -470,9 +471,11 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Protótipo v0.4 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Protótipo v0.5 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
+    <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
+    <button class="btn" style="margin-top:8px" data-act="trocar-grafico"><span>${R && R.modo === '3d' ? 'Usar modo 2D simples' : 'Tentar o 3D de novo'}</span></button></div>
     <button class="btn perigo" style="margin-top:14px" data-act="trocar-cenario"><span>🔁 Nova história / trocar de cenário</span></button>`;
 }
 
@@ -642,6 +645,7 @@ document.addEventListener('click', (ev) => {
     case 'tratar': { const r = acaoTratamento(S, cfg, id, el.dataset.cond, el.dataset.ligar === '1'); renderFolha(); toast(r.msg, r.ok); break; }
     case 'concluir': { const r = finalizarAtendimento(W, S, cfg, el.dataset.destino); fecharFolha(); resultado(r); break; }
     case 'sobre': abrirFolha({ tipo: 'sobre' }); break;
+    case 'trocar-grafico': { try { if (R && R.modo === '3d') localStorage.setItem('saude-sim-3d', 'travou'); else localStorage.removeItem('saude-sim-3d'); } catch (e) { /* ok */ } salvar(); location.reload(); break; }
     case 'ajuda': velAntes = vel || 1; abrirFolha({ tipo: 'intro' }); break;
     case 'comecar': marcaIntro(); fecharFolha(); break;
     case 'trocar-cenario': abrirFolha({ tipo: 'cenarios' }); break;
@@ -664,7 +668,7 @@ function quadro(t) {
       const pausado = folha && ['relatorio', 'intro', 'cenarios', 'personagem'].includes(folha.tipo);
       if (vel > 0 && !pausado) { if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes(); }
       const a = meuAgente();
-      if (aba === 'mundo') { if (S.jogador.seguir && a && a.vis) R.seguirAlvo(a.x, a.y, 0.1); R.desenha(t); }
+      if (aba === 'mundo') { if (S.jogador.seguir && a && a.vis) R.seguirAlvo(a.x, a.y, 0.1); R.desenha(t); if (R.modo === '3d' && ++window.__quadros3d === 60) { try { localStorage.setItem('saude-sim-3d', 'ok'); } catch (e) { /* ok */ } } }
       if (t - ultimoUI > 250) {
         ultimoUI = t;
         atualizaTopo(); atualizaPainel(); atualizaDica();
@@ -697,11 +701,38 @@ async function carregarBase() {
   return { game, cond, cenarios };
 }
 
+// Tenta o 3D; se faltar WebGL/Three.js (ou o 3D travou a página na última vez), cai no 2D simples.
+function criarRendererSeguro() {
+  const hooks = { aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } };
+  const get = () => ({ S, W, cfg });
+  const chave = 'saude-sim-3d';
+  let anterior = null;
+  try { anterior = localStorage.getItem(chave); } catch (e) { /* sem armazenamento */ }
+  let motivo = '';
+  if (typeof THREE === 'undefined') motivo = 'Three.js não carregou';
+  else if (anterior === 'tentando' || anterior === 'travou') { motivo = 'o 3D travou neste aparelho'; try { localStorage.setItem(chave, 'travou'); } catch (e) { /* ok */ } }
+  else if (window.__sem3d) motivo = 'modo simples pedido';
+  if (!motivo) {
+    try {
+      try { localStorage.setItem(chave, 'tentando'); } catch (e) { /* ok */ }
+      const r = criarRenderer($('#cv'), get, hooks);
+      window.__quadros3d = 0;
+      return r;
+    } catch (e) { motivo = '3D indisponível (' + (e && e.message ? e.message : e) + ')'; }
+  }
+  if (window.__diag) window.__diag('Modo 2D: ' + motivo);
+  const antigo = $('#cv'), novo = antigo.cloneNode(false);
+  antigo.parentNode.replaceChild(novo, antigo);
+  const r2 = criarRenderer2D(novo, get, hooks);
+  r2.motivo = motivo;
+  return r2;
+}
+
 async function iniciar() {
   base = await carregarBase();
   montaTopo();
   let salvo = carregarSalvo();
-  R = criarRenderer($('#cv'), () => ({ S, W, cfg }), { aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } });
+  R = criarRendererSeguro();
   if (salvo) {
     try {
       cfg = montarCfg(base, salvo.cenario);

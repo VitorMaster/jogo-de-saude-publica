@@ -20,7 +20,8 @@ const base = {
   cenarios: JSON.parse(ler('data/cenarios.json')),
 };
 const main = semModulo(ler('src/main.js')).replace('base = await carregarBase();', 'base = BASE_INLINE;');
-const js = `(function () {\n'use strict';\nconst BASE_INLINE = ${JSON.stringify(base)};\n${['rng', 'engine', 'mundo', 'render'].map((m) => semModulo(ler(`src/${m}.js`))).join('\n')}\n${main}\n})();`;
+const js = `(function () {\n'use strict';\nconst BASE_INLINE = ${JSON.stringify(base)};\n${['rng', 'engine', 'mundo', 'render'].map((m) => semModulo(ler(`src/${m}.js`))).join('\n')}
+const { criarRenderer2D } = (function () {\n${semModulo(ler('src/render2d.js'))}\nreturn { criarRenderer2D };\n})();\n${main}\n})();`;
 new Function(js); // falha aqui se houver nomes duplicados ou erro de sintaxe
 
 // HTML: reaproveita o corpo do index.html
@@ -42,14 +43,20 @@ const diag = `(function () {
     }
   }, 4000);
 })();`;
-const three = ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>');
-const html = `<title>Saúde Sim</title>
+// Por padrão o Three.js vem do cdnjs (página pequena); se não carregar, o jogo abre no modo 2D. --inline embute o arquivo local.
+const inline = process.argv.includes('--inline');
+const tag3d = inline
+  ? `<script>\n${ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>')}\n</script>`
+  : '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>';
+const html = `<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Saúde Sim</title>
 <style>\n${css}\n</style>
 ${corpo}
 <script>\n${diag}\n</script>
-<script>\n${three}\n</script>
+${tag3d}
 <script>\ndocument.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}\n</script>
 `;
-const saida = process.argv[2] || 'dist/saude-sim.html';
+const saida = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'dist/saude-sim.html';
 writeFileSync(saida, html);
 console.log(`${saida}: ${(html.length / 1024).toFixed(0)} KB`);
