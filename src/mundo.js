@@ -43,6 +43,14 @@ export function rotuloRelogio(s) {
 }
 export const diaDoMes = (s) => (diaDoJogo(s) % DIAS_MES) + 1;
 
+/** Minutos de jogo por segundo real a 1×: devagar no expediente (7h–17h), mais rápido à noite. */
+export function minutosPorSegundo(s) {
+  const h = minutoDoDia(s) / 60;
+  if (h >= 7 && h < 17) return 3;
+  if (h >= 17 && h < 22) return 5;
+  return 12;
+}
+
 /* ---------- Mapa ---------- */
 
 export function construirMapa(cfg) {
@@ -667,6 +675,16 @@ export function passoMundo(W, S, cfg, dtMin) {
     if (passoCurto(W, S, cfg, dt)) mes = true;
     resto -= dt;
   }
+  return mes;
+}
+
+/** Avança direto até as 7h do próximo dia (sem animação). Devolve true se um mês terminou. */
+export function pularDia(W, S, cfg) {
+  const m = minutoDoDia(S);
+  let faltam = (7 * 60 - m + MIN_DIA) % MIN_DIA;
+  if (faltam < 5) faltam += MIN_DIA;
+  let mes = false;
+  for (let r = faltam; r > 0; r -= 5) if (passoMundo(W, S, cfg, Math.min(5, r))) mes = true;
   return mes;
 }
 

@@ -5,7 +5,7 @@ import {
   sintomasDengueVisiveis, indicadores, adesao, acaoTratamento,
 } from './engine.js';
 import {
-  montarCfg, iniciarEstadoMundo, criarMundo, passoMundo, pularMes, rotuloRelogio, diaDoMes, ubsAberta,
+  montarCfg, iniciarEstadoMundo, criarMundo, passoMundo, pularMes, pularDia, minutosPorSegundo, rotuloRelogio, diaDoMes, ubsAberta,
   ordenarVisita, ordenarUnidade, ordenarOrientar, ordenarMutirao, acaoAtual, resumoEquipe, numMedicos, numACS,
   ROTULO_NEC, ROTULO_ACAO,
 } from './mundo.js';
@@ -13,7 +13,6 @@ import { criarRenderer } from './render.js';
 
 const SAVE_KEY = 'saude-sim-save-v2';
 const INTRO_KEY = 'saude-sim-intro-v2';
-const MIN_POR_SEG = 15; // a 1×, um dia de jogo dura 96 s
 
 let base, cfg, S, W, R;
 let aba = 'mundo';
@@ -92,12 +91,12 @@ function proximoPasso() {
 /* ---------- Topo, abas e cartão (estrutura criada uma vez; só os textos mudam) ---------- */
 function montaTopo() {
   $('#topo').innerHTML = `
-    <div class="linha"><h1 id="t-nome"></h1><span class="data" id="t-data"></span><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
+    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-insumos"></span><span class="chip" id="t-verba"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
     <div class="linha2">
+      <span class="data" id="t-data"></span>
       <div class="vel" role="group" aria-label="Velocidade do tempo">
-        <button data-act="vel" data-v="0" title="Pausar">⏸</button><button data-act="vel" data-v="1">1×</button><button data-act="vel" data-v="3">3×</button><button data-act="vel" data-v="8">8×</button><button data-act="pular" title="Pular até o fim do mês">⏭ mês</button>
+        <button data-act="vel" data-v="0" title="Pausar">⏸</button><button data-act="vel" data-v="1">1×</button><button data-act="vel" data-v="3">3×</button><button data-act="vel" data-v="8">8×</button><button data-act="pular-dia" title="Pular até as 7h do dia seguinte">☀ dia</button><button data-act="pular" title="Pular até o fim do mês">📅 mês</button>
       </div>
-      <div class="chips"><span class="chip" id="t-insumos"></span><span class="chip" id="t-verba"></span></div>
     </div>`;
   $('#rodape').innerHTML = `<div class="abas">${[['mundo', '🗺️', 'Mundo'], ['unidade', '🏥', 'Unidade'], ['diario', '📓', 'Diário'], ['indicadores', '📊', 'Desempenho']]
     .map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
@@ -106,7 +105,7 @@ function montaTopo() {
 function atualizaTopo() {
   $('#t-nome').textContent = `🏥 ${cfg.territorio.nomeUnidade}`;
   const mesAbr = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][S.mes];
-  $('#t-data').textContent = `${mesAbr}/${String(S.ano).slice(2)} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
+  $('#t-data').textContent = `${mesAbr} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
   $('#t-insumos').textContent = `💊 ${S.insumos}`;
   $('#t-verba').textContent = `💰 ${S.verba}`;
   document.querySelectorAll('#topo [data-act=vel]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.v) === vel)));
@@ -342,7 +341,7 @@ function folhaIntro() {
       <div class="p"><span class="passo">1</span><div><b>Toque num morador</b><br>Veja as necessidades (fome, energia, humor…) e o que ele está fazendo. Arraste o mapa e use dois dedos para dar zoom.</div></div>
       <div class="p"><span class="passo">2</span><div><b>Dê ordens à equipe</b><br><i>🚶 Visita</i>: o agente comunitário (verde) caminha até a casa. <i>📏 Triagem</i> e <i>🩺 Consulta</i>: o morador vai à unidade em dia útil.</div></div>
       <div class="p"><span class="passo">3</span><div><b>Trate e oriente</b><br>No <i>📋 Prontuário</i>, inicie o tratamento de quem tiver diagnóstico e oriente hábitos.</div></div>
-      <div class="p"><span class="passo">4</span><div><b>Controle o tempo</b><br>⏸ 1× 3× 8× no topo. A cada 30 dias o mês vira e você recebe um relatório. <i>⏭ mês</i> pula direto.</div></div>
+      <div class="p"><span class="passo">4</span><div><b>Controle o tempo</b><br>O dia corre devagar no expediente (7h–17h) e acelera à noite. ⏸ 1× 3× 8× no topo; <i>⏭ dia</i> pula até as 7h e <i>⏭ mês</i> até o fim do mês, quando você recebe um relatório.</div></div>
     </div>
     <p class="dica-t">Cada cenário tem desafios próprios: distâncias, dias de médico, recursos e hábitos locais. O botão <b>?</b> abre esta ajuda de novo.</p>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
@@ -451,11 +450,13 @@ document.addEventListener('click', (ev) => {
   switch (act) {
     case 'aba': mostraAba(id); break;
     case 'vel': vel = Number(el.dataset.v); atualizaTopo(); break;
+    case 'pular-dia': { const v0 = vel; const mes = pularDia(W, S, cfg); if (mes) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); montaCartao(true); break; }
     case 'pular': { const v0 = vel; const mes = pularMes(W, S, cfg); if (mes) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
     case 'abrir-familia': abrirFolha({ tipo: 'familia', id }); break;
     case 'abrir-pessoa': abrirFolha({ tipo: 'pessoa', id }); break;
     case 'familias': abrirFolha({ tipo: 'familias' }); break;
     case 'centro': { const a = sel && W.agentes.find((x) => x.id === sel && x.vis); if (a) R.centralizar(a.x, a.y, Math.max(R.cam.z, 1)); else R.enquadrarUBS(); break; }
+    case 'paredes': { const baixas = R.alternaParedes(); toast(baixas ? 'Paredes abaixadas' : 'Paredes recortadas', true); break; }
     case 'cartao-fechar': selecionar(null); break;
     case 'fechar': fecharFolha(); break;
     case 'sobre': abrirFolha({ tipo: 'sobre' }); break;
@@ -489,7 +490,7 @@ function quadro(t) {
   if (S && W) {
     const pausado = folha && ['relatorio', 'intro', 'cenarios'].includes(folha.tipo);
     if (vel > 0 && !pausado) {
-      if (passoMundo(W, S, cfg, dt * vel * MIN_POR_SEG)) aoVirarMes();
+      if (passoMundo(W, S, cfg, dt * vel * minutosPorSegundo(S))) aoVirarMes();
     }
     if (aba === 'mundo') R.desenha(t);
     if (t - ultimoUI > 250) {

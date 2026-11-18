@@ -16,9 +16,12 @@ node scripts/build-single.mjs saida.html   # gera uma página única autocontida
 
 Sem dependências: HTML + CSS + JavaScript (módulos ES) e dados em JSON.
 
-## O que existe na v0.2
+## O que existe na v0.3
 
-- **Mundo em tempo real** (mapa visto de cima): moradores caminham, entram em casa, vão ao trabalho, à escola, à praça e à lanchonete. Dia e noite, dias úteis e fins de semana.
+- **Visão isométrica** (estilo Sims): casas com paredes recortadas, móveis com volume, ruas, praça, roça, iluminação de dia e noite (janelas acesas) e plumbob na pessoa selecionada. Paredes que escondem alguém ficam translúcidas; o botão 🧱 abaixa todas.
+- **Personagens animados**: andam, sentam, deitam, cozinham, comem, digitam, tomam banho, fumam, se exercitam e capinam, com balões de ação e partículas (vapor, água, "zzz").
+- **Ritmo de tempo ajustável**: devagar no expediente (7h–17h) e mais rápido à noite; ⏸ 1× 3× 8×, "☀ dia" (pula até as 7h) e "📅 mês".
+- **Mundo em tempo real**: moradores caminham, entram em casa, vão ao trabalho, à escola, à praça e à lanchonete. Dia e noite, dias úteis e fins de semana.
 - **Necessidades estilo Sims** (fome, energia, higiene, disposição, humor) e rotina autônoma. O comportamento real vira **hábitos** (atividade, alimentação, sono, estresse), que alimentam o risco de doenças.
 - **Três cenários** com desafios diferentes:
   - 🏙️ **Metrópole**: alta demanda, estresse, sedentarismo e lanchonetes;

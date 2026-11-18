@@ -181,3 +181,16 @@ test('a página única (build) compila sem nomes duplicados', async () => {
   const html = readFileSync(saida, 'utf8');
   assert.ok(html.includes('BASE_INLINE') && html.includes('data-act="familias"'));
 });
+
+test('ritmo do tempo: devagar no expediente, mais rápido à noite; pularDia vai até as 7h', async () => {
+  const { minutosPorSegundo, pularDia } = await import('../src/mundo.js');
+  const { cfg, S, W } = novo('interior', 31);
+  S.mundo.min = 10 * 60;
+  const dia = minutosPorSegundo(S);
+  S.mundo.min = 23 * 60;
+  const noite = minutosPorSegundo(S);
+  assert.ok(dia < noite, `expediente (${dia}) deve ser mais lento que a noite (${noite})`);
+  S.mundo.min = 14 * 60;
+  pularDia(W, S, cfg);
+  assert.equal(Math.floor(minutoDoDia(S)), 7 * 60);
+});

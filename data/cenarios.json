@@ -214,7 +214,7 @@
         ],
         "trabalho": "O",
         "almoco": "lanchonete",
-        "velocidade": 1.4,
+        "velocidade": 0.9,
         "estresse": 18
       },
       "mapa": {
@@ -586,7 +586,7 @@
         ],
         "trabalho": "O",
         "almoco": "casa",
-        "velocidade": 1.2,
+        "velocidade": 0.75,
         "estresse": 0
       },
       "mapa": {
@@ -941,7 +941,7 @@
         ],
         "trabalho": "R",
         "almoco": "casa",
-        "velocidade": 0.8,
+        "velocidade": 0.55,
         "estresse": -8
       },
       "mapa": {

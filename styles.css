@@ -127,7 +127,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 .ajuda { margin-left: 6px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(255,255,255,.25); color: inherit; font-weight: 800; cursor: pointer; }
 
 /* Mundo (canvas) */
-.mundo { position: relative; flex: 1; min-height: 0; background: #8cc17a; }
+.mundo { position: relative; flex: 1; min-height: 0; background: #6fae60; }
 .mundo[hidden], .vista[hidden] { display: none; }
 #cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
 .dica-mundo { position: absolute; left: 10px; right: 56px; top: 10px; background: var(--card); color: var(--ink); border: 1px solid var(--info); border-radius: 12px; padding: 8px 12px; font-size: 14px; box-shadow: var(--shadow); }
@@ -155,7 +155,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 .topo .data { font-size: 13px; opacity: .95; margin-left: auto; }
 .linha2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .vel { display: flex; gap: 4px; }
-.vel button { min-width: 38px; height: 32px; border: 0; border-radius: 9px; background: rgba(255,255,255,.18); color: inherit; font-weight: 700; font-size: 13px; padding: 0 8px; cursor: pointer; }
+.vel button { min-width: 34px; height: 32px; border: 0; border-radius: 9px; background: rgba(255,255,255,.18); color: inherit; font-weight: 700; font-size: 12.5px; padding: 0 7px; cursor: pointer; }
 .vel button[aria-pressed="true"] { background: #fff; color: #0f766e; }
 @media (prefers-color-scheme: dark) { .vel button[aria-pressed="true"] { background: #062b27; color: #2dd4bf; } .vel button { background: rgba(0,0,0,.2); } }
 .topo .chips { margin-top: 0; }
@@ -166,3 +166,11 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 
 .topo h1 { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .topo .data { white-space: nowrap; }
+
+.topo { padding-bottom: 8px; }
+.topo .linha { gap: 8px; }
+.topo .linha .chips { margin: 0 0 0 auto; flex: none; }
+.topo .ajuda { margin-left: 0; flex: none; }
+.linha2 { margin-top: 6px; flex-wrap: nowrap; justify-content: space-between; }
+.topo .data { font-size: 12.5px; white-space: nowrap; margin: 0; opacity: .95; }
+.vel button { min-width: 30px; height: 30px; padding: 0 6px; font-size: 12px; }
