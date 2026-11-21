@@ -1,15 +1,13 @@
 # Testar com amigos e receber feedback
 
-## 1. Publicar como app instalável (GitHub Pages) — uma vez
-1. No GitHub: repositório `jogo-de-saude-publica` → **Settings → Pages**.
-2. Em **Build and deployment**, escolha *Deploy from a branch*, branch **main**, pasta **/ (root)** → **Save**.
-3. Em 1–2 minutos o endereço aparece (algo como `https://vitormaster.github.io/jogo-de-saude-publica/`).
+## 1. Publicar para testadores (versão protegida)
+**Não** ative o GitHub Pages neste repositório: ele publicaria o código aberto. Use a versão protegida e criptografada —
+veja [TESTE-PROTEGIDO.md](TESTE-PROTEGIDO.md) (gerar códigos, hospedar `dist-teste/`, limites).
 
-## 2. Como seus amigos instalam
-- **iPhone (Safari):** abrir o link → botão Compartilhar → **Adicionar à Tela de Início**.
-- **Android (Chrome):** abrir o link → menu ⋮ → **Instalar app** / *Adicionar à tela inicial*.
-- Depois da primeira abertura o jogo funciona offline. O progresso fica salvo no aparelho (o app instalado e o navegador guardam saves separados).
-- Para forçar a versão mais nova: fechar o app e abrir de novo com internet.
+## 2. Como os testadores instalam
+- Abrir o link que você enviou e digitar o **código pessoal**.
+- **iPhone (Safari):** Compartilhar → **Adicionar à Tela de Início**. **Android (Chrome):** menu ⋮ → **Instalar app**.
+- Depois da primeira abertura funciona offline; o código fica salvo no aparelho (não precisa digitar de novo).
 
 ## 3. Receber os feedbacks (Google Forms, grátis)
 A aba **💬 Feedback** do jogo funciona sem configuração: o jogador compartilha/copia o texto e manda para você. Para receber tudo

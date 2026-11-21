@@ -40,7 +40,9 @@ Entregue: 3D com luz e sombras, câmera giratória, móveis (estante, poltrona, 
 Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mais cômodos; mais roupas e cabelos; transições de sentar/levantar mais suaves; sons; mais doenças e histórias (gestação, puericultura, vacinação, saúde mental); papel de gestor; eventos do mundo; validação clínica com colegas; painel do professor e piloto com escola/UBS (ver monetização).
 
 ## Teste com amigos (v0.6)
-- PWA: `sw.js` (rede primeiro, cache de reserva; subir `VERSAO` a cada mudança de arquivos) + `manifest.webmanifest`; hospedagem pelo GitHub Pages (branch `main`, raiz). Passo a passo em `docs/FEEDBACK.md`.
+- **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.
+- PWA do app completo (`sw.js` + `manifest.webmanifest`) é só para desenvolvimento local; subir `VERSAO` ao mudar arquivos.
+- Imports com alias (`import { a as b }`) quebram o build de página única (o script remove imports): exporte com o nome final.
 - Aba **💬 Feedback** (`src/feedback.js` + `viewFeedback` em `main.js`): perguntas fixas, rascunho em `localStorage` (`saude-sim-feedback-v1`), envio via Google Forms se `data/game.json › feedback` estiver preenchido; senão compartilhar/copiar. Nenhum dado de saúde é enviado, só respostas e informações técnicas.
 
 ## Convenções

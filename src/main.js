@@ -10,7 +10,7 @@ import {
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
-import { PERGUNTAS, contextoTecnico, temResposta, enviar as enviarFeedback } from './feedback.js';
+import { PERGUNTAS, contextoTecnico, temResposta, enviarFeedback } from './feedback.js';
 
 const SAVE_KEY = 'saude-sim-save-v3';
 const INTRO_KEY = 'saude-sim-intro-v3';
@@ -326,7 +326,7 @@ function infoFeedback() {
   return contextoTecnico({
     userAgent: navigator.userAgent, graficos: R && R.modo === '3d' ? '3D' : '2D', cenario: cfg && cfg.cenario.id,
     personagem: S && S.jogador ? (modo() === 'paciente' ? 'paciente' : papel()) : '-', mesesJogados: S && S.metricas ? S.mes : undefined,
-    instalado, tela: `${window.innerWidth}x${window.innerHeight}`,
+    instalado, tela: `${window.innerWidth}x${window.innerHeight}`, testador: window.__testador && window.__testador.id,
   });
 }
 

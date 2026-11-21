@@ -6,7 +6,7 @@ Simulador de saúde para o **público geral**, jogável no **celular**. Você es
 > Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.
 
 ## Testar com amigos (app instalável + aba Feedback)
-Veja [docs/FEEDBACK.md](docs/FEEDBACK.md): publicar no GitHub Pages, instalar na tela inicial e receber respostas no Google Forms.
+Versão de teste **protegida por código** (jogo criptografado, marca d'água por testador): [docs/TESTE-PROTEGIDO.md](docs/TESTE-PROTEGIDO.md). Feedback e Google Forms: [docs/FEEDBACK.md](docs/FEEDBACK.md). Não ative o GitHub Pages neste repositório.
 
 ## Como rodar
 

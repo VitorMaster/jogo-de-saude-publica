@@ -2020,6 +2020,7 @@ function contextoTecnico(info) {
     instalado: info.instalado ? 'sim (tela inicial)' : 'não (navegador)',
     tela: info.tela || '?',
     aparelho: ua,
+    testador: info.testador || '-',
   };
 }
 
@@ -2033,7 +2034,7 @@ function textoRelatorio(resp, ctx) {
   linhas.push('', '— Informações técnicas —');
   linhas.push(`Gráficos: ${ctx.graficos} · Cenário: ${ctx.cenario} · Personagem: ${ctx.personagem}`);
   linhas.push(`Mês no jogo: ${ctx.mesesJogados} · Instalado: ${ctx.instalado} · Tela: ${ctx.tela}`);
-  linhas.push(`Aparelho: ${ctx.aparelho}`);
+  linhas.push(`Aparelho: ${ctx.aparelho} · Testador: ${ctx.testador}`);
   return linhas.join('\n');
 }
 
@@ -2047,7 +2048,7 @@ function temResposta(resp) {
  * compartilhar do sistema → copiar para a área de transferência.
  * Retorna { ok, via } e nunca lança.
  */
-async function enviar(resp, ctx, conf, ambiente = globalThis) {
+async function enviarFeedback(resp, ctx, conf, ambiente = globalThis) {
   const texto = textoRelatorio(resp, ctx);
   const c = conf || {};
   if (c.formAction && c.campos) {
@@ -4494,7 +4495,7 @@ function infoFeedback() {
   return contextoTecnico({
     userAgent: navigator.userAgent, graficos: R && R.modo === '3d' ? '3D' : '2D', cenario: cfg && cfg.cenario.id,
     personagem: S && S.jogador ? (modo() === 'paciente' ? 'paciente' : papel()) : '-', mesesJogados: S && S.metricas ? S.mes : undefined,
-    instalado, tela: `${window.innerWidth}x${window.innerHeight}`,
+    instalado, tela: `${window.innerWidth}x${window.innerHeight}`, testador: window.__testador && window.__testador.id,
   });
 }
 

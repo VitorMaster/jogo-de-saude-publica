@@ -30,6 +30,7 @@ export function contextoTecnico(info) {
     instalado: info.instalado ? 'sim (tela inicial)' : 'não (navegador)',
     tela: info.tela || '?',
     aparelho: ua,
+    testador: info.testador || '-',
   };
 }
 
@@ -43,7 +44,7 @@ export function textoRelatorio(resp, ctx) {
   linhas.push('', '— Informações técnicas —');
   linhas.push(`Gráficos: ${ctx.graficos} · Cenário: ${ctx.cenario} · Personagem: ${ctx.personagem}`);
   linhas.push(`Mês no jogo: ${ctx.mesesJogados} · Instalado: ${ctx.instalado} · Tela: ${ctx.tela}`);
-  linhas.push(`Aparelho: ${ctx.aparelho}`);
+  linhas.push(`Aparelho: ${ctx.aparelho} · Testador: ${ctx.testador}`);
   return linhas.join('\n');
 }
 
@@ -57,7 +58,7 @@ export function temResposta(resp) {
  * compartilhar do sistema → copiar para a área de transferência.
  * Retorna { ok, via } e nunca lança.
  */
-export async function enviar(resp, ctx, conf, ambiente = globalThis) {
+export async function enviarFeedback(resp, ctx, conf, ambiente = globalThis) {
   const texto = textoRelatorio(resp, ctx);
   const c = conf || {};
   if (c.formAction && c.campos) {
