@@ -113,6 +113,22 @@
   "J": {
    "nome": "Planta",
    "icone": "🪴"
+  },
+  "M": {
+   "nome": "Mesa de reunião",
+   "icone": "🗣️"
+  },
+  "Q": {
+   "nome": "Cadeira da sala de reunião",
+   "icone": "🪑"
+  },
+  "Z": {
+   "nome": "Arquivo de prontuários",
+   "icone": "🗄️"
+  },
+  "W": {
+   "nome": "Copa (café e água)",
+   "icone": "☕"
   }
  },
  "modelos": {
@@ -143,6 +159,10 @@
    "piso": "ubs",
    "linhas": [
     "###############",
+    "#__QMMMQ_ZZ_WW#",
+    "#___QQQ_______#",
+    "#_____________#",
+    "#######+#######",
     "#H_H_H__#_Y__D#",
     "#_______#_____#",
     "#_______+_____#",
@@ -196,7 +216,8 @@
    "desafios": [
     "Muita demanda e uma equipe enxuta",
     "Estresse alto, sedentarismo e lanchonetes por perto",
-    "Famílias em apartamentos pequenos"
+    "Famílias em apartamentos pequenos",
+    "Equipe grande e impessoal: alinhar os profissionais exige esforço"
    ],
    "game": {
     "inicio": {
@@ -259,7 +280,8 @@
      "enfermeiro": 0.3,
      "tecnico": 0,
      "acs": 1.0
-    }
+    },
+    "equipeVinculo": 40
    },
    "mapa": {
     "w": 58,
@@ -299,7 +321,7 @@
      {
       "m": "ubs",
       "x": 2,
-      "y": 4
+      "y": 0
      },
      {
       "m": "apto",
@@ -630,27 +652,9 @@
    "decoracao": [
     {
      "t": "predio",
-     "x": 2,
+     "x": 17,
      "y": 0,
      "w": 6,
-     "h": 3,
-     "alt": 9,
-     "cor": "#9bb4c9"
-    },
-    {
-     "t": "predio",
-     "x": 9,
-     "y": 0,
-     "w": 6,
-     "h": 3,
-     "alt": 13,
-     "cor": "#c9b79b"
-    },
-    {
-     "t": "predio",
-     "x": 16,
-     "y": 0,
-     "w": 7,
      "h": 3,
      "alt": 7,
      "cor": "#b9c9a8"
@@ -691,7 +695,8 @@
    "desafios": [
     "Equipe pequena e poucos recursos",
     "Boa relação com a comunidade, mas hábitos tradicionais",
-    "Dengue forte no verão"
+    "Dengue forte no verão",
+    "Equipe pequena e unida: cuidar do vínculo entre colegas rende muito"
    ],
    "game": {
     "inicio": {
@@ -749,7 +754,8 @@
      "enfermeiro": 0.5,
      "tecnico": 0,
      "acs": 1.0
-    }
+    },
+    "equipeVinculo": 55
    },
    "mapa": {
     "w": 54,
@@ -782,7 +788,7 @@
      {
       "m": "ubs",
       "x": 2,
-      "y": 6
+      "y": 2
      },
      {
       "m": "apto",
@@ -1046,13 +1052,6 @@
    },
    "decoracao": [
     {
-     "t": "igreja",
-     "x": 4,
-     "y": 0,
-     "w": 7,
-     "h": 5
-    },
-    {
      "t": "torre_agua",
      "x": 20,
      "y": 1,
@@ -1093,7 +1092,8 @@
    "desafios": [
     "Longas distâncias: as visitas e idas à unidade demoram",
     "Médico só 2 dias por semana",
-    "Poucos insumos e reposição lenta; água armazenada favorece a dengue"
+    "Poucos insumos e reposição lenta; água armazenada favorece a dengue",
+    "Pouca gente na equipe: ninguém faz nada sozinho"
    ],
    "game": {
     "inicio": {
@@ -1153,7 +1153,8 @@
      "enfermeiro": 0.9,
      "tecnico": 0,
      "acs": 1.2
-    }
+    },
+    "equipeVinculo": 60
    },
    "mapa": {
     "w": 68,
@@ -1198,7 +1199,7 @@
      {
       "m": "ubs",
       "x": 28,
-      "y": 5
+      "y": 1
      },
      {
       "m": "escola",
@@ -1295,11 +1296,6 @@
      {
       "t": "T",
       "x": 12,
-      "y": 3
-     },
-     {
-      "t": "T",
-      "x": 40,
       "y": 3
      },
      {
@@ -1494,20 +1490,6 @@
     ]
    },
    "decoracao": [
-    {
-     "t": "celeiro",
-     "x": 30,
-     "y": 0,
-     "w": 9,
-     "h": 4
-    },
-    {
-     "t": "silo",
-     "x": 41,
-     "y": 1,
-     "w": 2,
-     "h": 2
-    },
     {
      "t": "moinho",
      "x": 46,

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Saúde Sim — jogo de simulação em saúde para o público geral (mobile-first)",
+  "description": "Saudedavida - SV — jogo de simulação em saúde para o público geral (mobile-first)",
   "scripts": {
     "start": "node scripts/serve.mjs",
     "test": "node --test tests/*.test.mjs"

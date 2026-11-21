@@ -73,7 +73,7 @@ else {
 }
 const html = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Saúde Sim</title>
+<title>Saudedavida - SV</title>
 <style>\n${css}\n</style>
 ${corpo}
 <script>\n${diag}\n</script>

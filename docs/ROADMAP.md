@@ -8,7 +8,7 @@ Jogo de simulação de saúde para o público geral, mobile-first. Dois modos qu
 Inspiração de mecânica: jogos de gestão com loop curto e retenção (vila, recursos, construtores, clã, ligas),
 adaptados para cooperação contra a doença — **nunca PvP contra pacientes**.
 
-| Jogo de estratégia | Saúde Sim |
+| Jogo de estratégia | Saudedavida - SV |
 |---|---|
 | Vila / construções | UBS e território |
 | Recursos | horas de equipe, insumos, verba, **vínculo** |

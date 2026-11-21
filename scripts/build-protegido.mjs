@@ -74,9 +74,9 @@ const carregador = `<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#0f766e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Saúde Sim"><link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="SV"><link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<title>Saúde Sim</title>
+<title>Saudedavida - SV</title>
 <style>
 html,body{margin:0;height:100%;background:#0f766e;font:16px/1.45 system-ui,-apple-system,sans-serif;color:#14201e;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -86,7 +86,7 @@ input{width:100%;box-sizing:border-box;font:inherit;font-size:18px;letter-spacin
 button{width:100%;margin-top:12px;min-height:48px;border:0;border-radius:12px;background:#0f766e;color:#fff;font:inherit;font-weight:700}
 #msg{color:#b91c1c;min-height:20px;font-size:14px;margin-top:8px}.aviso{font-size:12px;margin-top:14px}
 </style></head><body><main><div class="c">
-<h1>🩺 Saúde Sim</h1><p>Versão de teste <b>confidencial</b>. Digite o código pessoal que você recebeu.</p>
+<h1>🩺 Saudedavida - SV</h1><p>Versão de teste <b>confidencial</b>. Digite o código pessoal que você recebeu.</p>
 <form id="f" autocomplete="off"><input id="cod" placeholder="T01-XXXXX-XXXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Código de acesso"><button type="submit">Entrar</button></form>
 <div id="msg" role="status"></div>
 <p class="aviso">Este material é protegido e de uso exclusivo de testadores autorizados. Cada tela é identificada com o seu código. É proibido compartilhar o acesso, divulgar imagens ou copiar o conteúdo.</p>

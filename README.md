@@ -1,4 +1,4 @@
-# Saúde Sim
+# Saudedavida - SV
 
 Simulador de saúde para o **público geral**, jogável no **celular**. Você escolhe **um personagem** — uma pessoa do bairro
 (paciente) ou um profissional da unidade de saúde — e vive o que ele viver. Os outros moradores e profissionais agem sozinhos.

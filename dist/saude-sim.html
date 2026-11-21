@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Saúde Sim</title>
+<title>Saudedavida - SV</title>
 <style>
 :root {
   --bg: #f2f6f5; --card: #ffffff; --ink: #14201e; --muted: #5b6b68; --line: #dbe5e2;
@@ -233,7 +233,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
     <section id="mundo" class="mundo">
       <canvas id="cv" aria-label="Mapa do bairro"></canvas>
       <div id="dica" class="dica-mundo" hidden></div>
-      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="girar-dir" aria-label="Girar a câmera">⟳</button><button data-act="girar-esq" aria-label="Girar a câmera">⟲</button><button data-act="paredes" aria-label="Paredes">🧱</button><button data-act="trocar-personagem" aria-label="Trocar de personagem">👥</button></div>
+      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="girar-dir" aria-label="Girar a câmera">⟳</button><button data-act="girar-esq" aria-label="Girar a câmera">⟲</button><button data-act="paredes" aria-label="Paredes">🧱</button><button data-act="trocar-personagem" aria-label="Trocar de personagem">👥</button><button id="b-painel" data-act="painel" aria-label="Ocultar a barra de ações">🔽</button><button data-act="zoom-mais" aria-label="Aproximar">➕</button><button data-act="zoom-menos" aria-label="Afastar">➖</button></div>
       <div id="cartao" class="cartao" hidden></div>
     </section>
     <nav id="rodape" class="rodape"></nav>
@@ -265,7 +265,7 @@ window.__jogoMain = function () {
 document.body.classList.add('sem-jogo');
 (function () {
 'use strict';
-const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2,"feedback":{"_ajuda":"Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.","formAction":"","campos":{}}},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá","icone":"🛋️"},"m":{"nome":"Mesa de jantar","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"},"V":{"nome":"Televisão","icone":"📺"},"K":{"nome":"Fonte","icone":"⛲"},"X":{"nome":"Estante de livros","icone":"📚"},"N":{"nome":"Poltrona","icone":"📖"},"J":{"nome":"Planta","icone":"🪴"}},"modelos":{"casa":{"piso":"casa","linhas":["#########","#B_B_C_G#","#______J#","#X_V____#","#N_m__m_#","#__S____#","####+####"]},"apto":{"piso":"casa","linhas":["#######","#B_C_G#","#N___J#","#X_V_m#","#__S__#","##+####"]},"ubs":{"piso":"ubs","linhas":["###############","#H_H_H__#_Y__D#","#_______#_____#","#_______+_____#","#_____U_#_____#","#_______#____D#","#H_H_H__#_____#","#######+#######"]},"escola":{"piso":"escola","linhas":["###########","#E_E_E_E_E#","#_________#","#E_E_E_E_E#","#_________#","#_________#","#####+#####"]},"trabalho":{"piso":"trabalho","linhas":["###########","#O_O_O_O_O#","#_________#","#O_O_O_O_O#","#_________#","#_________#","#####+#####"]},"lanche":{"piso":"lanche","linhas":["#########","#L_L_L_L#","#_______#","#_m___m_#","#_______#","####+####"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18,"procura":0.8,"afazeres":{"medico":4,"enfermeiro":5,"tecnico":6,"acs":5},"campo":{"medico":0.2,"enfermeiro":0.3,"tecnico":0,"acs":1}},"mapa":{"w":58,"h":32,"base":"c","retangulos":[{"c":".","x":0,"y":12,"w":58,"h":3},{"c":".","x":26,"y":0,"w":3,"h":32},{"c":",","x":2,"y":24,"w":22,"h":7},{"c":",","x":30,"y":24,"w":26,"h":7}],"carimbos":[{"m":"ubs","x":2,"y":4},{"m":"apto","x":19,"y":6,"casa":"silva"},{"m":"apto","x":30,"y":6,"casa":"oliveira"},{"m":"apto","x":38,"y":6,"casa":"pereira"},{"m":"trabalho","x":46,"y":5},{"m":"apto","x":2,"y":15,"flip":true,"casa":"costa"},{"m":"apto","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":19,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":30,"y":15,"flip":true},{"m":"lanche","x":43,"y":15,"flip":true}],"objetos":[{"t":"P","x":33,"y":27},{"t":"P","x":36,"y":27},{"t":"A","x":41,"y":27},{"t":"A","x":44,"y":27},{"t":"T","x":31,"y":25},{"t":"T","x":38,"y":29},{"t":"T","x":47,"y":26},{"t":"T","x":53,"y":28},{"t":"T","x":5,"y":26},{"t":"T","x":12,"y":29},{"t":"T","x":20,"y":27},{"t":"P","x":8,"y":27},{"t":"P","x":16,"y":27},{"t":"T","x":22,"y":25},{"t":"K","x":12,"y":27}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho","profissao":"Designer"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"}]},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]},"decoracao":[{"t":"predio","x":2,"y":0,"w":6,"h":3,"alt":9,"cor":"#9bb4c9"},{"t":"predio","x":9,"y":0,"w":6,"h":3,"alt":13,"cor":"#c9b79b"},{"t":"predio","x":16,"y":0,"w":7,"h":3,"alt":7,"cor":"#b9c9a8"},{"t":"predio","x":31,"y":0,"w":7,"h":3,"alt":11,"cor":"#a8b4d6"},{"t":"predio","x":39,"y":0,"w":7,"h":3,"alt":8,"cor":"#d6b0a8"},{"t":"predio","x":47,"y":0,"w":9,"h":3,"alt":14,"cor":"#8fb0b8"}]},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0,"procura":0.4,"afazeres":{"medico":5,"enfermeiro":5,"tecnico":5,"acs":6},"campo":{"medico":0.6,"enfermeiro":0.5,"tecnico":0,"acs":1}},"mapa":{"w":54,"h":28,"base":",","retangulos":[{"c":".","x":0,"y":14,"w":54,"h":2},{"c":".","x":26,"y":0,"w":2,"h":15},{"c":"c","x":22,"y":17,"w":8,"h":8}],"carimbos":[{"m":"ubs","x":2,"y":6},{"m":"apto","x":19,"y":8,"casa":"santos"},{"m":"casa","x":30,"y":7,"casa":"silva"},{"m":"casa","x":41,"y":7,"casa":"oliveira"},{"m":"casa","x":2,"y":16,"flip":true,"casa":"pereira"},{"m":"casa","x":12,"y":16,"flip":true,"casa":"souza"},{"m":"escola","x":30,"y":16,"flip":true},{"m":"trabalho","x":42,"y":16,"flip":true}],"objetos":[{"t":"P","x":24,"y":19},{"t":"P","x":27,"y":19},{"t":"A","x":24,"y":22},{"t":"A","x":27,"y":22},{"t":"T","x":22,"y":24},{"t":"T","x":29,"y":24},{"t":"T","x":22,"y":17},{"t":"T","x":29,"y":17},{"t":"K","x":25,"y":20}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa","profissao":"Costureira"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]},"decoracao":[{"t":"igreja","x":4,"y":0,"w":7,"h":5},{"t":"torre_agua","x":20,"y":1,"w":3,"h":3},{"t":"predio","x":30,"y":0,"w":7,"h":4,"alt":4,"cor":"#e3c9a8"},{"t":"predio","x":39,"y":0,"w":7,"h":4,"alt":5,"cor":"#c9d6b0"},{"t":"lago","x":32,"y":24,"w":11,"h":4}]},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8,"procura":0.18,"afazeres":{"medico":6,"enfermeiro":6,"tecnico":4,"acs":7},"campo":{"medico":1.2,"enfermeiro":0.9,"tecnico":0,"acs":1.2}},"mapa":{"w":68,"h":30,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":68,"h":2},{"c":"F","x":2,"y":17,"w":24,"h":11},{"c":"F","x":42,"y":17,"w":14,"h":11}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":28,"y":5},{"m":"escola","x":46,"y":6},{"m":"casa","x":59,"y":6,"casa":"souza"},{"m":"casa","x":30,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":58,"y":15,"flip":true,"casa":"costa"}],"objetos":[{"t":"R","x":6,"y":19},{"t":"R","x":10,"y":21},{"t":"R","x":14,"y":19},{"t":"R","x":18,"y":23},{"t":"R","x":22,"y":20},{"t":"R","x":5,"y":25},{"t":"R","x":12,"y":26},{"t":"R","x":20,"y":26},{"t":"R","x":45,"y":20},{"t":"R","x":49,"y":23},{"t":"R","x":53,"y":19},{"t":"R","x":46,"y":25},{"t":"R","x":52,"y":26},{"t":"T","x":12,"y":3},{"t":"T","x":40,"y":3},{"t":"T","x":57,"y":3},{"t":"T","x":1,"y":15},{"t":"T","x":26,"y":16}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa","profissao":"Designer"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa","profissao":"Entregador"}]}]},"decoracao":[{"t":"celeiro","x":30,"y":0,"w":9,"h":4},{"t":"silo","x":41,"y":1,"w":2,"h":2},{"t":"moinho","x":46,"y":0,"w":3,"h":3},{"t":"feno","x":4,"y":1,"w":1,"h":1},{"t":"feno","x":6,"y":2,"w":1,"h":1},{"t":"feno","x":19,"y":1,"w":1,"h":1},{"t":"pasto","x":27,"y":23,"w":15,"h":6,"vacas":4},{"t":"lago","x":58,"y":23,"w":9,"h":6}]}},"papeis":{"acs":{"nome":"Agente comunitário de saúde","icone":"🧑‍🌾","resumo":"Percorre o território, visita famílias, afere pressão em casa, orienta hábitos e convida para a unidade (busca ativa).","desafios":["Distâncias e calor","Famílias com pouco vínculo","Dengue: mutirões contra focos"],"curto":"Agente comunitário"},"tecnico":{"nome":"Técnico(a) de enfermagem","icone":"🧑‍🔬","resumo":"Faz a triagem: aferição de pressão e glicemia, e encaminha cada pessoa para enfermagem, consulta ou orientações.","desafios":["Fila crescendo","Decidir o encaminhamento certo","Tempo curto por pessoa"],"curto":"Técnico(a)"},"enfermeiro":{"nome":"Enfermeiro(a)","icone":"🧑‍⚕️","resumo":"Faz a consulta de enfermagem: rastreia riscos, orienta hábitos e encaminha ao médico quando preciso.","desafios":["Prevenção e vínculo","Escolher o foco da orientação","Equipe enxuta"],"curto":"Enfermeiro(a)"},"medico":{"nome":"Médico(a)","icone":"👨‍⚕️","resumo":"Faz a consulta médica: confirma diagnósticos, inicia tratamento e acompanha o retorno.","desafios":["Poucos dias de atendimento em alguns lugares","Insumos limitados","Doenças silenciosas"],"curto":"Médico(a)"}}}};
+const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2,"feedback":{"_ajuda":"Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.","formAction":"","campos":{}}},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá","icone":"🛋️"},"m":{"nome":"Mesa de jantar","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"},"V":{"nome":"Televisão","icone":"📺"},"K":{"nome":"Fonte","icone":"⛲"},"X":{"nome":"Estante de livros","icone":"📚"},"N":{"nome":"Poltrona","icone":"📖"},"J":{"nome":"Planta","icone":"🪴"},"M":{"nome":"Mesa de reunião","icone":"🗣️"},"Q":{"nome":"Cadeira da sala de reunião","icone":"🪑"},"Z":{"nome":"Arquivo de prontuários","icone":"🗄️"},"W":{"nome":"Copa (café e água)","icone":"☕"}},"modelos":{"casa":{"piso":"casa","linhas":["#########","#B_B_C_G#","#______J#","#X_V____#","#N_m__m_#","#__S____#","####+####"]},"apto":{"piso":"casa","linhas":["#######","#B_C_G#","#N___J#","#X_V_m#","#__S__#","##+####"]},"ubs":{"piso":"ubs","linhas":["###############","#__QMMMQ_ZZ_WW#","#___QQQ_______#","#_____________#","#######+#######","#H_H_H__#_Y__D#","#_______#_____#","#_______+_____#","#_____U_#_____#","#_______#____D#","#H_H_H__#_____#","#######+#######"]},"escola":{"piso":"escola","linhas":["###########","#E_E_E_E_E#","#_________#","#E_E_E_E_E#","#_________#","#_________#","#####+#####"]},"trabalho":{"piso":"trabalho","linhas":["###########","#O_O_O_O_O#","#_________#","#O_O_O_O_O#","#_________#","#_________#","#####+#####"]},"lanche":{"piso":"lanche","linhas":["#########","#L_L_L_L#","#_______#","#_m___m_#","#_______#","####+####"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos","Equipe grande e impessoal: alinhar os profissionais exige esforço"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18,"procura":0.8,"afazeres":{"medico":4,"enfermeiro":5,"tecnico":6,"acs":5},"campo":{"medico":0.2,"enfermeiro":0.3,"tecnico":0,"acs":1},"equipeVinculo":40},"mapa":{"w":58,"h":32,"base":"c","retangulos":[{"c":".","x":0,"y":12,"w":58,"h":3},{"c":".","x":26,"y":0,"w":3,"h":32},{"c":",","x":2,"y":24,"w":22,"h":7},{"c":",","x":30,"y":24,"w":26,"h":7}],"carimbos":[{"m":"ubs","x":2,"y":0},{"m":"apto","x":19,"y":6,"casa":"silva"},{"m":"apto","x":30,"y":6,"casa":"oliveira"},{"m":"apto","x":38,"y":6,"casa":"pereira"},{"m":"trabalho","x":46,"y":5},{"m":"apto","x":2,"y":15,"flip":true,"casa":"costa"},{"m":"apto","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":19,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":30,"y":15,"flip":true},{"m":"lanche","x":43,"y":15,"flip":true}],"objetos":[{"t":"P","x":33,"y":27},{"t":"P","x":36,"y":27},{"t":"A","x":41,"y":27},{"t":"A","x":44,"y":27},{"t":"T","x":31,"y":25},{"t":"T","x":38,"y":29},{"t":"T","x":47,"y":26},{"t":"T","x":53,"y":28},{"t":"T","x":5,"y":26},{"t":"T","x":12,"y":29},{"t":"T","x":20,"y":27},{"t":"P","x":8,"y":27},{"t":"P","x":16,"y":27},{"t":"T","x":22,"y":25},{"t":"K","x":12,"y":27}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho","profissao":"Designer"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"}]},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]},"decoracao":[{"t":"predio","x":17,"y":0,"w":6,"h":3,"alt":7,"cor":"#b9c9a8"},{"t":"predio","x":31,"y":0,"w":7,"h":3,"alt":11,"cor":"#a8b4d6"},{"t":"predio","x":39,"y":0,"w":7,"h":3,"alt":8,"cor":"#d6b0a8"},{"t":"predio","x":47,"y":0,"w":9,"h":3,"alt":14,"cor":"#8fb0b8"}]},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão","Equipe pequena e unida: cuidar do vínculo entre colegas rende muito"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0,"procura":0.4,"afazeres":{"medico":5,"enfermeiro":5,"tecnico":5,"acs":6},"campo":{"medico":0.6,"enfermeiro":0.5,"tecnico":0,"acs":1},"equipeVinculo":55},"mapa":{"w":54,"h":28,"base":",","retangulos":[{"c":".","x":0,"y":14,"w":54,"h":2},{"c":".","x":26,"y":0,"w":2,"h":15},{"c":"c","x":22,"y":17,"w":8,"h":8}],"carimbos":[{"m":"ubs","x":2,"y":2},{"m":"apto","x":19,"y":8,"casa":"santos"},{"m":"casa","x":30,"y":7,"casa":"silva"},{"m":"casa","x":41,"y":7,"casa":"oliveira"},{"m":"casa","x":2,"y":16,"flip":true,"casa":"pereira"},{"m":"casa","x":12,"y":16,"flip":true,"casa":"souza"},{"m":"escola","x":30,"y":16,"flip":true},{"m":"trabalho","x":42,"y":16,"flip":true}],"objetos":[{"t":"P","x":24,"y":19},{"t":"P","x":27,"y":19},{"t":"A","x":24,"y":22},{"t":"A","x":27,"y":22},{"t":"T","x":22,"y":24},{"t":"T","x":29,"y":24},{"t":"T","x":22,"y":17},{"t":"T","x":29,"y":17},{"t":"K","x":25,"y":20}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa","profissao":"Costureira"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}]},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}]}]},"decoracao":[{"t":"torre_agua","x":20,"y":1,"w":3,"h":3},{"t":"predio","x":30,"y":0,"w":7,"h":4,"alt":4,"cor":"#e3c9a8"},{"t":"predio","x":39,"y":0,"w":7,"h":4,"alt":5,"cor":"#c9d6b0"},{"t":"lago","x":32,"y":24,"w":11,"h":4}]},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue","Pouca gente na equipe: ninguém faz nada sozinho"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8,"procura":0.18,"afazeres":{"medico":6,"enfermeiro":6,"tecnico":4,"acs":7},"campo":{"medico":1.2,"enfermeiro":0.9,"tecnico":0,"acs":1.2},"equipeVinculo":60},"mapa":{"w":68,"h":30,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":68,"h":2},{"c":"F","x":2,"y":17,"w":24,"h":11},{"c":"F","x":42,"y":17,"w":14,"h":11}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":28,"y":1},{"m":"escola","x":46,"y":6},{"m":"casa","x":59,"y":6,"casa":"souza"},{"m":"casa","x":30,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":58,"y":15,"flip":true,"casa":"costa"}],"objetos":[{"t":"R","x":6,"y":19},{"t":"R","x":10,"y":21},{"t":"R","x":14,"y":19},{"t":"R","x":18,"y":23},{"t":"R","x":22,"y":20},{"t":"R","x":5,"y":25},{"t":"R","x":12,"y":26},{"t":"R","x":20,"y":26},{"t":"R","x":45,"y":20},{"t":"R","x":49,"y":23},{"t":"R","x":53,"y":19},{"t":"R","x":46,"y":25},{"t":"R","x":52,"y":26},{"t":"T","x":12,"y":3},{"t":"T","x":57,"y":3},{"t":"T","x":1,"y":15},{"t":"T","x":26,"y":16}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}]},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa","profissao":"—"}]},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}]},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa","profissao":"Designer"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa","profissao":"Entregador"}]}]},"decoracao":[{"t":"moinho","x":46,"y":0,"w":3,"h":3},{"t":"feno","x":4,"y":1,"w":1,"h":1},{"t":"feno","x":6,"y":2,"w":1,"h":1},{"t":"feno","x":19,"y":1,"w":1,"h":1},{"t":"pasto","x":27,"y":23,"w":15,"h":6,"vacas":4},{"t":"lago","x":58,"y":23,"w":9,"h":6}]}},"papeis":{"acs":{"nome":"Agente comunitário de saúde","icone":"🧑‍🌾","resumo":"Percorre o território, visita famílias, afere pressão em casa, orienta hábitos e convida para a unidade (busca ativa).","desafios":["Distâncias e calor","Famílias com pouco vínculo","Dengue: mutirões contra focos"],"curto":"Agente comunitário"},"tecnico":{"nome":"Técnico(a) de enfermagem","icone":"🧑‍🔬","resumo":"Faz a triagem: aferição de pressão e glicemia, e encaminha cada pessoa para enfermagem, consulta ou orientações.","desafios":["Fila crescendo","Decidir o encaminhamento certo","Tempo curto por pessoa"],"curto":"Técnico(a)"},"enfermeiro":{"nome":"Enfermeiro(a)","icone":"🧑‍⚕️","resumo":"Faz a consulta de enfermagem: rastreia riscos, orienta hábitos e encaminha ao médico quando preciso.","desafios":["Prevenção e vínculo","Escolher o foco da orientação","Equipe enxuta"],"curto":"Enfermeiro(a)"},"medico":{"nome":"Médico(a)","icone":"👨‍⚕️","resumo":"Faz a consulta médica: confirma diagnósticos, inicia tratamento e acompanha o retorno.","desafios":["Poucos dias de atendimento em alguns lugares","Insumos limitados","Doenças silenciosas"],"curto":"Médico(a)"}}}};
 // Gerador pseudo-aleatório com estado serializável (mulberry32) — permite salvar/carregar e testar de forma determinística.
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const sig = (x) => 1 / (1 + Math.exp(-x));
@@ -366,7 +366,7 @@ function gerarTerritorio(s, cfg) {
 function newGame(cfg, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
   const G = cfg.game;
   const s = {
-    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0, afazeres: 0 },
+    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0, afazeres: 0, reunioes: 0, falhasComunicacao: 0 },
     mes: G.inicio.mes, ano: G.inicio.ano, turno: 0,
     tempo: 0, tempoMax: 0, insumos: G.inicio.insumos, verba: G.inicio.verba,
     infestacao: G.inicio.infestacao, mutiraoTurno: -99,
@@ -944,6 +944,8 @@ function criarMundo(S, cfg) {
   W.ordens = [];
   W.tarefasACS = [];
   W.agenda = {}; // afazeres do dia de cada profissional (não é salvo)
+  W.apoio = {}; // até quando cada profissional trabalha mais rápido após discutir um caso
+  W.reuniao = null; W.ultReuniao = null;
   W.vel = cfg.cenario.mundo.velocidade || 1;
   W.msgs = [];
   W.relatorio = null;
@@ -983,7 +985,7 @@ function posicionarEmCasa(W, S, a) {
 
 /** Troca o personagem controlado sem reiniciar a história (mesmo mundo, mesmo tempo). */
 function trocarPersonagem(W, S, escolha) {
-  for (const a of W.agentes) if (a.jogador) { a.jogador = false; a.fila = []; a.proximos = []; a.path = []; a.pend = null; a.afz = null; if (a.k === 'res' && a.acao && a.acao.k !== 'dormir') a.acao = null; }
+  for (const a of W.agentes) if (a.jogador) { a.jogador = false; a.fila = []; a.proximos = []; a.path = []; a.pend = null; soltaAfazer(W, a); if (a.k === 'res' && a.acao && a.acao.k !== 'dormir') a.acao = null; }
   escolherPersonagem(S, escolha);
   const novo = W.agentes.find((a) => (a.k === 'res' && escolha.modo === 'paciente' && a.pid === escolha.pid) || (a.k === 'staff' && escolha.modo === 'profissional' && a.papel === escolha.papel && a.ind === 0));
   if (novo) { novo.jogador = true; novo.fila = []; novo.ocioso = 0; if (novo.k === 'res') novo.procurou = false; }
@@ -1394,6 +1396,8 @@ function postoDe(W, papel, ind) {
   if (papel === 'tecnico') { const o = (W.porTipo.U || [])[0]; return o ? pontosDeUso(W, o) : []; }
   if (papel === 'medico') { const o = (W.porTipo.D || [])[0]; return o ? pontosDeUso(W, o) : []; }
   if (papel === 'enfermeiro') { const o = (W.porTipo.D || [])[1] || (W.porTipo.D || [])[0]; return o ? pontosDeUso(W, o) : []; }
+  const copa = (W.porTipo.W || []).flatMap((o) => pontosDeUso(W, o));
+  if (copa.length) return [copa[ind % copa.length]]; // ACS espera na copa, fora da passagem dos pacientes
   const p = W.ubs.porta.fora;
   return [{ x: p.x + ind - 1, y: p.y }];
 }
@@ -1429,7 +1433,7 @@ function chamarPaciente(W, S, cfg, a, ord) {
   return true;
 }
 
-const duracaoServico = (S, tipo) => (tipo === 'triagem' ? 10 : tipo === 'enfermagem' ? 25 : duracaoConsulta(S));
+const duracaoServico = (W, S, cfg, a, tipo) => Math.max(5, Math.round((tipo === 'triagem' ? 10 : tipo === 'enfermagem' ? 25 : duracaoConsulta(S)) * fatorEquipe(W, S, cfg, a)));
 
 function aplicarServico(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
@@ -1468,6 +1472,13 @@ function concluirAtendimento(W, S, cfg, a, destino) {
     W.ordens = W.ordens.filter((o) => o !== ord);
   } else {
     ord.tipo = destino;
+    const receptor = destino === 'consulta' ? 'medico' : 'enfermeiro';
+    const vinc = vinculoEquipe(S, cfg, a.papel, receptor);
+    if (a.papel !== receptor && rnd(S.mundo) < 0.28 * (1 - vinc / 100)) {
+      ord.t0 = S.mundo.min + 25; // o encaminhamento se perde: a pessoa volta para o fim da fila
+      S.metricas.falhasComunicacao = (S.metricas.falhasComunicacao || 0) + 1;
+      if (a.jogador) avisar(W, S, `⚠️ Falha de comunicação: faltou alinhamento com ${nomePapel(cfg, receptor).toLowerCase()} e o encaminhamento de ${achaPessoa(S, ord.pid).nome} se perdeu — ela volta para o fim da fila. Cuide do vínculo com a equipe.`, 'alerta');
+    } else mudaEquipe(S, cfg, a.papel, receptor, 0.4);
     if (destino === 'consulta' && !ubsAberta(W, S, cfg, true)) { ord.estado = 'pendente'; ord.rolou = true; ord.espontaneo = true; avisar(W, S, `${achaPessoa(S, ord.pid).nome} precisa de consulta médica, mas o médico não atende hoje: volta no próximo dia de médico.`, 'info', { pessoaId: ord.pid }); }
     else { ord.estado = 'espera'; if (pac) pac.espera = ord; }
   }
@@ -1499,12 +1510,14 @@ function passoEquipe(W, S, cfg, a, dt) {
     a.x = q.x; a.y = q.y; a.path = []; a.tarefa = null;
   }
   if (!deveEstar && !a.tarefa && !a.path.length) {
-    a.vis = false; a.fila = []; a.afz = null;
+    a.vis = false; a.fila = []; soltaAfazer(W, a);
     if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && o.tipo === servicoDe(a.papel)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
     return;
   }
+  if (a.pausaEquipe > 0) a.pausaEquipe -= dt;
   if (a.path.length) { mover(a, dt, W.vel); return; }
   garanteAgenda(W, S, cfg, a);
+  if (a.pausaEquipe > 0 && !a.tarefa && !a.afz && !a.jogador) return; // conversando com um colega
   if (a.afz && !a.tarefa) { passoAfazer(W, S, cfg, a, dt); return; }
   if (a.papel === 'acs') return passoACS(W, S, cfg, a, dt);
 
@@ -1517,7 +1530,7 @@ function passoEquipe(W, S, cfg, a, dt) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
       if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && o.tipo === servico); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
-      if (cmd.k === 'afazer') { const it = itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
+      if (cmd.k === 'afazer') { const it = cmd.item || itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
     }
     if (a.jogador) return; // o jogador decide quem chamar e o que fazer
     const prox = filaEspera(W, servico).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
@@ -1538,7 +1551,7 @@ function passoEquipe(W, S, cfg, a, dt) {
     if (!naPos && posto.length) { if (!a.path.length) irPara(W, a, [posto[0]]); return; }
     if (!pac.atend.pronto) return;
     t.fase = 'pronto';
-    if (!a.jogador) { t.fase = 'atendendo'; t.restante = duracaoServico(S, t.tipo); }
+    if (!a.jogador) { t.fase = 'atendendo'; t.restante = duracaoServico(W, S, cfg, a, t.tipo); }
     return;
   }
   if (t.fase === 'atendendo') {
@@ -1551,51 +1564,94 @@ function passoEquipe(W, S, cfg, a, dt) {
   // fases 'pronto' e 'resultado' do jogador esperam a decisão pela interface
 }
 
+/* ---------- Vínculo entre profissionais ("ninguém faz nada sozinho") ---------- */
+const chaveEq = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+const PARES_EQUIPE = [];
+for (let i = 0; i < PAPEIS.length; i++) for (let j = i + 1; j < PAPEIS.length; j++) PARES_EQUIPE.push(chaveEq(PAPEIS[i], PAPEIS[j]));
+
+function estadoEquipe(S, cfg) {
+  const M = S.mundo;
+  if (!M.equipe) {
+    const ini = cfg.cenario.mundo.equipeVinculo === undefined ? 50 : cfg.cenario.mundo.equipeVinculo;
+    M.equipe = {};
+    for (const k of PARES_EQUIPE) M.equipe[k] = ini;
+  }
+  return M.equipe;
+}
+function vinculoEquipe(S, cfg, a, b) { return a === b ? 100 : estadoEquipe(S, cfg)[chaveEq(a, b)]; }
+function mudaEquipe(S, cfg, a, b, delta) {
+  if (a === b) return;
+  const e = estadoEquipe(S, cfg), k = chaveEq(a, b);
+  e[k] = clamp(e[k] + delta, 5, 100);
+}
+/** Média do vínculo de um papel com os demais (0–100). */
+function coesaoDe(S, cfg, papel) {
+  const outros = PAPEIS.filter((p) => p !== papel);
+  return outros.reduce((t, p) => t + vinculoEquipe(S, cfg, papel, p), 0) / outros.length;
+}
+function vinculosEquipe(S, cfg) {
+  return PARES_EQUIPE.map((k) => { const [a, b] = k.split('|'); return { a, b, v: Math.round(estadoEquipe(S, cfg)[k]) }; });
+}
+/** Equipe afinada trabalha mais rápido; equipe desencontrada, mais devagar. */
+function fatorEquipe(W, S, cfg, a) {
+  let f = 1.3 - 0.5 * coesaoDe(S, cfg, a.papel) / 100;
+  if ((W.apoio[a.id] || 0) > S.mundo.min) f *= 0.85;
+  return f;
+}
+const nomePapel = (cfg, papel) => cfg.papeis[papel].nome;
+
 /* ---------- Afazeres do dia (trabalho de bastidor e de campo) ---------- */
-// local: D consultório · Y farmácia · U triagem · H sala de espera · ubs (recepção) · campo (casa de uma família)
+// local: D consultório · Y farmácia · U triagem · H sala de espera · Z arquivo · W copa · seat (sala de reunião) · ubs (recepção) · campo (casa) · colega
 const AFAZERES = {
   medico: [
-    { id: 'prontuarios', rot: 'Revisar prontuários e exames', ic: '🗂️', local: 'D', dur: 30 },
+    { id: 'prontuarios', rot: 'Revisar prontuários e exames', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'receitas', rot: 'Renovar receitas de quem está em tratamento', ic: '📝', local: 'D', dur: 25 },
-    { id: 'caso', rot: 'Discutir casos com a equipe', ic: '🗣️', local: 'H', dur: 25 },
+    { id: 'caso', rot: 'Discutir casos com a enfermagem', ic: '🗣️', local: 'seat', dur: 25, equipe: ['medico', 'enfermeiro'] },
     { id: 'visita_med', rot: 'Visita domiciliar (consulta em casa)', ic: '🏠', local: 'campo', dur: 45, campo: true },
   ],
   enfermeiro: [
     { id: 'educacao', rot: 'Roda de conversa na sala de espera', ic: '🗣️', local: 'H', dur: 30 },
     { id: 'estoque', rot: 'Conferir estoque e farmácia', ic: '📦', local: 'Y', dur: 25 },
-    { id: 'supervisao', rot: 'Supervisionar a equipe e os registros', ic: '📋', local: 'U', dur: 25 },
-    { id: 'cadastro', rot: 'Atualizar cadastros do território', ic: '🗂️', local: 'D', dur: 30 },
+    { id: 'supervisao', rot: 'Supervisionar o técnico e os registros', ic: '📋', local: 'U', dur: 25 },
+    { id: 'cadastro', rot: 'Atualizar cadastros do território', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'visita_enf', rot: 'Visita domiciliar (acompanhar tratamento)', ic: '🏠', local: 'campo', dur: 40, campo: true },
   ],
   tecnico: [
     { id: 'sala_espera', rot: 'Aferir a pressão de quem aguarda', ic: '📏', local: 'H', dur: 20 },
     { id: 'estoque', rot: 'Organizar farmácia e insumos', ic: '📦', local: 'Y', dur: 25 },
     { id: 'esterilizar', rot: 'Esterilizar e organizar a sala', ic: '🧼', local: 'D', dur: 25 },
-    { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'U', dur: 25 },
+    { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'Z', dur: 25 },
     { id: 'curativos', rot: 'Curativos e procedimentos simples', ic: '🩹', local: 'D', dur: 25 },
   ],
   acs: [
     { id: 'cadastro_acs', rot: 'Atualizar o cadastro de uma família', ic: '📇', local: 'campo', dur: 40, campo: true },
     { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true },
+    { id: 'repasse', rot: 'Repassar os casos do território para a equipe', ic: '📞', local: 'U', dur: 20 },
   ],
 };
-const REUNIAO = { id: 'reuniao', rot: 'Reunião de equipe', ic: '👥', local: 'ubs', dur: 25 };
+const CAFE = { id: 'cafe', rot: 'Pausa para o café e conversa com a equipe', ic: '☕', local: 'W', dur: 15 };
+const REUNIAO = { id: 'reuniao', rot: 'Reunião de equipe', ic: '👥', local: 'seat', dur: 25, equipe: true };
+const CONVERSA_COLEGA = { id: 'colega_conversar', rot: 'Conversar com colega', ic: '💬', local: 'colega', dur: 12, ganho: 3 };
+const CASO_COLEGA = { id: 'colega_caso', rot: 'Discutir um caso com colega', ic: '🗂️', local: 'colega', dur: 20, ganho: 4, apoio: true };
+const DIAS_REUNIAO = [0, 3]; // reunião de equipe fixa: segunda e quinta
 
 const riscoFamilia = (f) => f.pessoas.reduce((n, p) => n + (p.conhecido.suspeitas.length ? 2 : 0) + (CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat) ? 2 : 0) + (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat) ? 1 : 0) + (p.dengue.ativa ? 3 : 0), 0);
 
 function gerarAgenda(W, S, cfg, a) {
-  const M = S.mundo, mundo = cfg.cenario.mundo;
-  const semConsultorio = a.papel === 'medico' && !mundo.medicoDias.includes(diaSemana(S));
+  const M = S.mundo, mundo = cfg.cenario.mundo, dow = diaSemana(S);
+  const semConsultorio = a.papel === 'medico' && !mundo.medicoDias.includes(dow);
   let n = (mundo.afazeres && mundo.afazeres[a.papel]) || 4;
   if (semConsultorio) n = Math.max(n, 6);
   const campoBase = (mundo.campo || {})[a.papel];
   const campoW = (campoBase === undefined ? 0.3 : campoBase) * (semConsultorio ? 2.5 : 1);
-  const pool = [...AFAZERES[a.papel], REUNIAO];
+  const pool = [...AFAZERES[a.papel], CAFE];
   const lista = [];
+  const poe = (def) => lista.push({ uid: String(lista.length), def, feito: false, falhas: 0 });
+  if (DIAS_REUNIAO.includes(dow)) poe(REUNIAO);
   for (let guard = 0; lista.length < n && guard < 80; guard++) {
     const def = escolhe(M, pool.map((d) => [d, d.campo ? campoW : 1]));
     if (!def.campo && lista.some((x) => x.def.id === def.id)) continue;
-    lista.push({ uid: String(lista.length), def, feito: false, falhas: 0 });
+    poe(def);
   }
   W.agenda[a.id] = { dia: diaDoJogo(S), lista, visitadas: [] };
 }
@@ -1605,6 +1661,7 @@ function garanteAgenda(W, S, cfg, a) {
   return W.agenda[a.id];
 }
 const itemDaAgenda = (W, a, uid) => (W.agenda[a.id] ? W.agenda[a.id].lista.find((i) => i.uid === uid) : null);
+const itemPorDef = (W, b, def) => { const ag = W.agenda[b.id]; return ag ? ag.lista.find((i) => i.def.id === def.id && !i.feito) || null : null; };
 
 /** Lista para a interface: o que o profissional controlado tem para fazer hoje. */
 function afazeresDoDia(W, S, cfg) {
@@ -1612,7 +1669,7 @@ function afazeresDoDia(W, S, cfg) {
   if (!a || a.k !== 'staff' || !a.vis) return { lista: [], feitos: 0, total: 0, aberto: false };
   const ag = garanteAgenda(W, S, cfg, a);
   const emCurso = a.afz ? a.afz.item : null;
-  const lista = ag.lista.map((i) => ({ uid: i.uid, rot: i.def.rot, ic: i.def.ic, campo: !!i.def.campo, feito: i.feito, andamento: i === emCurso }));
+  const lista = ag.lista.map((i) => ({ uid: i.uid, rot: i.def.rot, ic: i.def.ic, campo: !!i.def.campo, equipe: !!i.def.equipe, feito: i.feito, andamento: i === emCurso }));
   return { lista, feitos: lista.filter((i) => i.feito).length, total: lista.length, aberto: true };
 }
 
@@ -1625,30 +1682,154 @@ function escolheFamiliaCampo(W, S, a, ag) {
   return topo[Math.floor(rnd(M) * topo.length)];
 }
 
+/** Larga o que está fazendo (e sai da reunião, se estiver nela). */
+function soltaAfazer(W, a) {
+  if (a.afz && a.afz.reuniao) sairDaReuniao(W, a);
+  a.afz = null;
+}
+
+/* --- Reuniões de equipe: convocação, presença e quem não pôde comparecer --- */
+function motivoIndisponivel(W, S, cfg, b, org) {
+  if (!b.vis) return 'fora do expediente';
+  if (b.tarefa) return b.papel === 'acs' ? 'em campo (visita ou mutirão)' : 'em atendimento';
+  if (b.afz && b.afz.reuniao) return null;
+  if (b.afz && b.afz.def.campo) return 'em visita no território';
+  if (b.jogador && !org.jogador) return 'é você: participe pelos Afazeres do dia';
+  if (rnd(S.mundo) < 0.2 * (1 - vinculoEquipe(S, cfg, org.papel, b.papel) / 100)) return 'agenda cheia (pouco alinhamento com a equipe)';
+  return null;
+}
+
+function entrarNaReuniao(W, S, cfg, b, item, r) {
+  if (b.afz && !b.afz.reuniao) b.afz = null;
+  const usadas = Object.values(r.seat);
+  const seat = (W.porTipo.Q || []).find((c) => !usadas.includes(c)) || null;
+  r.seat[b.id] = seat;
+  const pontos = seat ? pontosDeUso(W, seat) : pontosDeUso(W, W.porTipo.M[0]);
+  b.afz = { item: item || { uid: 'x', def: r.def, feito: false, falhas: 0 }, def: r.def, fase: 'indo', restante: r.def.dur, fam: null, reuniao: true, seat };
+  b.path = caminhoAte(W, b.x, b.y, pontos) || [];
+  r.part[b.id] = 'indo';
+}
+
+function convocarReuniao(W, S, cfg, a, item) {
+  const def = item.def;
+  const alvo = def.equipe === true ? PAPEIS : def.equipe;
+  if (!(W.porTipo.Q || []).length || !(W.porTipo.M || []).length) { item.feito = true; return false; }
+  let r = W.reuniao;
+  if (r) {
+    if (r.papeis.includes(a.papel) && !r.part[a.id]) {
+      entrarNaReuniao(W, S, cfg, a, item, r);
+      if (a.jogador) avisar(W, S, `👥 Você foi para a ${r.def.rot.toLowerCase()} que já está acontecendo.`, 'info');
+      return true;
+    }
+    if (a.jogador) avisar(W, S, 'Já há uma reunião acontecendo na sala da equipe. Aguarde terminar.', 'alerta');
+    return false;
+  }
+  r = { org: a.id, def, papeis: alvo, part: {}, seat: {}, restante: def.dur, espera: 0, faltas: [] };
+  const vao = [];
+  for (const b of W.agentes) {
+    if (b.k !== 'staff' || b === a || !alvo.includes(b.papel)) continue;
+    const motivo = motivoIndisponivel(W, S, cfg, b, a);
+    if (motivo) { r.faltas.push({ papel: b.papel, motivo, jogador: b.jogador }); continue; }
+    vao.push(b);
+  }
+  if (!vao.length) {
+    if (a.jogador) avisar(W, S, `👥 Ninguém pôde participar agora: ${r.faltas.map((f) => `${nomePapel(cfg, f.papel)} (${f.motivo})`).join('; ') || 'não há outros profissionais convocados'}. Tente mais tarde.`, 'alerta');
+    return false;
+  }
+  W.reuniao = r;
+  entrarNaReuniao(W, S, cfg, a, item, r);
+  for (const b of vao) entrarNaReuniao(W, S, cfg, b, itemPorDef(W, b, def), r);
+  const lista = (xs) => [...new Set(xs)].join(', ');
+  const faltas = r.faltas.filter((f) => !f.jogador);
+  if (a.jogador) {
+    avisar(W, S, `👥 ${def.rot} convocada. A caminho: ${lista(vao.map((b) => nomePapel(cfg, b.papel)))}.${faltas.length ? ` Não puderam: ${faltas.map((f) => `${nomePapel(cfg, f.papel)} (${f.motivo})`).join('; ')}.` : ''}`, faltas.length ? 'alerta' : 'info');
+  } else {
+    const eu = r.faltas.find((f) => f.jogador);
+    if (eu) avisar(W, S, `👥 ${nomePapel(cfg, a.papel)} convocou a ${def.rot.toLowerCase()}. Vá em Afazeres do dia para participar.`, 'alerta');
+  }
+  return true;
+}
+
+function sairDaReuniao(W, a) {
+  const r = W.reuniao;
+  if (!r || !r.part[a.id]) return;
+  if (a.id === r.org) {
+    for (const b of W.agentes) if (b !== a && r.part[b.id] && b.afz && b.afz.reuniao) b.afz = null;
+    W.reuniao = null;
+  } else {
+    delete r.part[a.id]; delete r.seat[a.id];
+    if (Object.keys(r.part).length < 2) { for (const b of W.agentes) if (r.part[b.id] && b.afz && b.afz.reuniao) b.afz = null; W.reuniao = null; }
+  }
+}
+
+function passoReuniao(W, S, cfg, a, dt) {
+  const z = a.afz, r = W.reuniao;
+  if (!r || !r.part[a.id]) { a.afz = null; return; }
+  if (z.fase === 'indo') { z.fase = 'presente'; r.part[a.id] = 'presente'; return; }
+  if (a.id !== r.org) return;
+  const presentes = Object.values(r.part).filter((v) => v === 'presente').length;
+  if (presentes >= Object.keys(r.part).length) r.restante -= dt;
+  else { r.espera += dt; if (r.espera >= 20 && presentes >= 2) r.restante -= dt; }
+  if (r.restante <= 0) encerrarReuniao(W, S, cfg);
+}
+
+function encerrarReuniao(W, S, cfg) {
+  const r = W.reuniao;
+  if (!r) return;
+  const presentes = W.agentes.filter((b) => r.part[b.id] === 'presente');
+  const papeis = [...new Set(presentes.map((b) => b.papel))];
+  const dia = diaDoJogo(S);
+  const repetida = W.ultReuniao && W.ultReuniao.dia === dia;
+  const ganho = (r.def.id === 'caso' ? 6 : 4) * (repetida ? 0.25 : 1);
+  for (let i = 0; i < papeis.length; i++) for (let j = i + 1; j < papeis.length; j++) mudaEquipe(S, cfg, papeis[i], papeis[j], ganho);
+  W.ultReuniao = { dia };
+  const jogou = presentes.some((b) => b.jogador);
+  for (const b of W.agentes) if (r.part[b.id] && b.afz && b.afz.reuniao) { if (r.part[b.id] === 'presente') { b.afz.item.feito = true; S.metricas.afazeres = (S.metricas.afazeres || 0) + 1; } b.afz = null; }
+  S.metricas.reunioes = (S.metricas.reunioes || 0) + 1;
+  if (jogou) {
+    const faltas = r.faltas.filter((f) => !f.jogador);
+    avisar(W, S, `👥 ${r.def.rot} concluída com ${papeis.map((p) => nomePapel(cfg, p)).join(', ')}: vínculo da equipe +${ganho % 1 ? ganho.toFixed(1) : ganho}${repetida ? ' (já houve reunião hoje: ganho menor)' : ''}.${faltas.length ? ` Não participaram: ${faltas.map((f) => `${nomePapel(cfg, f.papel)} (${f.motivo})`).join('; ')}.` : ''}`, 'bom');
+  }
+  W.reuniao = null;
+  W.sinal++;
+}
+
+/* --- Execução dos afazeres --- */
 function iniciarAfazer(W, S, cfg, a, item) {
-  const def = item.def, ag = W.agenda[a.id];
-  let pontos, fam = null;
+  const def = item.def, ag = garanteAgenda(W, S, cfg, a);
+  if (def.equipe) return convocarReuniao(W, S, cfg, a, item);
+  let pontos, fam = null, alvo = null;
   if (def.local === 'campo') {
     const f = escolheFamiliaCampo(W, S, a, ag);
     if (!f || !W.casas[f.id]) { item.feito = true; return false; }
     fam = f.id; pontos = [W.casas[f.id].porta.dentro];
+  } else if (def.local === 'colega') {
+    const b = W.agentes.find((x) => x.id === item.alvo);
+    if (!b || !b.vis || b.tarefa || (b.afz && (b.afz.reuniao || b.afz.def.campo))) {
+      if (a.jogador) avisar(W, S, `${b ? nomePapel(cfg, b.papel) : 'O colega'} não está disponível agora (${!b || !b.vis ? 'fora do expediente' : b.tarefa ? 'em atendimento' : 'em outra atividade'}).`, 'alerta');
+      return false;
+    }
+    alvo = b.id; pontos = vizinhosDe(W, b.x, b.y);
+    if (!pontos.length) return false;
   } else if (def.local === 'ubs' || !(W.porTipo[def.local] || []).length) {
     pontos = [W.ubs.porta.dentro];
   } else {
-    pontos = pontosDeUso(W, W.porTipo[def.local][0]);
+    const objs = W.porTipo[def.local];
+    pontos = objs.flatMap((o) => pontosDeUso(W, o));
     if (!pontos.length) pontos = [W.ubs.porta.dentro];
   }
   const rota = caminhoAte(W, a.x, a.y, pontos);
   if (!rota) { item.falhas++; if (item.falhas >= 2) item.feito = true; return false; }
   a.path = rota;
-  a.afz = { item, def, fase: 'indo', restante: def.dur, fam };
+  a.afz = { item, def, fase: 'indo', restante: def.dur, fam, alvo, tent: 0 };
   return true;
 }
 
 function iniciarProximoAfazer(W, S, cfg, a) {
-  if (a.afz || a.tarefa) return false;
-  const [, fim] = cfg.cenario.mundo.expediente;
-  if (minutoDoDia(S) >= fim * 60 - 40) return false;
+  if (a.afz || a.tarefa || a.pausaEquipe > 0) return false;
+  const [ini, fim] = cfg.cenario.mundo.expediente;
+  const m = minutoDoDia(S);
+  if (m >= fim * 60 - 40 || m < ini * 60 + 15) return false; // dá tempo de todos chegarem antes de começar
   if (a.papel === 'acs' && W.tarefasACS.length) return false;
   const ag = garanteAgenda(W, S, cfg, a);
   const item = ag.lista.find((i) => !i.feito);
@@ -1657,23 +1838,74 @@ function iniciarProximoAfazer(W, S, cfg, a) {
 
 function passoAfazer(W, S, cfg, a, dt) {
   const z = a.afz;
-  if (z.fase === 'indo') { z.fase = 'fazendo'; z.restante = z.def.dur; return; }
+  if (z.reuniao) return passoReuniao(W, S, cfg, a, dt);
+  if (z.fase === 'indo') {
+    if (z.def.local === 'colega') {
+      const b = W.agentes.find((x) => x.id === z.alvo);
+      if (!b || !b.vis) { if (a.jogador) avisar(W, S, 'O colega saiu da unidade antes da conversa.', 'alerta'); a.afz = null; return; }
+      if (b.tarefa) { // colega ocupado: espera um pouco por perto
+        z.espera = (z.espera || 0) + dt;
+        if (z.espera > 20) { if (a.jogador) avisar(W, S, `${nomePapel(cfg, b.papel)} continua ocupado(a): a conversa fica para depois.`, 'alerta'); a.afz = null; }
+        return;
+      }
+      if (Math.hypot(b.x - a.x, b.y - a.y) > 2.3) {
+        if (++z.tent > 4) { a.afz = null; return; }
+        const rota = caminhoAte(W, a.x, a.y, vizinhosDe(W, b.x, b.y));
+        if (rota && rota.length) { a.path = rota; return; }
+      }
+      b.pausaEquipe = z.def.dur + 6;
+    }
+    z.fase = 'fazendo'; z.restante = z.def.dur;
+    return;
+  }
   z.restante -= dt;
   if (z.restante > 0) return;
   const msg = efeitoAfazer(W, S, cfg, a, z);
   z.item.feito = true;
   S.metricas.afazeres = (S.metricas.afazeres || 0) + 1;
-  if (z.fam) W.agenda[a.id].visitadas.push(z.fam);
+  if (z.fam && W.agenda[a.id]) W.agenda[a.id].visitadas.push(z.fam);
   if (a.jogador) avisar(W, S, `${z.def.ic} ${msg}`, 'bom');
   a.afz = null;
   W.sinal++;
 }
 
 function adultosDaFamilia(f) { return f.pessoas.filter((p) => p.idade >= 18 && !p.internado); }
+const colegaLivre = (W, papel) => W.agentes.find((b) => b.k === 'staff' && b.papel === papel && b.vis && !b.tarefa);
 
 function efeitoAfazer(W, S, cfg, a, z) {
   const id = z.def.id;
   const espera = W.agentes.filter((x) => x.k === 'res' && x.espera && !x.atend).map((x) => achaPessoa(S, x.pid));
+  if (id === 'colega_conversar' || id === 'colega_caso') {
+    const b = W.agentes.find((x) => x.id === z.alvo);
+    if (!b) return 'O colega saiu.';
+    if (b.papel === a.papel) return `Conversa com ${nomePapel(cfg, b.papel)} (mesma função: boa troca, sem efeito no vínculo).`;
+    mudaEquipe(S, cfg, a.papel, b.papel, z.def.ganho);
+    if (z.def.apoio) { W.apoio[a.id] = S.mundo.min + 90; W.apoio[b.id] = S.mundo.min + 90; }
+    return `${id === 'colega_caso' ? 'Caso discutido' : 'Conversa'} com ${nomePapel(cfg, b.papel)}: vínculo +${z.def.ganho} (agora ${Math.round(vinculoEquipe(S, cfg, a.papel, b.papel))}%).${z.def.apoio ? ' Os dois trabalham mais rápido por 90 min.' : ''}`;
+  }
+  if (id === 'cafe') {
+    let n = 0;
+    for (const b of W.agentes) {
+      if (b === a || b.k !== 'staff' || !b.vis || b.papel === a.papel) continue;
+      const perto = (b.afz && b.afz.def.id === 'cafe') || Math.hypot(b.x - a.x, b.y - a.y) <= 4;
+      if (perto) { mudaEquipe(S, cfg, a.papel, b.papel, 1.5); n++; }
+    }
+    if (!n) { const out = PAPEIS.filter((p) => p !== a.papel); mudaEquipe(S, cfg, a.papel, out[Math.floor(rnd(S.mundo) * out.length)], 0.5); }
+    return n ? `Pausa na copa: conversa leve com ${n} colega(s) (vínculo +1.5).` : 'Pausa na copa sozinho(a): quase ninguém por perto (vínculo +0.5).';
+  }
+  if (id === 'supervisao') {
+    const t = colegaLivre(W, 'tecnico');
+    if (!t) return 'Registros conferidos, mas o técnico não estava na unidade para o alinhamento.';
+    mudaEquipe(S, cfg, 'enfermeiro', 'tecnico', 2.5);
+    return 'Supervisão feita junto com o técnico: vínculo +2.5.';
+  }
+  if (id === 'repasse') {
+    const e = colegaLivre(W, 'enfermeiro'), t = colegaLivre(W, 'tecnico');
+    if (e) mudaEquipe(S, cfg, 'acs', 'enfermeiro', 3);
+    if (t) mudaEquipe(S, cfg, 'acs', 'tecnico', 1.5);
+    if (S.metricas) S.metricas.repasses = (S.metricas.repasses || 0) + 1;
+    return e || t ? `Casos do território repassados para ${[e && 'o enfermeiro', t && 'o técnico'].filter(Boolean).join(' e ')}: vínculo da equipe aumentou.` : 'Repasse anotado, mas ninguém da equipe estava livre para ouvir (pouco vínculo).';
+  }
   if (id === 'estoque') {
     const antes = S.insumos;
     S.insumos = Math.min(cfg.game.economia.insumosCap, S.insumos + 2);
@@ -1733,7 +1965,7 @@ function passoACS(W, S, cfg, a, dt) {
     if (a.jogador && a.fila.length) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
-      if (cmd.k === 'afazer') { const it = itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
+      if (cmd.k === 'afazer') { const it = cmd.item || itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
       const t = { ...cmd, fase: 'indo', rep: 0 };
       a.tarefa = t;
       if (t.tipo === 'mutirao') { t.pontos = []; for (let i = 0; i < 3; i++) t.pontos.push(pontoAleatorio(W, S.mundo, { x: a.x, y: a.y }) || W.ubs.porta.fora); t.i = 0; irPara(W, a, [t.pontos[0]]); }
@@ -1949,7 +2181,15 @@ function opcoesPara(W, S, cfg, alvo) {
   // profissional
   if (alvo.tipo === 'agente') {
     const o = W.agentes.find((x) => x.id === alvo.id);
-    if (o && o.k === 'staff' && o.id !== ag.id) { op('colega', 'Ver o que está fazendo', '👀'); return ops; }
+    if (o && o.k === 'staff' && o.id !== ag.id) {
+      const nome = nomePapel(cfg, o.papel).toLowerCase();
+      const indisp = !o.vis ? 'Fora do expediente' : o.tarefa ? (o.papel === 'acs' ? 'Em campo agora' : 'Em atendimento agora') : ag.tarefa ? 'Termine seu atendimento' : null;
+      op('colega', 'Ver o que está fazendo', '👀');
+      op('colega_conversar', `Conversar com ${nome} (vínculo)`, '💬', indisp);
+      op('colega_caso', `Discutir um caso com ${nome}`, '🗂️', indisp);
+      op('equipe_reuniao', 'Convocar reunião de equipe', '👥', ag.tarefa ? 'Termine seu atendimento' : null);
+      return ops;
+    }
     if (!o || o.k !== 'res') return ops;
     const p = achaPessoa(S, o.pid);
     if (j.papel === 'acs') {
@@ -2056,6 +2296,22 @@ function comandar(W, S, cfg, opId, alvo) {
   }
   // profissional
   if (id === 'mutirao') { if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' }; ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' }; }
+  if (id === 'equipe_reuniao') {
+    if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
+    if (!ag.vis) return { ok: false, msg: 'Fora do expediente.' };
+    const it = (W.agenda[ag.id] && W.agenda[ag.id].lista.find((i) => i.def.id === 'reuniao' && !i.feito)) || { uid: 'r', def: REUNIAO, feito: false, falhas: 0 };
+    ag.fila.push({ k: 'afazer', item: it });
+    return { ok: true, msg: '👥 Convocando a reunião de equipe…' };
+  }
+  if (id === 'colega_conversar' || id === 'colega_caso') {
+    const b = alvo && alvo.id ? W.agentes.find((x) => x.id === alvo.id) : null;
+    if (!b || b.k !== 'staff' || b === ag) return { ok: false, msg: 'Colega não encontrado.' };
+    if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
+    if (!b.vis) return { ok: false, msg: `${nomePapel(cfg, b.papel)} está fora do expediente.` };
+    if (b.tarefa) return { ok: false, msg: `${nomePapel(cfg, b.papel)} está ${b.papel === 'acs' ? 'em campo' : 'em atendimento'} agora. Tente depois.` };
+    ag.fila.push({ k: 'afazer', item: { uid: `c${S.mundo.min | 0}`, def: id === 'colega_caso' ? CASO_COLEGA : CONVERSA_COLEGA, feito: false, falhas: 0, alvo: b.id } });
+    return { ok: true, msg: `Indo falar com ${nomePapel(cfg, b.papel).toLowerCase()}…` };
+  }
   if (id === 'afazer') {
     const it = itemDaAgenda(W, ag, arg);
     if (!it) return { ok: false, msg: 'Afazer não encontrado.' };
@@ -2064,11 +2320,11 @@ function comandar(W, S, cfg, opId, alvo) {
     ag.fila.push({ k: 'afazer', uid: arg });
     return { ok: true, msg: `${it.def.ic} ${it.def.rot}: na sua fila.` };
   }
-  if (id === 'chamar') { if (ag.afz) { ag.afz = null; ag.path = []; } ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
+  if (id === 'chamar') { if (ag.afz) { soltaAfazer(W, ag); ag.path = []; } ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
   if (id === 'chamar_proximo') {
     const prox = filaEspera(W, servicoDe(j.papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
     if (!prox) return { ok: false, msg: j.papel === 'medico' && !cfg.cenario.mundo.medicoDias.includes(diaSemana(S)) ? 'Hoje não é dia de consultório neste cenário: faça os afazeres do dia (visitas, receitas, reuniões).' : 'Ninguém na sua fila agora. Que tal um afazer do dia?' };
-    if (ag.afz) { ag.afz = null; ag.path = []; }
+    if (ag.afz) { soltaAfazer(W, ag); ag.path = []; }
     ag.fila.push({ k: 'chamar', pid: prox.pid });
     return { ok: true, msg: 'Chamando o próximo da fila…' };
   }
@@ -2087,7 +2343,7 @@ function cancelarFila(W, S) {
   const ag = agenteJogador(W);
   if (!ag) return;
   ag.fila = []; ag.proximos = [];
-  if (ag.k === 'staff' && ag.afz) { ag.afz = null; ag.path = []; }
+  if (ag.k === 'staff' && ag.afz) { soltaAfazer(W, ag); ag.path = []; }
   if (ag.k === 'res' && ag.acao && ag.acao.k !== 'dormir') ag.acao = null;
   if (ag.k === 'res') { ag.path = []; ag.pend = null; }
 }
@@ -2099,7 +2355,7 @@ function iniciarAtendimento(W, S, cfg, opts = {}) {
   if (!a || !a.tarefa || a.tarefa.fase !== 'pronto') return { ok: false, msg: 'Nenhum paciente pronto.' };
   a.tarefa.opts = opts;
   a.tarefa.fase = 'atendendo';
-  a.tarefa.restante = duracaoServico(S, a.tarefa.tipo);
+  a.tarefa.restante = duracaoServico(W, S, cfg, a, a.tarefa.tipo);
   return { ok: true, msg: 'Atendimento iniciado.' };
 }
 function finalizarAtendimento(W, S, cfg, destino) {
@@ -2147,6 +2403,7 @@ function passoCurto(W, S, cfg, dt) {
   }
   if (Math.floor(M.min / MIN_DIA) > diaAntes) {
     fimDoDia(W, S, cfg);
+    if (diaSemana(S) < 5) { const e = estadoEquipe(S, cfg); for (const k of PARES_EQUIPE) e[k] = clamp(e[k] - 1, 5, 100); } // sem convivência, o vínculo esfria
     for (const a of W.agentes) if (a.k === 'res') a.procurou = false;
     if (diaDoJogo(S) % DIAS_MES === 0) {
       // adesão do paciente controlado = dias em que tomou o remédio
@@ -2199,6 +2456,7 @@ function pularMes(W, S, cfg) {
 function acaoAtual(W, S, a) {
   if (a.k === 'staff') {
     if (!a.vis) return 'Fora do expediente';
+    if (a.afz && a.afz.reuniao && !a.tarefa) return a.afz.fase === 'indo' ? '🚶 Indo para a reunião de equipe' : '👥 Em reunião de equipe';
     if (a.afz && !a.tarefa) return a.afz.fase === 'indo' ? `🚶 Indo: ${a.afz.def.rot}` : `${a.afz.def.ic} ${a.afz.def.rot}`;
     if (a.tarefa) {
       const t = a.tarefa;
@@ -2239,7 +2497,7 @@ function resumoEquipe(W) {
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-const VERSAO_JOGO = 'v0.7';
+const VERSAO_JOGO = 'v0.8';
 
 const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },
@@ -2273,7 +2531,7 @@ function contextoTecnico(info) {
 }
 
 function textoRelatorio(resp, ctx) {
-  const linhas = ['Feedback — Saúde Sim ' + ctx.versao, ''];
+  const linhas = ['Feedback — Saudedavida - SV ' + ctx.versao, ''];
   for (const p of PERGUNTAS) {
     const v = resp[p.id];
     if (v === undefined || v === '' || v === null) continue;
@@ -2310,7 +2568,7 @@ async function enviarFeedback(resp, ctx, conf, ambiente = globalThis) {
   }
   try {
     if (ambiente.navigator && ambiente.navigator.share) {
-      await ambiente.navigator.share({ title: 'Feedback — Saúde Sim', text: texto });
+      await ambiente.navigator.share({ title: 'Feedback — Saudedavida - SV', text: texto });
       return { ok: true, via: 'compartilhar' };
     }
   } catch (e) { if (e && e.name === 'AbortError') return { ok: false, via: 'cancelado' }; }
@@ -2797,6 +3055,35 @@ function criarRenderer(canvas, getEstado, hooks) {
           M.caixa(cx + 0.45, y0, cz + 0.3, 0.06, 1.3, 0.06, '#9aa3ad'); M.caixa(cx + 0.45, y0 + 1.3, cz + 0.3, 0.2, 0.1, 0.2, '#e5e7eb');
           break;
         }
+        case 'M': { // mesa da sala de reunião (cada tile é um pedaço da mesa)
+          for (const [dx, dz] of [[-0.42, -0.4], [0.42, -0.4], [-0.42, 0.4], [0.42, 0.4]]) M.caixa(cx + dx, y0, cz + dz, 0.07, 0.74, 0.07, '#6b4a2f');
+          M.caixa(cx, y0 + 0.74, cz, 1.0, 0.07, 0.96, '#a9744a');
+          if (hh % 2 === 0) { M.caixa(cx - 0.12, y0 + 0.81, cz + 0.05, 0.3, 0.015, 0.22, '#f8fafc'); M.cilindro(cx + 0.28, y0 + 0.81, cz - 0.2, 0.05, 0.1, '#ffffff', 8); }
+          else { M.caixa(cx + 0.1, y0 + 0.81, cz, 0.34, 0.02, 0.24, '#e5e7eb'); M.caixa(cx - 0.25, y0 + 0.81, cz - 0.15, 0.2, 0.015, 0.14, '#fde68a'); }
+          break;
+        }
+        case 'Q': { // cadeira da sala de reunião, com o encosto do lado oposto à mesa
+          let mesa = null, melhor = 99;
+          for (const t of W.porTipo.M || []) { const dd = Math.abs(t.x - i) + Math.abs(t.y - j); if (dd < melhor) { melhor = dd; mesa = t; } }
+          let ux = 0, uz = 1;
+          if (mesa) { if (Math.abs(mesa.x - i) >= Math.abs(mesa.y - j)) { ux = Math.sign(mesa.x - i); uz = 0; } else { ux = 0; uz = Math.sign(mesa.y - j); } }
+          M.caixa(cx, y0 + 0.42, cz, 0.5, 0.07, 0.5, '#2f6f8f');
+          for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) M.caixa(cx + dx, y0, cz + dz, 0.05, 0.42, 0.05, '#4a5560');
+          M.caixa(cx - ux * 0.23, y0 + 0.49, cz - uz * 0.23, ux ? 0.06 : 0.5, 0.45, uz ? 0.06 : 0.5, '#256079');
+          break;
+        }
+        case 'Z': { // arquivo de prontuários (gaveteiro de aço encostado na parede)
+          M.caixa(cx, y0, cz, 0.92, 1.55, 0.6, '#9aa7b2');
+          for (let g = 0; g < 4; g++) { M.caixa(cx, y0 + 0.08 + g * 0.38, cz + 0.31, 0.8, 0.32, 0.02, '#b8c3cc'); M.caixa(cx, y0 + 0.2 + g * 0.38, cz + 0.33, 0.2, 0.04, 0.03, '#374151'); }
+          break;
+        }
+        case 'W': { // copa: bancada com cafeteira, garrafa térmica e galão de água
+          M.caixa(cx, y0, cz, 0.96, 0.9, 0.56, '#d9c7a7'); M.caixa(cx, y0 + 0.9, cz, 1.0, 0.05, 0.6, '#8b6b4a');
+          M.caixa(cx - 0.22, y0 + 0.95, cz, 0.24, 0.3, 0.2, '#1f2933'); M.caixa(cx - 0.22, y0 + 1.0, cz + 0.11, 0.1, 0.12, 0.02, '#f59e0b');
+          M.cilindro(cx + 0.12, y0 + 0.95, cz, 0.07, 0.26, '#cbd5e1', 8); M.cilindro(cx + 0.32, y0 + 0.95, cz + 0.12, 0.045, 0.09, '#ffffff', 8);
+          M.cilindro(cx + 0.3, y0 + 0.95, cz - 0.15, 0.1, 0.4, '#7dd3fc', 8);
+          break;
+        }
         case 'E': { // carteira escolar
           for (const [dx, dz] of [[-0.3, -0.2], [0.3, -0.2], [-0.3, 0.2], [0.3, 0.2]]) M.caixa(cx + dx, y0, cz + dz, 0.05, 0.62, 0.05, '#6b7280');
           M.caixa(cx, y0 + 0.62, cz, 0.8, 0.05, 0.56, '#d6a35a');
@@ -3184,7 +3471,13 @@ function criarRenderer(canvas, getEstado, hooks) {
         else if (a.acao.k === 'lanche' || a.acao.k === 'remedio') r.pose = 'comer_de_pe';
       }
     }
-    if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') r.pose = 'digitar';
+    if (a.k === 'staff' && !a.path.length && !a.tarefa && a.afz && a.afz.reuniao && a.afz.fase === 'presente' && a.afz.seat) {
+      const c = a.afz.seat;
+      let mesa = null, melhor = 99;
+      for (const t of W.porTipo.M || []) { const dd = Math.abs(t.x - c.x) + Math.abs(t.y - c.y); if (dd < melhor) { melhor = dd; mesa = t; } }
+      r.pose = 'sentar'; r.pos = new THREE.Vector3(c.x + 0.5, alturaPiso(W, rv, c.x, c.y), c.y + 0.5); r.extraY = -0.05;
+      if (mesa) r.yaw = yawDe(mesa.x - c.x, mesa.y - c.y);
+    } else if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') r.pose = 'digitar';
     if (a.k === 'staff' && !a.path.length && !a.tarefa && a.afz && a.afz.fase === 'fazendo' && !a.afz.def.campo) r.pose = 'digitar';
     return r;
   }
@@ -3352,6 +3645,13 @@ function criarRenderer(canvas, getEstado, hooks) {
   function enquadrarUBS() { const { W } = E(); if (!W) return; cam.z = 1; orbita.dist = 24; orbita.yaw = Math.PI / 4; orbita.alvo.set(W.ubs.x + W.ubs.w / 2, 0, W.ubs.y + W.ubs.h / 2); }
   function seguirAlvo(tx, ty, k = 0.12) { orbita.alvo.x += (tx + 0.5 - orbita.alvo.x) * k; orbita.alvo.z += (ty + 0.5 - orbita.alvo.z) * k; }
   function girar(passo) { orbita.yaw += passo * (Math.PI / 2); }
+  /** Move a câmera em relação à tela: dx para a direita, dy para frente (em tiles). */
+  function mover(dx, dy) {
+    const fx = -Math.sin(orbita.yaw), fz = -Math.cos(orbita.yaw); // frente (para onde a câmera olha, no chão)
+    const rx = Math.cos(orbita.yaw), rz = -Math.sin(orbita.yaw);
+    orbita.alvo.x += fx * dy + rx * dx; orbita.alvo.z += fz * dy + rz * dx;
+    const { W } = E(); if (W) limitaAlvo(W);
+  }
 
   /* ---------- sobreposição: balões, nome, rótulos ---------- */
   const proj = new THREE.Vector3();
@@ -3509,6 +3809,7 @@ function criarRenderer(canvas, getEstado, hooks) {
     marcar(x, y) { marcador = x === null ? null : { x, y }; },
     alternaParedes() { paredesBaixas = !paredesBaixas; quadranteAtual = -1; return paredesBaixas; },
     zoom(f) { orbita.dist = lim(orbita.dist / f, 7, 85); cam.z = 26 / orbita.dist; },
+    mover,
     estadoVisual(id) { const p = agentes3d.get(id); return p ? { x: p.pos.x, z: p.pos.z, y: p.pos.y, pose: p.situacao && p.situacao.pose, yaw: p.yaw } : null; },
     girar2: null,
     modo: '3d',
@@ -3817,6 +4118,23 @@ function criarRenderer2D(canvas, getEstado, hooks) {
         caixa(ctx, i + 0.12, j + 0.12, i + 0.88, j + 0.3, 16, 20, '#9ec9e8');
         break;
       }
+      case 'M':
+        caixa(ctx, i, j + 0.05, i + 1, j + 0.95, 0, 14, '#a9744a');
+        caixa(ctx, i + 0.2, j + 0.3, i + 0.5, j + 0.6, 14, 15, '#f8fafc');
+        break;
+      case 'Q':
+        caixa(ctx, i + 0.2, j + 0.2, i + 0.8, j + 0.8, 0, 10, '#2f6f8f');
+        caixa(ctx, i + 0.2, j + 0.2, i + 0.8, j + 0.3, 10, 22, '#256079');
+        break;
+      case 'Z':
+        caixa(ctx, i + 0.05, j + 0.15, i + 0.95, j + 0.85, 0, 40, '#9aa7b2');
+        for (let g = 0; g < 3; g++) caixa(ctx, i + 0.1, j + 0.85, i + 0.9, j + 0.9, 4 + g * 12, 12 + g * 12, '#b8c3cc', { borda: null });
+        break;
+      case 'W':
+        caixa(ctx, i + 0.05, j + 0.2, i + 0.95, j + 0.8, 0, 22, '#d9c7a7');
+        caixa(ctx, i + 0.1, j + 0.3, i + 0.4, j + 0.6, 22, 34, '#1f2933');
+        caixa(ctx, i + 0.6, j + 0.35, i + 0.85, j + 0.6, 22, 30, '#7dd3fc');
+        break;
       case 'E':
         caixa(ctx, i + 0.15, j + 0.3, i + 0.85, j + 0.85, 12, 15, '#d6a35a');
         for (const [dx, dy] of [[0.2, 0.35], [0.8, 0.35], [0.2, 0.8], [0.8, 0.8]]) caixa(ctx, i + dx - 0.03, j + dy - 0.03, i + dx + 0.03, j + dy + 0.03, 0, 12, '#7a5a35', { borda: null });
@@ -4422,6 +4740,7 @@ function criarRenderer2D(canvas, getEstado, hooks) {
     seguirAlvo(tx, ty, k = 0.12) { const [sx, sy] = proj(tx + 0.5, ty + 0.5); cam.x += (sx - cam.x) * k; cam.y += (sy - 10 - cam.y) * k; limitaCamera(); },
     alternaParedes() { paredesBaixas = !paredesBaixas; return paredesBaixas; },
     zoom(f) { cam.z *= f; limitaCamera(); },
+    mover(dx, dy) { cam.x += dx * 32 / cam.z; cam.y += dy * 32 / cam.z; limitaCamera(); },
     girar() {},
     modo: '2d',
     get selecionado() { return selecionado; },
@@ -4447,6 +4766,7 @@ let jaDeuOrdem = false;
 let assinaturaCartao = '';
 let ultimaChaveAtend = '';
 let errosSeguidos = 0;
+let painelOculto = false; // esconde a barra de ações do personagem para ver e navegar pelo cenário
 let fbResp = {}, fbEstado = 'editando', fbMsg = ''; // rascunho e estado do envio do feedback
 
 const $ = (q) => document.querySelector(q);
@@ -4576,7 +4896,7 @@ function barraNec(k, v) { return `<div class="nec" title="${ROTULO_NEC[k][1]}"><
 
 function montaPainel(forcar = false) {
   const el = $('#cartao');
-  if (!S || aba !== 'mundo') { el.hidden = true; return; }
+  if (!S || aba !== 'mundo' || painelOculto) { el.hidden = true; return; }
   const ag = meuAgente();
   let assin = `${modo()}|${papel()}|${ag.id}`;
   if (modo() === 'paciente') { const p = minhaPessoa(); assin += `|${p.tabagismo}|${CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)}|${S.jogador.vontade}|${ag.fila.length}|${sintomasDe(S, cfg, p.id).length}`; }
@@ -4651,7 +4971,7 @@ function dicaDoMomento() {
 }
 function atualizaDica() {
   const el = $('#dica');
-  const txt = aba === 'mundo' && !folha && !menu ? dicaDoMomento() : null;
+  const txt = aba === 'mundo' && !folha && !menu && !painelOculto ? dicaDoMomento() : null;
   if (!txt) { el.hidden = true; return; }
   if (el.dataset.t !== txt) { el.innerHTML = txt; el.dataset.t = txt; }
   el.hidden = false;
@@ -4711,6 +5031,9 @@ function viewUnidade() {
     <div class="card"><div class="rotulo"><strong>${aberta ? '🟢 Aberta agora' : '🔴 Fechada agora'}</strong><span>${mundo.expediente[0]}h–${mundo.expediente[1]}h, dias úteis</span></div>
       <p class="dica-t">Médico(a): ${diasMedico} ${med ? '· presente hoje' : '· <b>não atende hoje</b>'}.<br>Pessoas chamadas: ${r.chamados} · tarefas de campo: ${r.acs}.</p></div>
     <h2 class="secao">Filas</h2>${fila('triagem', '📏 Triagem (técnico)')}${fila('enfermagem', '🩺 Enfermagem')}${fila('consulta', '🩺 Consulta médica')}
+    <h2 class="secao">🤝 Vínculo entre os profissionais</h2>
+    <div class="card">${vinculosEquipe(S, cfg).map((x) => barraIndicador(`${EMOJI_PAPEL[x.a]} ${esc(cfg.papeis[x.a].curto || cfg.papeis[x.a].nome)} ↔ ${EMOJI_PAPEL[x.b]} ${esc(cfg.papeis[x.b].curto || cfg.papeis[x.b].nome)}`, x.v / 100)).join('')}
+      <p class="dica-t">Equipe afinada atende mais rápido e perde menos encaminhamentos; equipe desencontrada atrasa e se perde (até 30% mais lento). O vínculo esfria sem convivência: converse, discuta casos, faça reuniões e pausas na copa.</p></div>
     <h2 class="secao">Vigilância do território</h2>
     <div class="card"><div class="rotulo"><strong>🦟 Índice de infestação do mosquito</strong><span>${inf}%</span></div>
       <div class="barra ${inf >= 60 ? 'perigo' : inf >= 35 ? 'alerta' : ''}"><i style="width:${inf}%"></i></div>
@@ -4723,7 +5046,7 @@ function viewDesempenho() {
   return `<h2 class="secao">Cenário</h2>
     <div class="card"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div><ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
     <h2 class="secao">Seu trabalho</h2>
-    <div class="card"><div class="kv"><span>Consultas feitas</span><span>${m.atendidos}</span><span>Triagens</span><span>${m.triagens}</span><span>Orientações</span><span>${m.orientacoes}</span><span>Visitas domiciliares</span><span>${m.visitas}</span><span>Espera média</span><span>${espera} min</span></div></div>
+    <div class="card"><div class="kv"><span>Consultas feitas</span><span>${m.atendidos}</span><span>Triagens</span><span>${m.triagens}</span><span>Orientações</span><span>${m.orientacoes}</span><span>Visitas domiciliares</span><span>${m.visitas}</span><span>Afazeres concluídos</span><span>${m.afazeres || 0}</span><span>Reuniões de equipe</span><span>${m.reunioes || 0}</span><span>Falhas de comunicação</span><span>${m.falhasComunicacao || 0}</span><span>Espera média</span><span>${espera} min</span></div></div>
     <h2 class="secao">Desempenho da unidade</h2>
     <div class="card"><div class="rotulo"><span>Liga</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div></div>
     <div class="card" style="margin-top:10px">
@@ -4798,16 +5121,35 @@ function blocoAfazeres() {
   return `<h2 class="secao">📋 Afazeres do dia (${af.feitos}/${af.total})</h2>${af.lista.map((i) => `<button class="btn" data-act="afazer" data-id="${i.uid}" ${i.feito || ocupado ? 'disabled' : ''}><span>${i.feito ? '✅' : i.ic} ${esc(i.rot)}</span>${i.feito ? '<small>feito</small>' : i.andamento ? '<small>em andamento</small>' : i.campo ? '<small>em campo</small>' : ''}</button>`).join('')}`;
 }
 
+/** Interações com os outros profissionais: ninguém faz nada sozinho. */
+function blocoEquipe() {
+  const eu = meuAgente();
+  const colegas = W.agentes.filter((a) => a.k === 'staff' && a.id !== eu.id && a.vis);
+  const reuniao = opcoesPara(W, S, cfg, colegas.length ? { tipo: 'agente', id: colegas[0].id } : { tipo: 'agente', id: eu.id }).find((o) => o.id === 'equipe_reuniao');
+  const lista = colegas.map((b) => {
+    const ops = opcoesPara(W, S, cfg, { tipo: 'agente', id: b.id }).filter((o) => o.id === 'colega_conversar' || o.id === 'colega_caso');
+    const par = vinculosEquipe(S, cfg).find((x) => (x.a === eu.papel && x.b === b.papel) || (x.b === eu.papel && x.a === b.papel));
+    const v = par ? par.v : 100;
+    return `<div class="card eq"><div class="rotulo"><strong>${EMOJI_PAPEL[b.papel]} ${esc(cfg.papeis[b.papel].nome)}</strong><span>vínculo ${b.papel === eu.papel ? '—' : v + '%'}</span></div>
+      <div class="dica-t">${esc(acaoAtual(W, S, b))}</div>
+      <div class="c-btns" style="grid-template-columns:repeat(2,1fr);margin-top:6px">${ops.map((o) => `<button class="btn peq" data-act="equipe-op" data-op="${o.id}" data-id="${b.id}" ${o.desab ? 'disabled' : ''}>${o.ic} ${o.id === 'colega_caso' ? 'Discutir caso' : 'Conversar'}</button>`).join('')}</div>
+      ${ops.some((o) => o.desab) ? `<div class="dica-t">${esc(ops.find((o) => o.desab).desab)}</div>` : ''}</div>`;
+  }).join('');
+  return `<h2 class="secao">🤝 Equipe (ninguém faz nada sozinho)</h2>
+    <button class="btn" data-act="equipe-op" data-op="equipe_reuniao" data-id="${eu.id}" ${reuniao && reuniao.desab ? 'disabled' : ''}><span>👥 Convocar reunião de equipe</span>${reuniao && reuniao.desab ? `<small>${esc(reuniao.desab)}</small>` : ''}</button>
+    ${lista || '<p class="dica-t">Nenhum colega na unidade agora.</p>'}`;
+}
+
 function folhaAcoes() {
   let corpo = '';
   if (modo() === 'paciente') {
     corpo = acoesPaciente(W, S, cfg).map((g) => `<h2 class="secao">${esc(g.nome)}</h2>${g.itens.map((i) => `<button class="btn" data-act="acao-op" data-op="${i.id}" ${i.desab ? 'disabled' : ''}><span>${i.ic} ${esc(i.rot)}</span>${i.desab ? `<small>${esc(i.desab)}</small>` : ''}</button>`).join('')}`).join('');
   } else if (papel() === 'acs') {
-    corpo = `${blocoAfazeres()}<h2 class="secao">Visitas e orientações</h2><button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
+    corpo = `${blocoAfazeres()}${blocoEquipe()}<h2 class="secao">Visitas e orientações</h2><button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
       <button class="btn" data-act="abrir-pessoas"><span>🧑 Atender uma pessoa (aferir, orientar, convidar)</span></button>
       <button class="btn" data-act="cartao-mutirao"><span>🧹 Mutirão contra focos do mosquito</span></button>`;
   } else {
-    corpo = `${blocoAfazeres()}<h2 class="secao">Atendimento</h2><button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
+    corpo = `${blocoAfazeres()}${blocoEquipe()}<h2 class="secao">Atendimento</h2><button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
       <button class="btn" data-act="abrir-fila"><span>📋 Ver a fila e escolher quem chamar</span></button>
       <button class="btn" data-act="abrir-atend" ${atendimentoAtual(W, S) ? '' : 'disabled'}><span>🩺 Voltar ao atendimento atual</span></button>`;
   }
@@ -4955,7 +5297,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Protótipo v0.7 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v0.8 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
@@ -5061,10 +5403,14 @@ function aoTocar(alvo) {
     const ag = W.agentes.find((x) => x.id === alvo.id);
     if (!ag) return;
     if (ag.jogador) { if (modo() === 'paciente') mostraAba('saude'); return; }
-    if (ag.k === 'staff') { toast(`${cfg.papeis[ag.papel].nome}: ${acaoAtual(W, S, ag)}`, true); return; }
-    const p = achaPessoa(S, ag.pid);
-    titulo = `${emojiPessoa(p)} ${p.nome}`;
-    if (modo() === 'paciente') titulo += ` · ${acaoAtual(W, S, ag).replace(/^[^\s]+\s/, '')}`;
+    if (ag.k === 'staff') {
+      if (modo() === 'paciente') { toast(`${cfg.papeis[ag.papel].nome}: ${acaoAtual(W, S, ag)}`, true); return; }
+      titulo = `${EMOJI_PAPEL[ag.papel]} ${cfg.papeis[ag.papel].nome} · ${acaoAtual(W, S, ag).replace(/^[^\s]+\s/, '')}`;
+    } else {
+      const p = achaPessoa(S, ag.pid);
+      titulo = `${emojiPessoa(p)} ${p.nome}`;
+      if (modo() === 'paciente') titulo += ` · ${acaoAtual(W, S, ag).replace(/^[^\s]+\s/, '')}`;
+    }
   } else if (alvo.tipo === 'obj') {
     titulo = nomeObjeto(alvo.obj);
   } else {
@@ -5087,6 +5433,25 @@ function menuUnidade() {
 }
 
 /* ---------- Eventos ---------- */
+// Navegação livre pelo cenário (computador): setas/WASD movem, +/- zoom, Q/E giram, H oculta a barra de ações.
+document.addEventListener('keydown', (ev) => {
+  if (!S || !W || aba !== 'mundo' || folha || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const t = ev.target && ev.target.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA') return;
+  const k = ev.key.toLowerCase();
+  const passo = ev.shiftKey ? 2.4 : 0.9;
+  const mexe = (dx, dy) => { S.jogador.seguir = false; R.mover(dx, dy); ev.preventDefault(); };
+  if (k === 'arrowleft' || k === 'a') mexe(-passo, 0);
+  else if (k === 'arrowright' || k === 'd') mexe(passo, 0);
+  else if (k === 'arrowup' || k === 'w') mexe(0, passo);
+  else if (k === 'arrowdown' || k === 's') mexe(0, -passo);
+  else if (k === '+' || k === '=') R.zoom(1.15);
+  else if (k === '-' || k === '_') R.zoom(0.87);
+  else if (k === 'q') R.girar(1);
+  else if (k === 'e') R.girar(-1);
+  else if (k === 'h') document.querySelector('[data-act="painel"]').click();
+  else if (k === 'c') document.querySelector('[data-act="centro"]').click();
+});
 document.addEventListener('input', (ev) => {
   const id = ev.target && ev.target.dataset && ev.target.dataset.fb;
   if (id) { fbResp[id] = ev.target.value; salvaRascunhoFb(); }
@@ -5164,6 +5529,10 @@ document.addEventListener('click', (ev) => {
     case 'pers-paciente': (folha && folha.troca ? trocaPersonagemJogo : comecarComPersonagem)({ modo: 'paciente', pid: id }); break;
     case 'pers-prof': (folha && folha.troca ? trocaPersonagemJogo : comecarComPersonagem)({ modo: 'profissional', papel: id }); break;
     case 'trocar-personagem': velAntes = vel || velAntes || 1; vel = 0; abaPers = modo() === 'paciente' ? 'paciente' : 'profissional'; abrirFolha({ tipo: 'personagem', troca: true }); break;
+    case 'equipe-op': { const r = comandar(W, S, cfg, el.dataset.op, { tipo: 'agente', id }); fecharFolha(); resultado(r); break; }
+    case 'painel': { painelOculto = !painelOculto; const b = $('#b-painel'); if (b) { b.textContent = painelOculto ? '🔼' : '🔽'; b.setAttribute('aria-label', painelOculto ? 'Mostrar a barra de ações' : 'Ocultar a barra de ações'); } assinaturaCartao = ''; montaPainel(true); atualizaDica(); break; }
+    case 'zoom-mais': R.zoom(1.25); break;
+    case 'zoom-menos': R.zoom(0.8); break;
     case 'afazer': { const r = comandar(W, S, cfg, `afazer:${id}`, { tipo: 'auto' }); fecharFolha(); resultado(r); break; }
     default: break;
   }

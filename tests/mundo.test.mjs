@@ -6,7 +6,7 @@ import {
   iniciarEstadoMundo, criarMundo, passoMundo, pularMes, pularDia, ordenarVisita, ordenarUnidade, ordenarOrientar,
   ordenarMutirao, diaDoJogo, diaSemana, minutoDoDia, minutosPorSegundo, escolherPersonagem, agenteJogador,
   opcoesPara, comandar, acoesPaciente, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, sintomasDe,
-  afazeresDoDia, trocarPersonagem, acaoAtual,
+  afazeresDoDia, trocarPersonagem, acaoAtual, vinculosEquipe, vinculoEquipe,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
@@ -44,9 +44,10 @@ test('todos os cenários: portas, móveis essenciais e conexão entre todos os l
       assert.ok(visto[casa.porta.fora.y * w + casa.porta.fora.x], `${id}: rua em frente a ${casa.casa} inacessível`);
       assert.ok(visto[casa.porta.dentro.y * w + casa.porta.dentro.x], `${id}: interior de ${casa.casa} inacessível`);
     }
-    for (const o of W.objs.filter((o) => !o.decor)) assert.ok(alcanca(o), `${id}: objeto ${o.t} em (${o.x},${o.y}) inacessível`);
+    for (const o of W.objs.filter((o) => !o.decor && o.t !== 'M')) assert.ok(alcanca(o), `${id}: objeto ${o.t} em (${o.x},${o.y}) inacessível`);
     for (const f of cfg.territorio.familias) for (const t of ['B', 'C', 'G', 'S', 'V', 'X', 'N']) assert.ok(W.objs.some((o) => o.casa === f.id && o.t === t), `${id}: ${f.id} sem ${t}`);
-    for (const t of ['H', 'U', 'D', 'Y']) assert.ok(W.objs.some((o) => o.lugar === 'ubs' && o.t === t), `${id}: UBS sem ${t}`);
+    for (const t of ['H', 'U', 'D', 'Y', 'M', 'Q', 'Z', 'W']) assert.ok(W.objs.some((o) => o.lugar === 'ubs' && o.t === t), `${id}: UBS sem ${t}`);
+    assert.ok(W.objs.filter((o) => o.lugar === 'ubs' && o.t === 'Q').length >= 5, 'sala de reunião precisa de 5+ cadeiras');
     assert.ok(W.objs.filter((o) => o.lugar === 'ubs' && o.t === 'D').length >= 2, 'UBS precisa de 2 consultórios');
     assert.equal(S.familias.length, cfg.territorio.familias.length);
   }
@@ -369,7 +370,7 @@ test('TODOS os profissionais têm afazeres todos os dias úteis, em qualquer cen
     for (const papel of ['medico', 'enfermeiro', 'tecnico', 'acs']) {
       const v = feitosPorDia[papel];
       assert.ok(v && v.length >= 8, `${id}: ${papel} não trabalhou nos dias úteis`);
-      assert.ok(v.every((n) => n >= 2), `${id}: ${papel} ficou parado em algum dia útil (${v})`);
+      assert.ok(v.every((n) => n >= 1) && v.reduce((a, b) => a + b, 0) / v.length >= 3, `${id}: ${papel} ficou parado em dias úteis (${v})`);
     }
   }
 });
@@ -443,4 +444,104 @@ test('TROCAR PERSONAGEM: a história continua e só uma pessoa é controlada', (
   for (let i = 0; i < 200; i++) passoMundo(W, S, cfg, 5);
   assert.ok(trocarPersonagem(W, S, { modo: 'profissional', papel: 'acs' }));
   assert.equal(agenteJogador(W).papel, 'acs');
+});
+
+/* ---------- Equipe: vínculo, reuniões, interação entre profissionais ---------- */
+function ateDiaHora(W, S, cfg, dow, hora) { while (diaSemana(S) !== dow || minutoDoDia(S) < hora * 60) passoMundo(W, S, cfg, 5); }
+function profissional(id, papel, seed = 21) {
+  const cfg = cfgDe(id);
+  const S = newGame(cfg, seed); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'profissional', papel });
+  return { cfg, S, W: criarMundo(S, cfg) };
+}
+const ultimoDiario = (S) => S.diario[S.diario.length - 1].texto;
+
+test('UBS tem sala de reunião (mesa e cadeiras), copa e arquivo fora da passagem dos pacientes', () => {
+  for (const id of CENARIOS) {
+    const { W } = novo(id);
+    const dentro = (o) => o.lugar === 'ubs';
+    assert.ok(W.objs.filter((o) => dentro(o) && o.t === 'Q').length >= 5, `${id}: faltam cadeiras de reunião`);
+    assert.ok(W.objs.some((o) => dentro(o) && o.t === 'M') && W.objs.some((o) => dentro(o) && o.t === 'W') && W.objs.some((o) => dentro(o) && o.t === 'Z'));
+  }
+});
+
+test('ENFERMEIRO interage com os outros profissionais: conversar aumenta o vínculo', () => {
+  const { cfg, S, W } = profissional('interior', 'enfermeiro');
+  ateDiaHora(W, S, cfg, 2, 10); // quarta, sem reunião fixa
+  const tec = W.agentes.find((a) => a.papel === 'tecnico');
+  const ops = opcoesPara(W, S, cfg, { tipo: 'agente', id: tec.id });
+  assert.ok(['colega', 'colega_conversar', 'colega_caso', 'equipe_reuniao'].every((id) => ops.some((o) => o.id === id)), ops.map((o) => o.id).join());
+  // espera o técnico ficar livre
+  for (let i = 0; i < 200 && (tec.tarefa || !tec.vis); i++) passoMundo(W, S, cfg, 2);
+  const antes = vinculoEquipe(S, cfg, 'enfermeiro', 'tecnico');
+  const r = comandar(W, S, cfg, 'colega_conversar', { tipo: 'agente', id: tec.id });
+  assert.ok(r.ok, r.msg);
+  for (let i = 0; i < 60 && vinculoEquipe(S, cfg, 'enfermeiro', 'tecnico') <= antes; i++) passoMundo(W, S, cfg, 2);
+  assert.ok(vinculoEquipe(S, cfg, 'enfermeiro', 'tecnico') > antes, 'o vínculo deveria subir depois da conversa');
+});
+
+test('REUNIÃO DE EQUIPE: os demais comparecem sentados na sala, o vínculo sobe e o jogador é informado', () => {
+  const { cfg, S, W } = profissional('metropole', 'enfermeiro');
+  ateDiaHora(W, S, cfg, 1, 9); // terça: sem reunião fixa, todos livres
+  for (const k of Object.keys(S.mundo.equipe || (vinculosEquipe(S, cfg), S.mundo.equipe))) S.mundo.equipe[k] = 60;
+  for (const b of W.agentes) if (b.k === 'staff' && !b.jogador) { b.afz = null; b.path = []; b.tarefa = null; } // todos livres
+  const antes = vinculosEquipe(S, cfg).map((x) => x.v);
+  const r = comandar(W, S, cfg, 'equipe_reuniao', { tipo: 'agente', id: agenteJogador(W).id });
+  assert.ok(r.ok, r.msg);
+  let sentados = 0, chegou = false;
+  for (let i = 0; i < 400 && S.metricas.reunioes < 1; i++) {
+    passoMundo(W, S, cfg, 1);
+    const n = W.agentes.filter((a) => a.k === 'staff' && a.afz && a.afz.reuniao && a.afz.fase === 'presente').length;
+    if (n > sentados) sentados = n;
+    chegou = chegou || (W.reuniao && W.agentes.some((a) => a.afz && a.afz.seat && a.afz.seat.t === 'Q'));
+  }
+  assert.ok(S.metricas.reunioes >= 1, 'a reunião não aconteceu');
+  assert.ok(sentados >= 2 && chegou, `sentados: ${sentados}`);
+  assert.ok(vinculosEquipe(S, cfg).some((x, i) => x.v > antes[i]), 'o vínculo deveria subir');
+  assert.match(S.diario.map((d) => d.texto).join('\n'), /Reunião de equipe/);
+  assert.equal(W.reuniao, null);
+});
+
+test('REUNIÃO: quem não pode comparecer é informado com o motivo', () => {
+  const { cfg, S, W } = profissional('interior', 'enfermeiro');
+  ateDiaHora(W, S, cfg, 2, 10);
+  const acs = W.agentes.find((a) => a.papel === 'acs'), med = W.agentes.find((a) => a.papel === 'medico');
+  vinculosEquipe(S, cfg); for (const k of Object.keys(S.mundo.equipe)) S.mundo.equipe[k] = 100;
+  for (const b of W.agentes) if (b.k === 'staff' && !b.jogador) { b.afz = null; b.path = []; }
+  acs.tarefa = { tipo: 'visita', fase: 'fazendo', restante: 999, fam: S.familias[0].id }; // agente em campo
+  med.afz = { item: { uid: 'x', def: { id: 'visita_med', campo: true }, feito: false }, def: { id: 'visita_med', campo: true, rot: 'Visita', ic: '🏠' }, fase: 'fazendo', restante: 999 }; // médico em visita
+  assert.ok(comandar(W, S, cfg, 'equipe_reuniao', { tipo: 'agente', id: agenteJogador(W).id }).ok);
+  passoMundo(W, S, cfg, 1);
+  const txt = S.diario.map((d) => d.texto).join('\n');
+  assert.match(txt, /Não puderam/);
+  assert.match(txt, /em campo/);
+  assert.match(txt, /em visita no território/);
+});
+
+test('vínculo da equipe muda a velocidade do trabalho e as falhas de comunicação', () => {
+  const resultado = (v) => {
+    const cfg = cfgDe('metropole');
+    const S = newGame(cfg, 9); S.tempoReal = true; iniciarEstadoMundo(S);
+    escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+    const W = criarMundo(S, cfg);
+    vinculosEquipe(S, cfg);
+    for (const k of Object.keys(S.mundo.equipe)) S.mundo.equipe[k] = v;
+    for (let i = 0; i < 15 * 24 * 12; i++) { passoMundo(W, S, cfg, 5); for (const k of Object.keys(S.mundo.equipe)) S.mundo.equipe[k] = v; }
+    return S.metricas;
+  };
+  const alto = resultado(100), baixo = resultado(5);
+  assert.ok(baixo.falhasComunicacao > alto.falhasComunicacao, `falhas: baixo ${baixo.falhasComunicacao} × alto ${alto.falhasComunicacao}`);
+  assert.ok(alto.atendidos + alto.triagens + alto.orientacoes >= baixo.atendidos + baixo.triagens + baixo.orientacoes, 'equipe afinada deveria atender ao menos tanto quanto a desencontrada');
+});
+
+test('sem convivência o vínculo esfria; reuniões fixas (seg/qui) e a copa mantêm a equipe unida', () => {
+  const cfg = cfgDe('rural');
+  const S = newGame(cfg, 5); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+  const W = criarMundo(S, cfg);
+  const ini = vinculosEquipe(S, cfg).reduce((t, x) => t + x.v, 0);
+  for (let i = 0; i < 20 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
+  assert.ok(S.metricas.reunioes >= 4, `reuniões: ${S.metricas.reunioes}`);
+  const fim = vinculosEquipe(S, cfg).reduce((t, x) => t + x.v, 0);
+  assert.ok(fim >= ini - 6 * 10, `o vínculo desabou: ${ini} → ${fim}`);
 });

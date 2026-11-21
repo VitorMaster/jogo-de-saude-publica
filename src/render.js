@@ -477,6 +477,35 @@ export function criarRenderer(canvas, getEstado, hooks) {
           M.caixa(cx + 0.45, y0, cz + 0.3, 0.06, 1.3, 0.06, '#9aa3ad'); M.caixa(cx + 0.45, y0 + 1.3, cz + 0.3, 0.2, 0.1, 0.2, '#e5e7eb');
           break;
         }
+        case 'M': { // mesa da sala de reunião (cada tile é um pedaço da mesa)
+          for (const [dx, dz] of [[-0.42, -0.4], [0.42, -0.4], [-0.42, 0.4], [0.42, 0.4]]) M.caixa(cx + dx, y0, cz + dz, 0.07, 0.74, 0.07, '#6b4a2f');
+          M.caixa(cx, y0 + 0.74, cz, 1.0, 0.07, 0.96, '#a9744a');
+          if (hh % 2 === 0) { M.caixa(cx - 0.12, y0 + 0.81, cz + 0.05, 0.3, 0.015, 0.22, '#f8fafc'); M.cilindro(cx + 0.28, y0 + 0.81, cz - 0.2, 0.05, 0.1, '#ffffff', 8); }
+          else { M.caixa(cx + 0.1, y0 + 0.81, cz, 0.34, 0.02, 0.24, '#e5e7eb'); M.caixa(cx - 0.25, y0 + 0.81, cz - 0.15, 0.2, 0.015, 0.14, '#fde68a'); }
+          break;
+        }
+        case 'Q': { // cadeira da sala de reunião, com o encosto do lado oposto à mesa
+          let mesa = null, melhor = 99;
+          for (const t of W.porTipo.M || []) { const dd = Math.abs(t.x - i) + Math.abs(t.y - j); if (dd < melhor) { melhor = dd; mesa = t; } }
+          let ux = 0, uz = 1;
+          if (mesa) { if (Math.abs(mesa.x - i) >= Math.abs(mesa.y - j)) { ux = Math.sign(mesa.x - i); uz = 0; } else { ux = 0; uz = Math.sign(mesa.y - j); } }
+          M.caixa(cx, y0 + 0.42, cz, 0.5, 0.07, 0.5, '#2f6f8f');
+          for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) M.caixa(cx + dx, y0, cz + dz, 0.05, 0.42, 0.05, '#4a5560');
+          M.caixa(cx - ux * 0.23, y0 + 0.49, cz - uz * 0.23, ux ? 0.06 : 0.5, 0.45, uz ? 0.06 : 0.5, '#256079');
+          break;
+        }
+        case 'Z': { // arquivo de prontuários (gaveteiro de aço encostado na parede)
+          M.caixa(cx, y0, cz, 0.92, 1.55, 0.6, '#9aa7b2');
+          for (let g = 0; g < 4; g++) { M.caixa(cx, y0 + 0.08 + g * 0.38, cz + 0.31, 0.8, 0.32, 0.02, '#b8c3cc'); M.caixa(cx, y0 + 0.2 + g * 0.38, cz + 0.33, 0.2, 0.04, 0.03, '#374151'); }
+          break;
+        }
+        case 'W': { // copa: bancada com cafeteira, garrafa térmica e galão de água
+          M.caixa(cx, y0, cz, 0.96, 0.9, 0.56, '#d9c7a7'); M.caixa(cx, y0 + 0.9, cz, 1.0, 0.05, 0.6, '#8b6b4a');
+          M.caixa(cx - 0.22, y0 + 0.95, cz, 0.24, 0.3, 0.2, '#1f2933'); M.caixa(cx - 0.22, y0 + 1.0, cz + 0.11, 0.1, 0.12, 0.02, '#f59e0b');
+          M.cilindro(cx + 0.12, y0 + 0.95, cz, 0.07, 0.26, '#cbd5e1', 8); M.cilindro(cx + 0.32, y0 + 0.95, cz + 0.12, 0.045, 0.09, '#ffffff', 8);
+          M.cilindro(cx + 0.3, y0 + 0.95, cz - 0.15, 0.1, 0.4, '#7dd3fc', 8);
+          break;
+        }
         case 'E': { // carteira escolar
           for (const [dx, dz] of [[-0.3, -0.2], [0.3, -0.2], [-0.3, 0.2], [0.3, 0.2]]) M.caixa(cx + dx, y0, cz + dz, 0.05, 0.62, 0.05, '#6b7280');
           M.caixa(cx, y0 + 0.62, cz, 0.8, 0.05, 0.56, '#d6a35a');
@@ -864,7 +893,13 @@ export function criarRenderer(canvas, getEstado, hooks) {
         else if (a.acao.k === 'lanche' || a.acao.k === 'remedio') r.pose = 'comer_de_pe';
       }
     }
-    if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') r.pose = 'digitar';
+    if (a.k === 'staff' && !a.path.length && !a.tarefa && a.afz && a.afz.reuniao && a.afz.fase === 'presente' && a.afz.seat) {
+      const c = a.afz.seat;
+      let mesa = null, melhor = 99;
+      for (const t of W.porTipo.M || []) { const dd = Math.abs(t.x - c.x) + Math.abs(t.y - c.y); if (dd < melhor) { melhor = dd; mesa = t; } }
+      r.pose = 'sentar'; r.pos = new THREE.Vector3(c.x + 0.5, alturaPiso(W, rv, c.x, c.y), c.y + 0.5); r.extraY = -0.05;
+      if (mesa) r.yaw = yawDe(mesa.x - c.x, mesa.y - c.y);
+    } else if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') r.pose = 'digitar';
     if (a.k === 'staff' && !a.path.length && !a.tarefa && a.afz && a.afz.fase === 'fazendo' && !a.afz.def.campo) r.pose = 'digitar';
     return r;
   }
@@ -1032,6 +1067,13 @@ export function criarRenderer(canvas, getEstado, hooks) {
   function enquadrarUBS() { const { W } = E(); if (!W) return; cam.z = 1; orbita.dist = 24; orbita.yaw = Math.PI / 4; orbita.alvo.set(W.ubs.x + W.ubs.w / 2, 0, W.ubs.y + W.ubs.h / 2); }
   function seguirAlvo(tx, ty, k = 0.12) { orbita.alvo.x += (tx + 0.5 - orbita.alvo.x) * k; orbita.alvo.z += (ty + 0.5 - orbita.alvo.z) * k; }
   function girar(passo) { orbita.yaw += passo * (Math.PI / 2); }
+  /** Move a câmera em relação à tela: dx para a direita, dy para frente (em tiles). */
+  function mover(dx, dy) {
+    const fx = -Math.sin(orbita.yaw), fz = -Math.cos(orbita.yaw); // frente (para onde a câmera olha, no chão)
+    const rx = Math.cos(orbita.yaw), rz = -Math.sin(orbita.yaw);
+    orbita.alvo.x += fx * dy + rx * dx; orbita.alvo.z += fz * dy + rz * dx;
+    const { W } = E(); if (W) limitaAlvo(W);
+  }
 
   /* ---------- sobreposição: balões, nome, rótulos ---------- */
   const proj = new THREE.Vector3();
@@ -1189,6 +1231,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     marcar(x, y) { marcador = x === null ? null : { x, y }; },
     alternaParedes() { paredesBaixas = !paredesBaixas; quadranteAtual = -1; return paredesBaixas; },
     zoom(f) { orbita.dist = lim(orbita.dist / f, 7, 85); cam.z = 26 / orbita.dist; },
+    mover,
     estadoVisual(id) { const p = agentes3d.get(id); return p ? { x: p.pos.x, z: p.pos.z, y: p.pos.y, pose: p.situacao && p.situacao.pose, yaw: p.yaw } : null; },
     girar2: null,
     modo: '3d',

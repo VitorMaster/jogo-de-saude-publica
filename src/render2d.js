@@ -300,6 +300,23 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
         caixa(ctx, i + 0.12, j + 0.12, i + 0.88, j + 0.3, 16, 20, '#9ec9e8');
         break;
       }
+      case 'M':
+        caixa(ctx, i, j + 0.05, i + 1, j + 0.95, 0, 14, '#a9744a');
+        caixa(ctx, i + 0.2, j + 0.3, i + 0.5, j + 0.6, 14, 15, '#f8fafc');
+        break;
+      case 'Q':
+        caixa(ctx, i + 0.2, j + 0.2, i + 0.8, j + 0.8, 0, 10, '#2f6f8f');
+        caixa(ctx, i + 0.2, j + 0.2, i + 0.8, j + 0.3, 10, 22, '#256079');
+        break;
+      case 'Z':
+        caixa(ctx, i + 0.05, j + 0.15, i + 0.95, j + 0.85, 0, 40, '#9aa7b2');
+        for (let g = 0; g < 3; g++) caixa(ctx, i + 0.1, j + 0.85, i + 0.9, j + 0.9, 4 + g * 12, 12 + g * 12, '#b8c3cc', { borda: null });
+        break;
+      case 'W':
+        caixa(ctx, i + 0.05, j + 0.2, i + 0.95, j + 0.8, 0, 22, '#d9c7a7');
+        caixa(ctx, i + 0.1, j + 0.3, i + 0.4, j + 0.6, 22, 34, '#1f2933');
+        caixa(ctx, i + 0.6, j + 0.35, i + 0.85, j + 0.6, 22, 30, '#7dd3fc');
+        break;
       case 'E':
         caixa(ctx, i + 0.15, j + 0.3, i + 0.85, j + 0.85, 12, 15, '#d6a35a');
         for (const [dx, dy] of [[0.2, 0.35], [0.8, 0.35], [0.2, 0.8], [0.8, 0.8]]) caixa(ctx, i + dx - 0.03, j + dy - 0.03, i + dx + 0.03, j + dy + 0.03, 0, 12, '#7a5a35', { borda: null });
@@ -905,6 +922,7 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
     seguirAlvo(tx, ty, k = 0.12) { const [sx, sy] = proj(tx + 0.5, ty + 0.5); cam.x += (sx - cam.x) * k; cam.y += (sy - 10 - cam.y) * k; limitaCamera(); },
     alternaParedes() { paredesBaixas = !paredesBaixas; return paredesBaixas; },
     zoom(f) { cam.z *= f; limitaCamera(); },
+    mover(dx, dy) { cam.x += dx * 32 / cam.z; cam.y += dy * 32 / cam.z; limitaCamera(); },
     girar() {},
     modo: '2d',
     get selecionado() { return selecionado; },

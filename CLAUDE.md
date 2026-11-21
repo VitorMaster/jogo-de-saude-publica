@@ -1,4 +1,4 @@
-# Saúde Sim — contexto do projeto (leia antes de mexer)
+# Saudedavida - SV — contexto do projeto (leia antes de mexer)
 
 Este repositório é a casa definitiva do jogo. O repositório antigo (`assistente-saude-idosos`) não recebe mais atualizações.
 Todo o trabalho novo acontece aqui, na branch `main`, salvo instrução em contrário do dono (Vitor, estudante de medicina; fala português do Brasil — responda sempre em português).
@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 48 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 54 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -43,6 +43,13 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - Cada cenário tem em `data/cenarios.json › mundo`: `procura` (fração de moradores que busca a unidade por dia útil: metrópole 0.8 > interior 0.4 > rural 0.18), `medicoDias` (5 / 4 / 2 dias), `afazeres` (nº de afazeres por papel/dia) e `campo` (peso das tarefas de visita domiciliar por papel). Queixas leves (`meta.leve`) geram atendimento sem diagnóstico novo; só quem tem doença não diagnosticada passa pelo motor clínico.
 - **Afazeres do dia** (`AFAZERES` em `mundo.js`): agenda diária por profissional (`W.agenda`, não salva). NPCs executam sozinhos quando não há fila; o jogador escolhe em 🎬 Ações → "Afazeres do dia". Todos os dias úteis todo papel tem trabalho; o médico fica na unidade mesmo nos dias sem consultório (visitas domiciliares, receitas, estoque, reuniões). Efeitos reais: estoque (+insumos), receitas (vínculo), roda de conversa, aferição na sala de espera, visitas médicas/de enfermagem, busca ativa.
 - **Trocar de personagem** sem reiniciar a história: botão 👥 no mapa e em Sobre (`trocarPersonagem` em `mundo.js`). Tocar num profissional mostra o que ele faz ("Ver o que está fazendo").
+
+## Equipe, UBS e navegação (v0.8)
+- Nome do jogo: **Saudedavida - SV** (nome curto "SV"). Chaves de `localStorage` e nomes de arquivo antigos (`saude-sim-*`) foram mantidos para não perder saves.
+- **UBS** (template `ubs` 15x12): sala de reunião no topo (mesa `M`, cadeiras `Q`), arquivo `Z` e copa `W` fora da passagem dos pacientes; o ACS espera na copa. Objetos novos têm modelos em `render.js` e `render2d.js`.
+- **Vínculo entre profissionais** (`S.mundo.equipe`, pares entre os 4 papéis, inicial `mundo.equipeVinculo` por cenário; esfria 1/dia útil): vínculo alto = atendimento até 15% mais rápido, baixo = até 30% mais lento + falhas de comunicação nos encaminhamentos (paciente volta ao fim da fila). Sobe com reuniões, discussão de casos, conversas, café na copa, repasse do ACS e supervisão.
+- **Reuniões de equipe** (`convocarReuniao`): fixas seg/qui e sob convocação do jogador; convidados vão e sentam nas cadeiras; quem não pode (em atendimento, em campo, fora do expediente, agenda cheia) é informado com o motivo ao jogador. Qualquer profissional (inclusive o enfermeiro) toca num colega e escolhe Conversar / Discutir caso / Convocar reunião, ou usa 🎬 Ações → Equipe.
+- **Navegação:** botão 🔽/🔼 oculta a barra de ações; ➕/➖ zoom; no computador setas/WASD movem, +/- zoom, Q/E giram, H oculta a barra, C centraliza (`R.mover` em `render.js`/`render2d.js`).
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

@@ -1,7 +1,7 @@
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-export const VERSAO_JOGO = 'v0.7';
+export const VERSAO_JOGO = 'v0.8';
 
 export const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },
@@ -35,7 +35,7 @@ export function contextoTecnico(info) {
 }
 
 export function textoRelatorio(resp, ctx) {
-  const linhas = ['Feedback — Saúde Sim ' + ctx.versao, ''];
+  const linhas = ['Feedback — Saudedavida - SV ' + ctx.versao, ''];
   for (const p of PERGUNTAS) {
     const v = resp[p.id];
     if (v === undefined || v === '' || v === null) continue;
@@ -72,7 +72,7 @@ export async function enviarFeedback(resp, ctx, conf, ambiente = globalThis) {
   }
   try {
     if (ambiente.navigator && ambiente.navigator.share) {
-      await ambiente.navigator.share({ title: 'Feedback — Saúde Sim', text: texto });
+      await ambiente.navigator.share({ title: 'Feedback — Saudedavida - SV', text: texto });
       return { ok: true, via: 'compartilhar' };
     }
   } catch (e) { if (e && e.name === 'AbortError') return { ok: false, via: 'cancelado' }; }
