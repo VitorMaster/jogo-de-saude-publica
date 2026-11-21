@@ -94,3 +94,7 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - **Sentidos** (`render.js › atualizaClimaFx`): chuva, névoa, relâmpago, calor, mosquitos visíveis com infestação alta. `window.__climaForcado` força o clima em testes.
 - **Som e vibração** (`src/som.js`, Web Audio procedural, sem arquivos): chuva, vento, grilos, pássaros, sino, alerta, trovão; botão 🔊/🔇 (`saude-sim-som`). Vibração só em Android (iOS não suporta).
 - Ideia aberta: "4D temporal" (linha do tempo da saúde, voltar e simular o futuro). 83 testes.
+
+## Lago vivo e placas dos lugares (v1.5)
+- **Lago** (`render.js › case 'lago'` + bloco de água em `construirDecoracao`): margem de areia e barranco elípticos, água com gradiente e ondas animadas, juncos/taboas, pedras, vitórias-régias, patos redondos e 7 peixes que nadam e às vezes saltam (`vida.peixes`). Grama do terreno com variação suave (`ruidoSuave`) em vez de xadrez.
+- **Placas** discretas de madeira (baixas, junto à vegetação) com ícone + nome para lago, UPA/hospital, caixa d'água, moinho, pasto, praça, academia e plantação (`placaLocal`); as placas das portas (UBS, escola, lanchonete, trabalho, farmácia) agora também têm texto. Só no 3D (o plano B 2D ainda não tem). `window.__placas` lista as posições (depuração).

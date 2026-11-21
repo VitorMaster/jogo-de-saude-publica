@@ -1,7 +1,7 @@
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-export const VERSAO_JOGO = 'v1.4';
+export const VERSAO_JOGO = 'v1.5';
 
 export const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },

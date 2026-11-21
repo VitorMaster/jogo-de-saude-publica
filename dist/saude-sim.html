@@ -3153,7 +3153,7 @@ function resumoEquipe(W) {
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-const VERSAO_JOGO = 'v1.4';
+const VERSAO_JOGO = 'v1.5';
 
 const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },
@@ -3346,6 +3346,7 @@ function rgb(hex) {
   return c;
 }
 const escCor = (c, f) => { const [r, g, b] = rgb(c); return [lim(r * f, 0, 1), lim(g * f, 0, 1), lim(b * f, 0, 1)]; };
+const ruidoSuave = (x, y, esc, s = 0) => { const fx = x / esc, fy = y / esc, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy; const u = tx * tx * (3 - 2 * tx), v = ty * ty * (3 - 2 * ty); const a = ruido(ix, iy, s), b = ruido(ix + 1, iy, s), c = ruido(ix, iy + 1, s), d = ruido(ix + 1, iy + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
 const mistura = (a, b, t) => { const A = rgb(a), B = rgb(b); return [mixn(A[0], B[0], t), mixn(A[1], B[1], t), mixn(A[2], B[2], t)]; };
 
 const PELES = ['#f6d3b3', '#eab98e', '#cf966a', '#a8714a', '#7b4b2e'];
@@ -3603,14 +3604,14 @@ function criarRenderer(canvas, getEstado, hooks) {
         continue;
       }
       if (ch === '.') { M.caixa(cx, -0.02, cz, 1, 0.02, 1, r > 0.5 ? '#4f565d' : '#535a62'); continue; }
-      if (ch === 'c') { M.caixa(cx, 0, cz, 1, 0.07, 1, (i + j) % 2 === 0 ? '#d3d8d4' : '#c9cfca'); continue; }
+      if (ch === 'c') { M.caixa(cx, 0, cz, 1, 0.07, 1, (i + j) % 2 === 0 ? '#d3d8d4' : '#cdd2ce'); continue; }
       if (ch === 'F') {
         M.caixa(cx, 0, cz, 1, 0.04, 1, mistura('#8a5a32', '#6f4526', r * 0.5));
         for (let n = 0; n < 3; n++) M.caixa(cx - 0.33 + n * 0.33, 0.04, cz, 0.12, 0.05, 0.94, '#5d3a1c');
         continue;
       }
       // grama
-      M.caixa(cx, 0, cz, 1, 0.02, 1, mistura('#79bd62', '#5ea552', r * 0.8));
+      { const sv = ruidoSuave(i, j, 5, 3) * 0.75 + ruidoSuave(i, j, 2, 8) * 0.25; M.caixa(cx, 0, cz, 1, 0.02, 1, mistura('#7cc063', '#589f4e', Math.min(1, sv * 0.9 + r * 0.12))); }
       if (r > 0.7) M.caixa(cx + (ruido(i, j, 1) - 0.5) * 0.6, 0.02, cz + (ruido(i, j, 2) - 0.5) * 0.6, 0.05, 0.16, 0.05, '#3f8a3f', ruido(i, j, 3) * 3);
     }
     // faixas das ruas
@@ -4084,30 +4085,94 @@ function criarRenderer(canvas, getEstado, hooks) {
           break;
         }
         case 'lago': {
-          M.caixa(cx, 0, cz, w - 0.2, 0.05, h - 0.2, '#d8c690');
-          extras.lagos.push({ x: cx, z: cz, w: w - 1.1, h: h - 1.1 });
-          for (let n = 0; n < 9; n++) { const ang = (n / 9) * Math.PI * 2; M.cilindro(cx + Math.cos(ang) * (w / 2 - 0.5), 0.05, cz + Math.sin(ang) * (h / 2 - 0.5), 0.03, 0.8 + ruido(n, 1, 1) * 0.3, '#5a8a3a', 4); }
-          for (let n = 0; n < 5; n++) extras.animais.push({ tipo: 'pato', x: cx + (ruido(n, 3, 4) - 0.5) * (w - 3), z: cz + (ruido(n, 4, 5) - 0.5) * (h - 3), area: [cx - (w - 2) / 2, cz - (h - 2) / 2, cx + (w - 2) / 2, cz + (h - 2) / 2], seed: n });
+          extras.lagos.push({ x: cx, z: cz, w: w - 0.5, h: h - 0.5 });
+          const rx = (w - 0.5) / 2, rz = (h - 0.5) / 2;
+          for (let n = 0; n < 26; n++) { // juncos e taboas na margem
+            const ang = (n / 26) * Math.PI * 2 + ruido(n, 1, 1) * 0.2, ex = 1.02 + ruido(n, 2, 2) * 0.08;
+            const bx = cx + Math.cos(ang) * rx * ex, bz = cz + Math.sin(ang) * rz * ex;
+            if (n % 3 === 0) { M.cilindro(bx, 0.04, bz, 0.025, 0.9 + ruido(n, 3, 3) * 0.4, '#5f8f3a', 4, 0.012); M.cilindro(bx, 0.85, bz, 0.05, 0.22, '#7a4a28', 5, 0.045); }
+            else M.cilindro(bx, 0.04, bz, 0.03, 0.55 + ruido(n, 4, 4) * 0.35, '#6a9a40', 4, 0.005);
+          }
+          for (let n = 0; n < 7; n++) { const ang = n * 0.9 + 0.3, ex = 1.1 + ruido(n, 5, 5) * 0.1; M.esfera(cx + Math.cos(ang) * rx * ex, 0.1, cz + Math.sin(ang) * rz * ex, 0.16 + ruido(n, 6, 6) * 0.1, ['#8d8f93', '#a0a2a6', '#7b7d82'][n % 3], 6, 4, 1, 0.65, 1); }
+          for (let n = 0; n < 5; n++) { // vitórias-régias com flor
+            const ang = n * 1.3 + 0.7, rr = 0.35 + ruido(n, 7, 7) * 0.4, lx = cx + Math.cos(ang) * rx * rr, lz = cz + Math.sin(ang) * rz * rr;
+            M.cilindro(lx, 0.07, lz, 0.2, 0.012, '#4c9a46', 8); if (n % 2 === 0) M.esfera(lx, 0.1, lz, 0.06, '#ffb3d1', 5, 4);
+          }
+          for (let n = 0; n < 5; n++) extras.animais.push({ tipo: 'pato', x: cx + (ruido(n, 3, 4) - 0.5) * (w - 3), z: cz + (ruido(n, 4, 5) - 0.5) * (h - 2.4), area: [cx - rx * 0.7, cz - rz * 0.6, cx + rx * 0.7, cz + rz * 0.6], seed: n });
           break;
         }
         default: break;
       }
     }
+    // placas discretas dos lugares abertos (baixas, junto à vegetação, com ícone e nome)
+    const usados = [];
+    const placaLocal = (icone, texto, cands) => {
+      for (const [px, pz] of cands) {
+        const tx = Math.floor(px), tz = Math.floor(pz);
+        if (!pisavel(tx, tz) || terr(W, tx, tz) !== ',') continue;
+        if (usados.some(([a, b]) => Math.hypot(a - px, b - pz) < 1.6)) continue;
+        usados.push([px, pz]); if (typeof window !== 'undefined') (window.__placas = window.__placas || []).push([texto, px, pz]);
+        M.cilindro(px - 0.45, 0, pz, 0.03, 0.62, '#6b4a2a', 5); M.cilindro(px + 0.45, 0, pz, 0.03, 0.62, '#6b4a2a', 5);
+        M.caixa(px, 0.4, pz, 1.12, 0.42, 0.06, '#6b4a2a'); M.caixa(px, 0.42, pz, 1.06, 0.36, 0.07, '#f4e8c8');
+        extras.texturasPlaca.push({ x: px, y: 0.575, z: pz, icone, texto, rot: 0, placa: true });
+        return true;
+      }
+      return false;
+    };
+    const rodeia = (x0, z0, w, h) => { const c = []; for (const m of [0.5, 1.5, 2.5]) { for (let k = 0; k <= 4; k++) { const fx = x0 + (w * k) / 4, fz = z0 + (h * k) / 4; c.push([fx, z0 + h + m], [x0 + w + m, fz], [fx, z0 - m], [x0 - m, fz]); } } return c.map(([a2, b2]) => [Math.floor(a2) + 0.5, Math.floor(b2) + 0.5]); };
+    for (const d of W.decoracao || []) {
+      if (d.t === 'lago') placaLocal('🎣', 'Lago · pesca', rodeia(d.x, d.y, d.w, d.h));
+      else if (d.t === 'hospital') placaLocal('🏥', 'UPA / Hospital', rodeia(d.x, d.y, d.w, d.h));
+      else if (d.t === 'torre_agua') placaLocal('💧', 'Caixa d\u2019água', rodeia(d.x, d.y, d.w, d.h));
+      else if (d.t === 'moinho') placaLocal('🌾', 'Moinho', rodeia(d.x, d.y, d.w, d.h));
+      else if (d.t === 'pasto') placaLocal('🐄', 'Pasto', rodeia(d.x, d.y, d.w, d.h));
+    }
+    const grupoObjs = (tipos) => { const l = W.objs.filter((o) => tipos.indexOf(o.t) >= 0); if (!l.length) return null; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1; for (const o of l) { x0 = Math.min(x0, o.x); x1 = Math.max(x1, o.x); y0 = Math.min(y0, o.y); y1 = Math.max(y1, o.y); } return { x0, z0: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }; };
+    const gp = grupoObjs(['P', 'K']), ga = grupoObjs(['A']), gr = grupoObjs(['R']);
+    if (gp) placaLocal('🌳', 'Praça', rodeia(gp.x0, gp.z0, gp.w, gp.h));
+    if (ga) placaLocal('🏋️', 'Academia ao ar livre', rodeia(ga.x0, ga.z0, ga.w, ga.h));
+    if (gr) placaLocal('🌽', 'Plantação', rodeia(gr.x0, gr.z0, gr.w, gr.h));
     const malha = M.pronta(new THREE.MeshLambertMaterial({ vertexColors: true }), true, true);
     grupo.add(malha);
     // lagos (água) e placas com ícone
     for (const lg of extras.lagos) {
-      const agua = new THREE.Mesh(new THREE.PlaneGeometry(lg.w, lg.h), new THREE.MeshLambertMaterial({ color: 0x4aa8d8, transparent: true, opacity: 0.92 }));
-      agua.rotation.x = -Math.PI / 2; agua.position.set(lg.x, 0.03, lg.z); grupo.add(agua);
+      const rx = lg.w / 2, rz = lg.h / 2;
+      const margem = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.04, 0.07, 36), new THREE.MeshLambertMaterial({ color: 0xcdb98a }));
+      margem.scale.set(rx + 0.32, 1, rz + 0.32); margem.position.set(lg.x, 0.03, lg.z); margem.receiveShadow = true; grupo.add(margem);
+      const barranco = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.09, 36), new THREE.MeshLambertMaterial({ color: 0x8e7b4f }));
+      barranco.scale.set(rx + 0.06, 1, rz + 0.06); barranco.position.set(lg.x, 0.035, lg.z); grupo.add(barranco);
+      const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const gx = cv.getContext('2d');
+      const gr = gx.createRadialGradient(64, 64, 6, 64, 64, 64); gr.addColorStop(0, '#2b7db0'); gr.addColorStop(0.6, '#3e9bc9'); gr.addColorStop(1, '#79cfe0');
+      gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
+      const agua = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, opacity: 0.8 }));
+      agua.rotation.x = -Math.PI / 2; agua.scale.set(rx, rz, 1); agua.position.set(lg.x, 0.085, lg.z); grupo.add(agua);
+      // brilho/ondas que deslizam
+      const c2 = document.createElement('canvas'); c2.width = 128; c2.height = 128; const g2 = c2.getContext('2d');
+      g2.strokeStyle = 'rgba(255,255,255,0.55)'; g2.lineWidth = 2; g2.lineCap = 'round';
+      for (let n = 0; n < 16; n++) { const yy = (n * 8.3) % 128, xx = (n * 41) % 128; g2.beginPath(); g2.moveTo(xx, yy); g2.quadraticCurveTo(xx + 10, yy - 4, xx + 22, yy); g2.stroke(); }
+      const tx = new THREE.CanvasTexture(c2); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(Math.max(1, rx / 1.2), Math.max(1, rz / 1.2));
+      const brilho = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0.6, depthWrite: false }));
+      brilho.rotation.x = -Math.PI / 2; brilho.scale.set(rx * 0.98, rz * 0.98, 1); brilho.position.set(lg.x, 0.092, lg.z); grupo.add(brilho);
+      lg.tex = tx; lg.agua = agua;
     }
+    const ROTULOS = { ubs: ['✚', 'UBS'], escola: ['📚', 'Escola'], lanche: ['🍔', 'Lanchonete'], trabalho: ['💼', 'Trabalho'], farmacia: ['💊', 'Farmácia Popular'] };
     for (const p of extras.texturasPlaca) {
-      const c = document.createElement('canvas'); c.width = 64; c.height = 64;
-      const g = c.getContext('2d'); g.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-      g.fillText({ ubs: '✚', escola: '📚', lanche: '🍔', trabalho: '💼', farmacia: '💊' }[p.modelo] || '✚', 32, 36);
+      const [ico, txt] = p.modelo ? (ROTULOS[p.modelo] || ['✚', '']) : [p.icone, p.texto];
+      const c = document.createElement('canvas'); c.width = p.placa ? 256 : 128; c.height = p.placa ? 96 : 96;
+      const g = c.getContext('2d'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = p.placa ? '#4a3220' : '#fff';
+      if (p.placa) {
+        g.font = '56px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(ico, 40, 50);
+        let tam = 34; g.font = 'bold ' + tam + 'px sans-serif'; while (g.measureText(txt).width > 170 && tam > 14) { tam -= 2; g.font = 'bold ' + tam + 'px sans-serif'; }
+        g.textAlign = 'left'; g.fillText(txt, 76, 54);
+      } else {
+        g.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(ico, 64, 32);
+        let tam = 20; g.font = 'bold ' + tam + 'px sans-serif'; while (g.measureText(txt).width > 118 && tam > 10) { tam -= 1; g.font = 'bold ' + tam + 'px sans-serif'; }
+        g.fillText(txt, 64, 74);
+      }
       const t = new THREE.CanvasTexture(c);
-      const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.55), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
-      pl.position.set(p.x, p.y - 0.35, p.z); pl.rotation.y = p.rot; pl.translateZ(0.055); grupo.add(pl);
-      const pl2 = pl.clone(); pl2.rotation.y = p.rot + Math.PI; pl2.position.set(p.x, p.y - 0.35, p.z); pl2.translateZ(0.055); grupo.add(pl2);
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(p.placa ? 1.04 : 0.78, p.placa ? 0.39 : 0.58), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+      pl.position.set(p.x, p.y - (p.placa ? 0 : 0.35), p.z); pl.rotation.y = p.rot; pl.translateZ(0.075); grupo.add(pl);
+      const pl2 = pl.clone(); pl2.rotation.y = p.rot + Math.PI; pl2.position.set(p.x, p.y - (p.placa ? 0 : 0.35), p.z); pl2.translateZ(0.075); grupo.add(pl2);
     }
     // postes de luz (lâmpadas que acendem à noite)
     const lampadas = extras.postes.map((p) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 5), new THREE.MeshBasicMaterial({ color: 0xfff2c4 })); m.position.set(p.x, p.y + 0.02, p.z); grupo.add(m); return m; });
@@ -4138,14 +4203,25 @@ function criarRenderer(canvas, getEstado, hooks) {
     for (const m of decor.extras.moinhos) { const pas = new THREE.Group(); pas.position.set(m.x, m.y, m.z + 0.2); for (let k = 0; k < 4; k++) { const pa = new THREE.Mesh(gCaixa, mat('#f1ede4')); pa.scale.set(0.35, 2.4, 0.05); pa.position.y = 1.2; const eixo = new THREE.Group(); eixo.rotation.z = (k * Math.PI) / 2; eixo.add(pa); pas.add(eixo); } grupo.add(pas); vida.pas.push(pas); }
     for (const an of decor.extras.animais) {
       const g = new THREE.Group();
-      const cor = an.tipo === 'vaca' ? (an.seed % 2 ? '#f4f4f4' : '#8a5a3a') : '#f2d34a';
-      const corpo = new THREE.Mesh(gCaixa, mat(cor)); const cab = new THREE.Mesh(gCaixa, mat(an.tipo === 'vaca' ? '#6b4a3a' : '#f2a43a'));
+      const cor = an.tipo === 'vaca' ? (an.seed % 2 ? '#f4f4f4' : '#8a5a3a') : (an.seed % 2 ? '#f5f0e0' : '#8a6a3c');
+      const redondo = an.tipo !== 'vaca'; const corpo = new THREE.Mesh(redondo ? gEsf : gCaixa, mat(cor)); const cab = new THREE.Mesh(redondo ? gEsf : gCaixa, mat(an.tipo === 'vaca' ? '#6b4a3a' : '#f7f3e6'));
       if (an.tipo === 'vaca') { corpo.scale.set(0.5, 0.5, 1.1); corpo.position.y = 0.75; cab.scale.set(0.28, 0.3, 0.3); cab.position.set(0, 0.9, 0.7); for (const [dx, dz] of [[-0.18, -0.4], [0.18, -0.4], [-0.18, 0.4], [0.18, 0.4]]) { const p = new THREE.Mesh(gCaixa, mat('#3a2a22')); p.scale.set(0.1, 0.55, 0.1); p.position.set(dx, 0.28, dz); g.add(p); } if (an.seed % 2) { const mancha = new THREE.Mesh(gCaixa, mat('#2a2a2a')); mancha.scale.set(0.52, 0.2, 0.4); mancha.position.set(0, 0.85, 0.1); g.add(mancha); } }
-      else { corpo.scale.set(0.22, 0.18, 0.34); corpo.position.y = 0.22; cab.scale.set(0.12, 0.12, 0.12); cab.position.set(0, 0.36, 0.2); const bico = new THREE.Mesh(gCaixa, mat('#e8782a')); bico.scale.set(0.08, 0.04, 0.08); bico.position.set(0, 0.34, 0.3); g.add(bico); }
-      g.add(corpo, cab); g.position.set(an.x, an.tipo === 'pato' ? 0.05 : 0, an.z);
+      else { corpo.scale.set(0.12, 0.1, 0.18); corpo.position.y = 0.14; cab.scale.set(0.065, 0.065, 0.065); cab.position.set(0, 0.26, 0.12); const bico = new THREE.Mesh(gCaixa, mat('#e8782a')); bico.scale.set(0.05, 0.025, 0.06); bico.position.set(0, 0.25, 0.2); g.add(bico); }
+      g.add(corpo, cab); g.position.set(an.x, an.tipo === 'pato' ? 0.09 : 0, an.z);
       g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
       grupo.add(g); vida.animais.push({ g, an, alvoX: an.x, alvoZ: an.z, t: 0 });
     }
+    // peixes nos lagos: nadam em órbita sob a água e às vezes saltam
+    vida.peixes = [];
+    decor.extras.lagos.forEach((lg, li) => {
+      for (let n = 0; n < 7; n++) {
+        const f = new THREE.Group(), cor = ['#ff8a2a', '#f4f1e6', '#ffb347', '#d9dde3', '#e8602c', '#f7c948', '#c8d0d8'][n];
+        const corpo = new THREE.Mesh(gEsf, mat(cor)); corpo.scale.set(0.07, 0.06, 0.16);
+        const cauda = new THREE.Mesh(gCaixa, mat(cor)); cauda.scale.set(0.01, 0.09, 0.08); cauda.position.z = -0.17;
+        f.add(corpo, cauda); f.userData.cauda = cauda; grupo.add(f);
+        vida.peixes.push({ g: f, lg, ang: n * 0.9 + li, vel: (0.25 + (n % 4) * 0.08) * (n % 2 ? 1 : -1), rr: 0.25 + ((n * 37) % 60) / 100, pulo: -1, prox: 2 + n * 2.1 });
+      }
+    });
     // reservas de partículas
     const mkPool = (n, geo, cor) => Array.from({ length: n }, () => { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: cor, transparent: true, opacity: 0.7 })); m.visible = false; grupo.add(m); return m; });
     vida.vapor = mkPool(24, gEsf, 0xffffff); vida.agua = mkPool(40, gCaixa, 0x8fd0ff); vida.fumaca = mkPool(12, gEsf, 0xd9d9d9); vida.jatos = mkPool(30, gEsf, 0xa6e0ff);
@@ -4409,7 +4485,22 @@ function criarRenderer(canvas, getEstado, hooks) {
       an.t -= dt;
       const dx = an.alvoX - an.g.position.x, dz = an.alvoZ - an.g.position.z, dist = Math.hypot(dx, dz);
       if (an.t <= 0 || dist < 0.1) { an.alvoX = lim(an.an.area[0] + Math.random() * (an.an.area[2] - an.an.area[0]), an.an.area[0], an.an.area[2]); an.alvoZ = lim(an.an.area[1] + Math.random() * (an.an.area[3] - an.an.area[1]), an.an.area[1], an.an.area[3]); an.t = 3 + Math.random() * 6; }
-      else { const v = (an.an.tipo === 'vaca' ? 0.25 : 0.35) * dt; an.g.position.x += (dx / dist) * Math.min(v, dist); an.g.position.z += (dz / dist) * Math.min(v, dist); an.g.rotation.y = lerpAng(an.g.rotation.y, yawDe(dx, dz), 0.1); an.g.position.y = an.an.tipo === 'pato' ? 0.05 + Math.abs(Math.sin(agora / 250)) * 0.02 : 0; }
+      else { const v = (an.an.tipo === 'vaca' ? 0.25 : 0.35) * dt; an.g.position.x += (dx / dist) * Math.min(v, dist); an.g.position.z += (dz / dist) * Math.min(v, dist); an.g.rotation.y = lerpAng(an.g.rotation.y, yawDe(dx, dz), 0.1); an.g.position.y = an.an.tipo === 'pato' ? 0.09 + Math.abs(Math.sin(agora / 250)) * 0.015 : 0; }
+    }
+    // água do lago: ondas e peixes
+    for (const lg of decor.extras.lagos) if (lg.tex) { lg.tex.offset.x = (agora / 26000) % 1; lg.tex.offset.y = (agora / 41000) % 1; }
+    for (const pe of vida.peixes || []) {
+      const rx = pe.lg.w / 2 - 0.35, rz = pe.lg.h / 2 - 0.35;
+      pe.ang += pe.vel * dt; pe.prox -= dt;
+      const x = pe.lg.x + Math.cos(pe.ang) * rx * pe.rr, z = pe.lg.z + Math.sin(pe.ang) * rz * pe.rr;
+      const dx = -Math.sin(pe.ang) * Math.sign(pe.vel) * rx, dz = Math.cos(pe.ang) * Math.sign(pe.vel) * rz;
+      let y = 0.045;
+      if (pe.pulo >= 0) { pe.pulo += dt; const q = pe.pulo / 0.9; if (q >= 1) pe.pulo = -1; else y = 0.045 + Math.sin(q * Math.PI) * 0.45; }
+      else if (pe.prox <= 0) { pe.pulo = 0; pe.prox = 6 + Math.random() * 10; }
+      pe.g.position.set(x, y, z); pe.g.rotation.y = yawDe(dx, dz);
+      pe.g.rotation.x = pe.pulo >= 0 ? -Math.cos((pe.pulo / 0.9) * Math.PI) * 0.7 : 0;
+      pe.g.userData.cauda.rotation.y = Math.sin(agora / 110 + pe.ang * 5) * 0.7;
+      pe.g.visible = true;
     }
     // postes de luz
     for (const l of decor.lampadas) l.material.color.setHex(noiteF > 0.3 ? 0xffe9a8 : 0xd8d8cf);
@@ -6219,7 +6310,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.4 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.5 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
