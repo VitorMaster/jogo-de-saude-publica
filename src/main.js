@@ -10,9 +10,11 @@ import {
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
+import { PERGUNTAS, contextoTecnico, temResposta, enviar as enviarFeedback } from './feedback.js';
 
 const SAVE_KEY = 'saude-sim-save-v3';
 const INTRO_KEY = 'saude-sim-intro-v3';
+const FEEDBACK_KEY = 'saude-sim-feedback-v1';
 
 let base, cfg, S, W, R;
 let aba = 'mundo';
@@ -24,6 +26,7 @@ let jaDeuOrdem = false;
 let assinaturaCartao = '';
 let ultimaChaveAtend = '';
 let errosSeguidos = 0;
+let fbResp = {}, fbEstado = 'editando', fbMsg = ''; // rascunho e estado do envio do feedback
 
 const $ = (q) => document.querySelector(q);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -56,6 +59,8 @@ function carregarSalvo() {
   return null;
 }
 function jaViuIntro() { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return true; } }
+function carregaRascunhoFb() { try { fbResp = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '{}') || {}; } catch { fbResp = {}; } }
+function salvaRascunhoFb() { try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify(fbResp)); } catch { /* ok */ } }
 function marcaIntro() { try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* ok */ } }
 
 /* ---------- Apresentação ---------- */
@@ -124,8 +129,8 @@ function montaTopo() {
 }
 function montaRodape() {
   const abas = modo() === 'paciente'
-    ? [['mundo', '🗺️', 'Mundo'], ['saude', '🩺', 'Minha saúde'], ['diario', '📓', 'Diário']]
-    : [['mundo', '🗺️', 'Mundo'], ['unidade', '🏥', 'Unidade'], ['diario', '📓', 'Diário'], ['desempenho', '📊', 'Desempenho']];
+    ? [['mundo', '🗺️', 'Mundo'], ['saude', '🩺', 'Saúde'], ['diario', '📓', 'Diário'], ['feedback', '💬', 'Feedback']]
+    : [['mundo', '🗺️', 'Mundo'], ['unidade', '🏥', 'Unidade'], ['diario', '📓', 'Diário'], ['desempenho', '📊', 'Desempenho'], ['feedback', '💬', 'Feedback']];
   $('#rodape').innerHTML = `<div class="abas" style="grid-template-columns:repeat(${abas.length},1fr)">${abas.map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
 }
 
@@ -309,9 +314,54 @@ function renderVista() {
   const v = $('#vista');
   if (aba === 'mundo') return;
   const scroll = v.scrollTop;
-  const corpo = { saude: viewSaude, diario: viewDiario, unidade: viewUnidade, desempenho: viewDesempenho }[aba]();
+  const corpo = { saude: viewSaude, diario: viewDiario, unidade: viewUnidade, desempenho: viewDesempenho, feedback: viewFeedback }[aba]();
   v.innerHTML = corpo + (modo() === 'paciente' && aba === 'diario' ? '' : '') + (aba === 'saude' ? '<button class="btn" style="margin-top:14px" data-act="sobre"><span>ℹ️ Sobre o jogo e avisos</span></button>' : '');
   v.scrollTop = scroll;
+}
+
+/* ---------- Feedback ---------- */
+function infoFeedback() {
+  let instalado = false;
+  try { instalado = !!(window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch { /* ok */ }
+  return contextoTecnico({
+    userAgent: navigator.userAgent, graficos: R && R.modo === '3d' ? '3D' : '2D', cenario: cfg && cfg.cenario.id,
+    personagem: S && S.jogador ? (modo() === 'paciente' ? 'paciente' : papel()) : '-', mesesJogados: S && S.metricas ? S.mes : undefined,
+    instalado, tela: `${window.innerWidth}x${window.innerHeight}`,
+  });
+}
+
+function viewFeedback() {
+  if (fbEstado === 'enviado') {
+    return `<div class="card"><h2>Obrigado! 💚</h2><p>${esc(fbMsg)}</p><p class="dica-t">Sua opinião ajuda a decidir os próximos passos do jogo.</p></div>
+      <button class="btn" style="margin-top:12px" data-act="fb-novo"><span>Enviar outro feedback</span></button>`;
+  }
+  const blocos = PERGUNTAS.map((p) => {
+    const v = fbResp[p.id];
+    if (p.tipo === 'estrelas') return `<div class="card fb"><b>${esc(p.rot)}</b><div class="fb-op">${[1, 2, 3, 4, 5].map((n) => `<button data-act="fb-op" data-id="${p.id}" data-v="${n}" aria-pressed="${v === n}">${n <= (v || 0) ? '⭐' : '☆'}</button>`).join('')}</div></div>`;
+    if (p.tipo === 'opcoes') return `<div class="card fb"><b>${esc(p.rot)}</b><div class="fb-op">${p.opcoes.map((o) => `<button class="pill" data-act="fb-op" data-id="${p.id}" data-v="${esc(o)}" aria-pressed="${v === o}">${esc(o)}</button>`).join('')}</div></div>`;
+    return `<div class="card fb"><label for="fb-${p.id}"><b>${esc(p.rot)}</b></label><${p.curto ? 'input type="text"' : 'textarea rows="3"'} id="fb-${p.id}" data-fb="${p.id}" maxlength="600" ${p.curto ? `value="${esc(v || '')}"` : ''}>${p.curto ? '' : esc(v || '')}${p.curto ? '' : '</textarea>'}${p.curto ? '' : ''}</div>`;
+  }).join('');
+  const ctx = infoFeedback();
+  return `<h2 class="secao">Sua opinião</h2>
+    <p class="dica-t">Leva 2 minutos. Responda o que quiser — nada é obrigatório.</p>${blocos}
+    <div class="card fb"><b>Informações enviadas junto</b><p class="dica-t">Versão ${esc(ctx.versao)} · gráficos ${esc(ctx.graficos)} · cenário ${esc(ctx.cenario)} · tela ${esc(ctx.tela)}. Nenhum dado de saúde seu é enviado.</p></div>
+    <button class="btn primario" style="margin-top:12px" data-act="fb-enviar" ${fbEstado === 'enviando' ? 'disabled' : ''}><span>${fbEstado === 'enviando' ? 'Enviando…' : '📨 Enviar feedback'}</span></button>
+    ${fbMsg ? `<p class="aviso" style="margin-top:10px">${esc(fbMsg)}</p>` : ''}`;
+}
+
+async function enviaFeedbackAgora() {
+  if (!temResposta(fbResp)) { fbMsg = 'Responda ao menos uma pergunta antes de enviar.'; renderVista(); return; }
+  fbEstado = 'enviando'; fbMsg = ''; renderVista();
+  const r = await enviarFeedback(fbResp, infoFeedback(), base.game.feedback);
+  if (r.ok) {
+    fbEstado = 'enviado';
+    fbMsg = { forms: 'Seu feedback foi enviado.', compartilhar: 'Feedback compartilhado.', copia: 'O texto foi copiado. Cole numa conversa e envie para quem te passou o jogo.' }[r.via] || 'Feedback enviado.';
+    fbResp = {}; salvaRascunhoFb();
+  } else {
+    fbEstado = 'editando';
+    fbMsg = r.via === 'cancelado' ? '' : 'Não foi possível enviar agora. Tente de novo com internet.';
+  }
+  if (aba === 'feedback') renderVista();
 }
 
 /* ---------- Folhas (modais) ---------- */
@@ -589,6 +639,10 @@ function menuUnidade() {
 }
 
 /* ---------- Eventos ---------- */
+document.addEventListener('input', (ev) => {
+  const id = ev.target && ev.target.dataset && ev.target.dataset.fb;
+  if (id) { fbResp[id] = ev.target.value; salvaRascunhoFb(); }
+});
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -598,6 +652,9 @@ document.addEventListener('click', (ev) => {
   if (['aba', 'fechar'].includes(act)) limpaToast();
   switch (act) {
     case 'aba': mostraAba(id); break;
+    case 'fb-op': { const p = PERGUNTAS.find((q) => q.id === id); const v = p.tipo === 'estrelas' ? Number(el.dataset.v) : el.dataset.v; fbResp[id] = fbResp[id] === v ? undefined : v; salvaRascunhoFb(); renderVista(); break; }
+    case 'fb-enviar': enviaFeedbackAgora(); break;
+    case 'fb-novo': fbEstado = 'editando'; fbMsg = ''; renderVista(); break;
     case 'vel': vel = Number(el.dataset.v); atualizaTopo(); break;
     case 'pular-dia': { const v0 = vel; if (pularDia(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
     case 'pular': { const v0 = vel; if (pularMes(W, S, cfg)) { velAntes = v0 || 1; aoVirarMes(); } atualizaTopo(); break; }
@@ -730,6 +787,7 @@ function criarRendererSeguro() {
 
 async function iniciar() {
   base = await carregarBase();
+  carregaRascunhoFb();
   montaTopo();
   let salvo = carregarSalvo();
   R = criarRendererSeguro();

@@ -1,7 +1,7 @@
 {
   "name": "Saúde Sim",
   "short_name": "Saúde Sim",
-  "description": "Cuide de uma unidade básica de saúde e das famílias do seu território.",
+  "description": "Jogo de simulação em saúde: viva a história de um morador ou de um profissional da unidade de saúde.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",

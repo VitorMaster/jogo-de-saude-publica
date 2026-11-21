@@ -5,6 +5,9 @@ Simulador de saúde para o **público geral**, jogável no **celular**. Você es
 
 > Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.
 
+## Testar com amigos (app instalável + aba Feedback)
+Veja [docs/FEEDBACK.md](docs/FEEDBACK.md): publicar no GitHub Pages, instalar na tela inicial e receber respostas no Google Forms.
+
 ## Como rodar
 
 ```bash

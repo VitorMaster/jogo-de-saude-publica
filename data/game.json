@@ -105,5 +105,10 @@
   },
   "insumosBase": 6,
   "insumosPorNivel": 4,
-  "tempoPorNivel": 2
+  "tempoPorNivel": 2,
+  "feedback": {
+    "_ajuda": "Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.",
+    "formAction": "",
+    "campos": {}
+  }
 }

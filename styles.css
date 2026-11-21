@@ -201,3 +201,12 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 
 .c-btns.um { grid-template-columns: 1fr; margin-bottom: 6px; }
 .c-btns.um .btn { justify-content: center; min-height: 46px; font-size: 15px; }
+
+/* Feedback */
+.card.fb { margin-top: 10px; }
+.card.fb b { display: block; margin-bottom: 8px; }
+.fb-op { display: flex; flex-wrap: wrap; gap: 8px; }
+.fb-op button { min-height: 44px; min-width: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 20px; cursor: pointer; }
+.fb-op button.pill { font-size: 14px; font-weight: 600; }
+.fb-op button[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); }
+.card.fb textarea, .card.fb input { width: 100%; font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; }

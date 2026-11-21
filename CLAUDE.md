@@ -39,6 +39,10 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 Entregue: 3D com luz e sombras, câmera giratória, móveis (estante, poltrona, plantas, fonte), ler/caminhada de verdade, menu por ações, atrações por cenário, profissionais com ações próprias, plano B 2D, 37 testes.
 Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mais cômodos; mais roupas e cabelos; transições de sentar/levantar mais suaves; sons; mais doenças e histórias (gestação, puericultura, vacinação, saúde mental); papel de gestor; eventos do mundo; validação clínica com colegas; painel do professor e piloto com escola/UBS (ver monetização).
 
+## Teste com amigos (v0.6)
+- PWA: `sw.js` (rede primeiro, cache de reserva; subir `VERSAO` a cada mudança de arquivos) + `manifest.webmanifest`; hospedagem pelo GitHub Pages (branch `main`, raiz). Passo a passo em `docs/FEEDBACK.md`.
+- Aba **💬 Feedback** (`src/feedback.js` + `viewFeedback` em `main.js`): perguntas fixas, rascunho em `localStorage` (`saude-sim-feedback-v1`), envio via Google Forms se `data/game.json › feedback` estiver preenchido; senão compartilhar/copiar. Nenhum dado de saúde é enviado, só respostas e informações técnicas.
+
 ## Convenções
 - Commits em português, descritivos. Não criar PR sem pedido. Não incluir identificador de modelo em arquivos do repositório.
 - Não inventar fontes clínicas; manter o aviso "Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento…".
