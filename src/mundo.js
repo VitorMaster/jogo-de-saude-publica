@@ -5,6 +5,7 @@ import { clamp, rnd, rint } from './rng.js';
 import {
   avancarMes, achaPessoa, achaFamilia, todasPessoas, adesao, sintomasDengueVisiveis, CONDS,
   acaoVisita, acaoMedir, acaoConsulta, acaoOrientar, acaoMutirao, acaoTratamento,
+  cuidadoDiario, acaoCuidador, pedirCuidador, encaminharReferencia, criterioReferencia, dependencia, copagamento,
 } from './engine.js';
 
 const CAMINHAVEL = new Set(['.', ',', 'c', 'F', '_', '+']);
@@ -162,11 +163,11 @@ const NECESSIDADES = ['fome', 'energia', 'higiene', 'disp', 'humor'];
 export const ROTULO_NEC = { fome: ['🍽️', 'Fome'], energia: ['😴', 'Energia'], higiene: ['🚿', 'Higiene'], disp: ['🏃', 'Disposição'], humor: ['😊', 'Humor'] };
 
 function contadoresNovos() {
-  return { exMin: 0, sedMin: 0, saudavel: 0, fast: 0, sonoMin: 0, humorSoma: 0, humorN: 0, trabMin: 0, cafe: false, almoco: false, jantar: false };
+  return { exMin: 0, sedMin: 0, saudavel: 0, fast: 0, sonoMin: 0, humorSoma: 0, humorN: 0, trabMin: 0, pescaMin: 0, cafe: false, almoco: false, jantar: false };
 }
 
 export function iniciarEstadoMundo(S) {
-  const M = { v: 2, min: 6 * 60, rng: (S.seed ^ 0x9e3779b9) >>> 0 || 7, needs: {}, dia: {}, intencao: {}, fumar: {}, remedios: {} };
+  const M = { v: 2, min: 6 * 60, rng: (S.seed ^ 0x9e3779b9) >>> 0 || 7, needs: {}, dia: {}, intencao: {}, fumar: {}, remedios: {}, cuidou: {}, cuidadosDia: {} };
   for (const p of todasPessoas(S)) {
     M.needs[p.id] = { fome: rint(M, 60, 95), energia: rint(M, 70, 100), higiene: rint(M, 60, 95), disp: rint(M, 50, 90), humor: rint(M, 55, 90) };
     M.dia[p.id] = contadoresNovos();
@@ -189,6 +190,7 @@ export function criarMundo(S, cfg) {
   W.ordens = [];
   W.tarefasACS = [];
   W.agenda = {}; // afazeres do dia de cada profissional (não é salvo)
+  W.pedidos = []; W.pedSeq = 0; // pedidos à coordenação (enfermeira)
   W.apoio = {}; // até quando cada profissional trabalha mais rápido após discutir um caso
   W.reuniao = null; W.ultReuniao = null;
   W.vel = cfg.cenario.mundo.velocidade || 1;
@@ -196,7 +198,7 @@ export function criarMundo(S, cfg) {
   W.relatorio = null;
   W.sinal = 0;
   for (const f of S.familias) for (const p of f.pessoas) W.agentes.push(novoAgente('res', p.id, { pid: p.id }));
-  sincronizarEquipe(W, S);
+  sincronizarEquipe(W, S); sincronizarCuidadores(W, S);
   const j = S.jogador;
   for (const a of W.agentes) {
     a.jogador = !!j && ((a.k === 'res' && j.modo === 'paciente' && a.pid === j.pid) || (a.k === 'staff' && j.modo === 'profissional' && a.papel === j.papel && a.ind === 0));
@@ -298,6 +300,10 @@ export const ACOES = {
   caminhar: { ic: '🚶', rot: 'Fazendo uma caminhada', dur: 1, local: 'rua', pose: 'parado', onde: 'local', ef: (n, dt) => { n.disp += 0.5 * dt; n.humor += 0.2 * dt; }, andarExercicio: true },
   remedio: { ic: '💊', rot: 'Tomando o remédio', obj: 'G', casa: true, dur: 2, pose: 'comer', onde: 'frente', fimC: (c, p, int, M) => { const r = M.remedios[p.id]; if (!r.hoje) { r.hoje = true; r.dias += 1; } } },
   esperar: { ic: '⏳', rot: 'Esperando', dur: 5, pose: 'parado', onde: 'local' },
+  acamado: { ic: '🛌', rot: 'Acamado(a), dependendo de cuidados', obj: 'B', casa: true, dur: 600, pose: 'deitar', onde: 'objeto', ef: (n, dt) => { n.energia += 0.02 * dt; }, fim: () => false },
+  cuidar: { ic: '🤲', rot: 'Cuidando de quem está acamado(a)', obj: 'B', casa: true, dur: 20, pose: 'parado', onde: 'frente', fimC: (c, p) => registraCuidado(p) },
+  pescar: { ic: '🎣', rot: 'Pescando no lago', obj: 'f', dur: 50, pose: 'pescar', onde: 'objeto', ef: (n, dt) => { n.humor += 0.35 * dt; n.disp -= 0.02 * dt; n.fome -= 0.02 * dt; }, cont: 'pescaMin' },
+  farmacia: { ic: '💊', rot: 'Comprando remédio na farmácia', obj: 'I', dur: 8, pose: 'parado', onde: 'frente', fimC: (c, p) => compraRemedio(p) },
 };
 export const ACOES_INFO = ACOES;
 export const ROTULO_ACAO = Object.fromEntries(Object.entries(ACOES).map(([k, v]) => [k, v.rot]));
@@ -315,8 +321,64 @@ export function sintomasDe(S, cfg, pid) {
   return [...new Set(out)];
 }
 
+/* ---------- Cuidadores, acamados e compra de remédio ---------- */
+let CTX = null; // { W, S, cfg } do passo em andamento (usado pelas ações que mexem em dinheiro e cuidado)
+const acamadoDe = (S, p) => todasPessoas(S).find((q) => q.acamado && q.cuidador && q.cuidador.pid === p.id && !q.internado) || null;
+
+/** Um cuidado foi prestado: as necessidades do acamado são atendidas e o dia conta para a qualidade do cuidado. */
+function registraCuidado(cuidador) {
+  const { S } = CTX, M = S.mundo;
+  const q = cuidador.cuidador !== undefined && cuidador.acamado ? cuidador : acamadoDe(S, cuidador);
+  if (!q) return;
+  const n = M.needs[q.id];
+  n.fome = clamp(n.fome + 30, 0, 100); n.higiene = clamp(n.higiene + 30, 0, 100); n.humor = clamp(n.humor + 6, 0, 100);
+  M.cuidou[q.id] = minutoDoDia(S);
+  M.cuidadosDia[q.id] = (M.cuidadosDia[q.id] || 0) + 1;
+}
+
+/** O paciente compra o remédio em falta na Farmácia Popular (parte do preço) com o dinheiro da família. */
+function compraRemedio(p) {
+  const { W, S, cfg } = CTX;
+  const f = achaFamilia(S, p.familiaId);
+  const pagos = [];
+  for (const id of [...p.semRemedio]) {
+    const v = copagamento(cfg, id);
+    if (f.saldo >= v) { f.saldo -= v; p.semRemedio = p.semRemedio.filter((x) => x !== id); pagos.push(`${cfg.cond[id].nome} R$ ${v}`); }
+  }
+  avisar(W, S, pagos.length ? `💊 Remédio comprado na Farmácia Popular (${pagos.join('; ')}). Saldo da família: R$ ${f.saldo}.` : `💸 Sem dinheiro para o remédio na Farmácia Popular (saldo R$ ${f.saldo}). Procure a unidade de saúde.`, pagos.length ? 'bom' : 'alerta', { pessoaId: p.id });
+}
+
+/** Garante um cuidador (figura no mapa) para quem tem cuidador contratado; remove quando deixa de existir. */
+export function sincronizarCuidadores(W, S) {
+  for (const f of S.familias) for (const p of f.pessoas) {
+    if (!p.cuidador || p.cuidador.tipo !== 'contratado') continue;
+    const id = `cuid-${p.id}`;
+    if (!W.agentes.some((a) => a.id === id)) W.agentes.push(novoAgente('cuid', id, { pid: p.id, papel: 'cuidador' }));
+  }
+  W.agentes = W.agentes.filter((a) => { if (a.k !== 'cuid') return true; const p = achaPessoa(S, a.pid); return p && p.cuidador && p.cuidador.tipo === 'contratado'; });
+}
+
+function passoCuidador(W, S, cfg, a, dt) {
+  const p = achaPessoa(S, a.pid), m = minutoDoDia(S);
+  if (m < 7 * 60 || m >= 19 * 60 || p.internado) { a.vis = false; a.path = []; a.acao = null; a.alvo = null; return; }
+  if (!a.vis) { const q = W.casas[p.familiaId].porta.dentro; a.x = q.x; a.y = q.y; a.vis = true; a.path = []; a.acao = null; }
+  if (a.path.length) { mover(a, dt, W.vel); return; }
+  if (a.alvo && !a.acao) { a.acao = { k: a.alvo.k, obj: a.alvo.obj, restante: a.alvo.k === 'cuidar' ? 20 : 15 }; a.alvo = null; return; }
+  if (a.acao) {
+    a.acao.restante -= dt;
+    if (a.acao.restante <= 0) { if (a.acao.k === 'cuidar') registraCuidado(p); a.acao = null; a.ocioso = 0; }
+    return;
+  }
+  a.ocioso = (a.ocioso || 0) + dt;
+  if (a.ocioso < 40) return;
+  a.ciclo = ((a.ciclo || 0) + 1) % 3;
+  const tipo = a.ciclo === 0 ? 'cozinhar' : 'cuidar', obj = objetosDe(W, tipo === 'cozinhar' ? 'G' : 'B', p.familiaId)[0];
+  if (obj && irPara(W, a, pontosDeUso(W, obj))) a.alvo = { k: tipo, obj };
+}
+
 /* ---------- Decisão autônoma ("vontade própria") ---------- */
 function decidir(W, S, cfg, a, p, f, n, c, int) {
+  if (p.acamado) return { k: 'acamado', dur: 600 };
   const M = S.mundo, m = minutoDoDia(S), dow = diaSemana(S), util = dow < 5;
   const oc = p.ocupacao || 'casa';
   const mundo = cfg.cenario.mundo;
@@ -368,8 +430,12 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
 
   if (p.tabagismo && m >= M.fumar[p.id] && m < 22 * 60) { M.fumar[p.id] = m + 150 + rint(M, 0, 60); return { k: 'fumar' }; }
 
+  // cuidador familiar: cuida de quem está acamado a cada ~2h30 durante o dia
+  const dependente = acamadoDe(S, p);
+  if (dependente && m >= 7 * 60 && m < 21 * 60 && m - (M.cuidou[dependente.id] === undefined ? -999 : M.cuidou[dependente.id]) >= 150 && !p.dengue.ativa) return { k: 'cuidar', obj: objetosDe(W, 'B', p.familiaId)[0] };
+
   // trabalho e escola
-  if (util && oc === 'trabalho' && !p.dengue.ativa) {
+  if (util && oc === 'trabalho' && !p.dengue.ativa && !dependente) {
     if (m >= 7.5 * 60 && m < 12 * 60) return { k: mundo.trabalho === 'R' ? 'roca' : 'trabalho', fim: 12 * 60 };
     if (m >= 13 * 60 && m < 17 * 60) return { k: mundo.trabalho === 'R' ? 'roca' : 'trabalho', fim: 17 * 60 };
   }
@@ -386,6 +452,7 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
   if (temPraca) op.push(['praca', 0.25 + (1 - ativ) * 0.3]);
   if (temAcad && p.idade >= 14) op.push(['academia', (0.05 + ativ * 0.6 + int.atividade * 0.6) * fatorEx]);
   if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.5) * fatorEx]);
+  if (p.idade >= 10 && objetosDe(W, 'f', null).length) op.push(['pescar', (0.1 + (p.habitos.estresse / 100) * 0.9 + (n.humor < 50 ? 0.3 : 0)) * ((m >= 15 * 60 && m < 19 * 60) || !util ? 1 : 0.3)]); // o lago alivia o estresse
   if (p.idade >= 6 && objetosDe(W, 'N', p.familiaId).length) op.push(['ler', 0.3 + (1 - ativ) * 0.4 + (p.idade >= 60 ? 0.5 : 0) + (p.ocupacao === 'escola' ? 0.2 : 0)]);
   if (temLanche && mundo.almoco === 'lanchonete' && m >= 17 * 60 && p.idade >= 14) op.push(['lanche', 0.1 + ((100 - p.habitos.alimentacao) / 100) * 0.8 - int.alimentacao * 0.4]);
   if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['caminhar', 0.5 * fatorEx], ['conversar', temPraca ? 0 : 0.5 * fatorEx]]) };
@@ -398,6 +465,7 @@ function ocupantes(W, o, a) {
   let n = 0;
   for (const x of W.agentes) {
     if (x === a || !x.vis) continue;
+    if (x.acao && x.acao.k === 'acamado') continue; // a cama do acamado continua livre para o resto da família
     if ((x.acao && x.acao.obj === o) || (x.pend && x.pend.obj === o) || x.cadeira === o) n++;
   }
   return n;
@@ -568,7 +636,7 @@ function passoMorador(W, S, cfg, a, dt) {
   } else if (a.acao) {
     const def = ACOES[a.acao.k];
     if (def.ef) def.ef(n, dt);
-    if (def.cont) c[def.cont] += dt;
+    if (def.cont) c[def.cont] = (c[def.cont] || 0) + dt;
     if (def.exLeve) c.exMin += dt * def.exLeve;
     a.acao.restante -= dt;
     const alarme = a.acao.k === 'dormir' && minutoDoDia(S) >= 6 * 60 && minutoDoDia(S) < 12 * 60 && diaSemana(S) < 5 && ['trabalho', 'escola'].includes(p.ocupacao) && !a.jogador;
@@ -743,6 +811,8 @@ function rotearAuto(W, S, cfg, a, t) {
   }
   if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
   for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
+  const ref = criterioReferencia(S, p);
+  if (ref && !W.pedidos.some((x) => x.tipo === 'referencia' && x.pid === p.id && x.estado === 'pendente')) criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: p.id, rot: `Referência de ${p.nome}: ${ref}` });
   return 'liberar';
 }
 
@@ -763,6 +833,7 @@ function passoEquipe(W, S, cfg, a, dt) {
   if (a.pausaEquipe > 0) a.pausaEquipe -= dt;
   if (a.path.length) { mover(a, dt, W.vel); return; }
   garanteAgenda(W, S, cfg, a);
+  if (a.papel === 'enfermeiro' && !a.jogador) processaPedidosNPC(W, S, cfg); // coordenação
   if (a.pausaEquipe > 0 && !a.tarefa && !a.afz && !a.jogador) return; // conversando com um colega
   if (a.afz && !a.tarefa) { passoAfazer(W, S, cfg, a, dt); return; }
   if (a.papel === 'acs') return passoACS(W, S, cfg, a, dt);
@@ -853,7 +924,8 @@ export const AFAZERES = {
     { id: 'prontuarios', rot: 'Revisar prontuários e exames', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'receitas', rot: 'Renovar receitas de quem está em tratamento', ic: '📝', local: 'D', dur: 25 },
     { id: 'caso', rot: 'Discutir casos com a enfermagem', ic: '🗣️', local: 'seat', dur: 25, equipe: ['medico', 'enfermeiro'] },
-    { id: 'visita_med', rot: 'Visita domiciliar (consulta em casa)', ic: '🏠', local: 'campo', dur: 45, campo: true },
+    { id: 'visita_med', rot: 'Visita domiciliar (consulta em casa)', ic: '🏠', local: 'campo', dur: 45, campo: true, pedido: true },
+    { id: 'visita_acam', rot: 'Visita ao acamado e ao cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, pedido: true, acamado: true },
   ],
   enfermeiro: [
     { id: 'educacao', rot: 'Roda de conversa na sala de espera', ic: '🗣️', local: 'H', dur: 30 },
@@ -861,18 +933,24 @@ export const AFAZERES = {
     { id: 'supervisao', rot: 'Supervisionar o técnico e os registros', ic: '📋', local: 'U', dur: 25 },
     { id: 'cadastro', rot: 'Atualizar cadastros do território', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'visita_enf', rot: 'Visita domiciliar (acompanhar tratamento)', ic: '🏠', local: 'campo', dur: 40, campo: true },
+    { id: 'visita_acam', rot: 'Visita ao acamado e ao cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, acamado: true },
+    { id: 'grupo_atividade', rot: 'Grupo de atividade física na praça', ic: '🧘', local: 'P', dur: 40 },
   ],
   tecnico: [
     { id: 'sala_espera', rot: 'Aferir a pressão de quem aguarda', ic: '📏', local: 'H', dur: 20 },
     { id: 'estoque', rot: 'Organizar farmácia e insumos', ic: '📦', local: 'Y', dur: 25 },
+    { id: 'insumos', rot: 'Solicitar reposição de insumos à coordenação', ic: '📨', local: 'U', dur: 15, pedido: true },
     { id: 'esterilizar', rot: 'Esterilizar e organizar a sala', ic: '🧼', local: 'D', dur: 25 },
     { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'Z', dur: 25 },
     { id: 'curativos', rot: 'Curativos e procedimentos simples', ic: '🩹', local: 'D', dur: 25 },
+    { id: 'visita_acam', rot: 'Curativo domiciliar no acamado', ic: '🛏️', local: 'campo', dur: 35, campo: true, pedido: true, acamado: true },
   ],
   acs: [
     { id: 'cadastro_acs', rot: 'Atualizar o cadastro de uma família', ic: '📇', local: 'campo', dur: 40, campo: true },
-    { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true },
+    { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true, pedido: true },
+    { id: 'visita_acam', rot: 'Visita ao acamado e orientação do cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, pedido: true, acamado: true },
     { id: 'repasse', rot: 'Repassar os casos do território para a equipe', ic: '📞', local: 'U', dur: 20 },
+    { id: 'grupo_atividade', rot: 'Grupo de caminhada na praça', ic: '🚶', local: 'P', dur: 40 },
   ],
 };
 const CAFE = { id: 'cafe', rot: 'Pausa para o café e conversa com a equipe', ic: '☕', local: 'W', dur: 15 };
@@ -890,10 +968,14 @@ function gerarAgenda(W, S, cfg, a) {
   if (semConsultorio) n = Math.max(n, 6);
   const campoBase = (mundo.campo || {})[a.papel];
   const campoW = (campoBase === undefined ? 0.3 : campoBase) * (semConsultorio ? 2.5 : 1);
-  const pool = [...AFAZERES[a.papel], CAFE];
+  const acamados = todasPessoas(S).filter((q) => q.acamado && !q.internado);
+  const pool = [...AFAZERES[a.papel].filter((d) => !d.acamado || acamados.length), CAFE];
   const lista = [];
   const poe = (def) => lista.push({ uid: String(lista.length), def, feito: false, falhas: 0 });
   if (DIAS_REUNIAO.includes(dow)) poe(REUNIAO);
+  const precisaCuidado = acamados.some((q) => !q.cuidador || q.cuidador.qualidade < 60 || q.acamado.lesao >= 0.5);
+  const dAc = AFAZERES[a.papel].find((d) => d.acamado);
+  if (dAc && precisaCuidado && lista.length < n && dow < 5 && (a.papel !== 'tecnico' || acamados.some((q) => q.acamado.lesao >= 0.5))) poe(dAc); // acamado com cuidado frágil entra na agenda
   for (let guard = 0; lista.length < n && guard < 80; guard++) {
     const def = escolhe(M, pool.map((d) => [d, d.campo ? campoW : 1]));
     if (!def.campo && lista.some((x) => x.def.id === def.id)) continue;
@@ -915,7 +997,8 @@ export function afazeresDoDia(W, S, cfg) {
   if (!a || a.k !== 'staff' || !a.vis) return { lista: [], feitos: 0, total: 0, aberto: false };
   const ag = garanteAgenda(W, S, cfg, a);
   const emCurso = a.afz ? a.afz.item : null;
-  const lista = ag.lista.map((i) => ({ uid: i.uid, rot: i.def.rot, ic: i.def.ic, campo: !!i.def.campo, equipe: !!i.def.equipe, feito: i.feito, andamento: i === emCurso }));
+  const estado = (i) => (i.feito ? (i.negado ? 'negado' : 'feito') : i === emCurso ? 'andamento' : i.aprovado ? 'aprovado' : i.pedidoRef && i.pedidoRef.estado === 'pendente' ? 'aguardando' : i.def.pedido && a.papel !== 'enfermeiro' ? 'precisa' : 'livre');
+  const lista = ag.lista.map((i) => ({ uid: i.uid, rot: i.def.rot, ic: i.def.ic, campo: !!i.def.campo, equipe: !!i.def.equipe, pedido: !!i.def.pedido && a.papel !== 'enfermeiro', feito: i.feito, andamento: i === emCurso, estado: estado(i) }));
   return { lista, feitos: lista.filter((i) => i.feito).length, total: lista.length, aberto: true };
 }
 
@@ -1040,12 +1123,78 @@ function encerrarReuniao(W, S, cfg) {
   W.sinal++;
 }
 
+/* --- Coordenação: a enfermeira é a coordenadora da unidade e regula o que sai para o território --- */
+function criarPedido(W, S, cfg, a, dados) {
+  const dia = diaDoJogo(S);
+  const ped = { id: ++W.pedSeq, agente: a.id, papel: a.papel, dia, t0: S.mundo.min, estado: 'pendente', ...dados };
+  W.pedidos.push(ped);
+  const enf = W.agentes.find((x) => x.k === 'staff' && x.papel === 'enfermeiro');
+  if (a.jogador) avisar(W, S, `📤 Pedido enviado à enfermeira coordenadora: ${dados.rot}. Aguarde a resposta (ela decide conforme a necessidade e a cobertura da unidade).`, 'info');
+  else if (enf && enf.jogador) avisar(W, S, `📥 Novo pedido de ${nomePapel(cfg, a.papel).toLowerCase()}: ${dados.rot}. Abra 🎬 Ações → Pedidos da equipe para aprovar ou negar.`, 'alerta');
+  return ped;
+}
+
+export function pedidosPendentes(W) { return W.pedidos.filter((p) => p.estado === 'pendente'); }
+
+function decidirPedido(W, S, cfg, ped, sim, motivo) {
+  if (ped.estado !== 'pendente') return;
+  ped.estado = sim ? 'aprovado' : 'negado';
+  ped.t1 = S.mundo.min;
+  const req = W.agentes.find((x) => x.id === ped.agente);
+  mudaEquipe(S, cfg, ped.papel, 'enfermeiro', sim ? 0.6 : -0.6);
+  if (sim) {
+    if (ped.item) ped.item.aprovado = true;
+    if (ped.tipo === 'referencia') {
+      const p = achaPessoa(S, ped.pid);
+      const r = encaminharReferencia(S, cfg, ped.pid);
+      avisar(W, S, `🚑 ${r.ok ? r.msg : `Referência de ${p.nome} não realizada: ${r.msg}`}`, r.ok ? 'alerta' : 'info', { pessoaId: ped.pid });
+    }
+    if (ped.tipo === 'mutirao') W.tarefasACS.push({ tipo: 'mutirao' });
+  } else if (ped.item) { ped.item.negado = true; ped.item.feito = true; }
+  if (req && req.jogador) avisar(W, S, sim ? `✅ A enfermeira aprovou: ${ped.rot}.` : `❌ A enfermeira negou: ${ped.rot}${motivo ? ` (${motivo})` : ''}.`, sim ? 'bom' : 'alerta');
+}
+
+/** A enfermeira controlada pelo computador responde aos pedidos da equipe. */
+function processaPedidosNPC(W, S, cfg) {
+  const dia = diaDoJogo(S);
+  for (const ped of W.pedidos) {
+    if (ped.estado !== 'pendente') continue;
+    const idade = S.mundo.min - ped.t0;
+    if (idade < 8) continue;
+    const aprovadosHoje = W.pedidos.filter((x) => x.estado === 'aprovado' && x.dia === dia && x.papel === ped.papel && x.tipo !== 'referencia').length;
+    const p = ped.tipo === 'referencia' ? 0.97 : 0.6 + 0.38 * vinculoEquipe(S, cfg, ped.papel, 'enfermeiro') / 100;
+    const sim = (ped.tipo === 'referencia' || aprovadosHoje < 3) && rnd(S.mundo) < p;
+    decidirPedido(W, S, cfg, ped, sim, aprovadosHoje >= 3 ? 'limite de saídas do dia atingido' : 'precisamos de você na unidade agora');
+  }
+}
+
+/** Pedido sem resposta por 3 horas expira (e esfria o vínculo com a coordenação). */
+function expiraPedidos(W, S, cfg) {
+  for (const ped of W.pedidos) {
+    if (ped.estado !== 'pendente' || S.mundo.min - ped.t0 < 180) continue;
+    ped.estado = 'expirado';
+    mudaEquipe(S, cfg, ped.papel, 'enfermeiro', -1);
+    const req = W.agentes.find((x) => x.id === ped.agente);
+    if (req && req.jogador) avisar(W, S, `⌛ Seu pedido ficou sem resposta da enfermeira: ${ped.rot}. Você pode pedir de novo.`, 'alerta');
+  }
+  if (W.pedidos.length > 80) W.pedidos = W.pedidos.filter((p) => p.estado === 'pendente' || diaDoJogo(S) - p.dia < 2);
+}
+
 /* --- Execução dos afazeres --- */
 function iniciarAfazer(W, S, cfg, a, item) {
   const def = item.def, ag = garanteAgenda(W, S, cfg, a);
   if (def.equipe) return convocarReuniao(W, S, cfg, a, item);
+  if (def.pedido && a.papel !== 'enfermeiro' && !item.aprovado) { // fluxo: nada sai da unidade sem passar pela enfermeira coordenadora
+    if (item.negado || (item.pedidoRef && item.pedidoRef.estado === 'pendente')) return false;
+    item.pedidoRef = criarPedido(W, S, cfg, a, { tipo: 'afazer', item, rot: def.rot });
+    return false;
+  }
   let pontos, fam = null, alvo = null;
-  if (def.local === 'campo') {
+  if (def.local === 'campo' && def.acamado) {
+    const q = todasPessoas(S).filter((x) => x.acamado && !x.internado).sort((x, y) => ((x.cuidador ? x.cuidador.qualidade : -1) - (y.cuidador ? y.cuidador.qualidade : -1)))[0];
+    if (!q || !W.casas[q.familiaId]) { item.feito = true; return false; }
+    fam = q.familiaId; pontos = [W.casas[q.familiaId].porta.dentro];
+  } else if (def.local === 'campo') {
     const f = escolheFamiliaCampo(W, S, a, ag);
     if (!f || !W.casas[f.id]) { item.feito = true; return false; }
     fam = f.id; pontos = [W.casas[f.id].porta.dentro];
@@ -1078,7 +1227,7 @@ function iniciarProximoAfazer(W, S, cfg, a) {
   if (m >= fim * 60 - 40 || m < ini * 60 + 15) return false; // dá tempo de todos chegarem antes de começar
   if (a.papel === 'acs' && W.tarefasACS.length) return false;
   const ag = garanteAgenda(W, S, cfg, a);
-  const item = ag.lista.find((i) => !i.feito);
+  const item = ag.lista.find((i) => !i.feito && !i.negado && !(i.pedidoRef && i.pedidoRef.estado === 'pendente'));
   return item ? iniciarAfazer(W, S, cfg, a, item) : false;
 }
 
@@ -1128,6 +1277,29 @@ function efeitoAfazer(W, S, cfg, a, z) {
     mudaEquipe(S, cfg, a.papel, b.papel, z.def.ganho);
     if (z.def.apoio) { W.apoio[a.id] = S.mundo.min + 90; W.apoio[b.id] = S.mundo.min + 90; }
     return `${id === 'colega_caso' ? 'Caso discutido' : 'Conversa'} com ${nomePapel(cfg, b.papel)}: vínculo +${z.def.ganho} (agora ${Math.round(vinculoEquipe(S, cfg, a.papel, b.papel))}%).${z.def.apoio ? ' Os dois trabalham mais rápido por 90 min.' : ''}`;
+  }
+  if (id === 'visita_acam') {
+    const q = todasPessoas(S).find((x) => x.familiaId === z.fam && x.acamado);
+    if (!q) return 'Ninguém acamado nesta casa agora.';
+    const r = acaoCuidador(S, cfg, q.id, a.papel);
+    S.metricas.visitasAcamado = (S.metricas.visitasAcamado || 0) + 1;
+    const ref = a.papel === 'medico' ? criterioReferencia(S, q) : null;
+    if (ref) criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: q.id, rot: `Referência de ${q.nome}: ${ref}` });
+    return `${q.nome}: ${r.msg}${ref ? ` Pedido de referência à UPA/hospital enviado à enfermeira (${ref}).` : ''}`;
+  }
+  if (id === 'grupo_atividade') {
+    let n = 0;
+    for (const p of todasPessoas(S)) {
+      if (p.idade < 12 || p.internado || p.acamado || p.habitos.atividade >= 70) continue;
+      const it = S.mundo.intencao[p.id]; it.atividade = clamp(it.atividade + 0.45, 0, 1); S.mundo.dia[p.id].exMin += 12; n++;
+    }
+    S.metricas.orientacoes += n;
+    return n ? `Grupo de atividade física: ${n} morador(es) sedentário(s) se animaram a se mexer (+atividade).` : 'Grupo na praça: quase todos já são ativos.';
+  }
+  if (id === 'insumos') {
+    const antes = S.insumos;
+    S.insumos = Math.min(cfg.game.economia.insumosCap, S.insumos + 3);
+    return `Reposição solicitada e aprovada pela coordenação: +${S.insumos - antes} insumos.`;
   }
   if (id === 'cafe') {
     let n = 0;
@@ -1195,8 +1367,8 @@ function efeitoAfazer(W, S, cfg, a, z) {
     const f = achaFamilia(S, z.fam);
     const chamados = [];
     for (const p of f.pessoas) {
-      if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
-      const precisaMed = p.conhecido.suspeitas.length || CONDS.some((c) => p.cond[c].diag && p.cond[c].trat) || p.dengue.ativa;
+      if (p.internado || p.acamado || W.ordens.some((o) => o.pid === p.id)) continue;
+      const precisaMed = p.posAlta || p.conhecido.suspeitas.length || CONDS.some((c) => p.cond[c].diag && p.cond[c].trat) || p.dengue.ativa;
       const r = precisaMed ? ordenarUnidade(W, S, cfg, p.id, 'consulta', { origem: 'acs', permiteCrianca: true }) : (p.idade >= 18 && p.conhecido.medidasTurno === null ? ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }) : { ok: false });
       if (r.ok) chamados.push(p.nome.split(' ')[0]);
     }
@@ -1336,7 +1508,8 @@ function demandaDeRotina(W, S, cfg) {
   for (const f of S.familias) for (const p of f.pessoas) {
     if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
     if (S.jogador && S.jogador.modo === 'paciente' && S.jogador.pid === p.id) continue; // o paciente controlado decide sozinho
-    const fator = (p.idade >= 60 || p.idade < 6 ? 1.4 : 1) * (0.55 + 0.9 * (f.vinculo / 100));
+    if (p.acamado) continue; // quem está acamado não vai à unidade: recebe visita
+    const fator = (p.idade >= 60 || p.idade < 6 ? 1.4 : 1) * (0.55 + 0.9 * (f.vinculo / 100)) * ({ baixa: 1.25, media: 1, alta: 0.55 }[f.classe] || 1); // renda alta usa mais o serviço privado
     if (rnd(M) >= (mundo.procura || 0.3) * fator) continue;
     const adulto = p.idade >= 18;
     let tipo = escolhe(M, adulto ? [['consulta', 40], ['triagem', 30], ['enfermagem', 30]] : [['consulta', 65], ['enfermagem', 35]]);
@@ -1349,10 +1522,14 @@ function demandaDeRotina(W, S, cfg) {
 
 function gerarDemanda(W, S, cfg) {
   const M = S.mundo;
-  demandaDeRotina(W, S, cfg);
   for (const f of S.familias) for (const p of f.pessoas) {
     if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
     const eu = S.jogador && S.jogador.modo === 'paciente' && S.jogador.pid === p.id;
+    if (!eu && p.posAlta && !p.posAlta.orientado && !p.acamado) { // contrarreferência: a UPA/hospital devolve o paciente à atenção primária
+      const medico = cfg.cenario.mundo.medicoDias.includes(diaSemana(S));
+      ordenarUnidade(W, S, cfg, p.id, medico ? 'consulta' : 'enfermagem', { espontaneo: true, origem: 'contrarreferencia', permiteCrianca: true, meta: { motivo: 'retorno depois da alta da UPA/hospital (orientação pós-procedimento)' } });
+      continue;
+    }
     // retorno de quem está em tratamento
     const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat);
     if (emTrat && S.turno - (p.retornoTurno === undefined ? -99 : p.retornoTurno) >= 1) {
@@ -1365,6 +1542,7 @@ function gerarDemanda(W, S, cfg) {
     const doente = ['dm', 'dep'].some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
     if (doente && rnd(M) < 0.035 * (0.5 + f.vinculo / 50)) ordenarUnidade(W, S, cfg, p.id, 'triagem', { espontaneo: true, origem: 'sintoma', meta: { consulta: true } });
   }
+  demandaDeRotina(W, S, cfg); // a procura espontânea vem depois dos chamados programados (retorno, pós-alta)
 }
 
 function planejarACS(W, S, cfg) {
@@ -1409,6 +1587,8 @@ export function opcoesPara(W, S, cfg, alvo) {
       case 'P': op('praca', 'Sentar na praça', '🌳'); break;
       case 'A': op('academia', 'Exercitar-se', '🏋️', idade < 14 ? 'Só a partir de 14 anos' : null); break;
       case 'L': op('lanche', 'Comer um lanche', '🍔'); break;
+      case 'f': op('pescar', 'Pescar no lago (alivia o estresse)', '🎣', idade < 10 ? 'Só a partir de 10 anos' : null); break;
+      case 'I': op('comprar_remedio', 'Comprar remédio na Farmácia Popular', '💊', p.semRemedio.length ? null : 'Você não precisa comprar remédio agora'); break;
       case 'O': op('trabalho', 'Trabalhar (2h)', '💼', p.ocupacao !== 'trabalho' ? 'Você não trabalha aqui' : null); break;
       case 'R': op('roca', 'Trabalhar na roça (2h)', '🌽', p.ocupacao !== 'trabalho' ? 'Você não trabalha aqui' : null); break;
       case 'E': op('escola', 'Estudar (2h)', '📚', p.ocupacao !== 'escola' ? 'Você não estuda aqui' : null); break;
@@ -1466,13 +1646,24 @@ export function acoesPaciente(W, S, cfg) {
   const grupos = [];
   const g = (nome, itens) => grupos.push({ nome, itens });
   const it = (id, rot, ic, desab) => ({ id, rot, ic, desab: desab || null });
+  const fam = achaFamilia(S, p.familiaId);
+  const semRem = p.semRemedio && p.semRemedio.length > 0;
+  const custoRem = (p.semRemedio || []).reduce((t, id) => t + copagamento(cfg, id), 0);
+  const itensCuidador = [it('pedir_cuidador', 'Pedir um cuidador', '🤲', p.cuidador ? 'Você já conta com um cuidador' : null)];
+  if (p.acamado) { // acamado: só depende do cuidador, do remédio e de pedir apoio
+    g('Você está acamado(a)', [
+      ...(emTrat ? [it('remedio', 'Tomar o remédio (o cuidador ajuda)', '💊', semRem ? 'Sem remédio neste mês' : S.mundo.remedios[p.id].hoje ? 'Já tomou hoje' : p.cuidador ? null : 'Sem cuidador para trazer o remédio')] : []),
+      ...itensCuidador,
+    ]);
+    return grupos;
+  }
   g('Necessidades', [
     it('dormir', 'Dormir', '💤', falta(tem('B', casa), 'Sem cama em casa')),
     it('descansar', 'Descansar um pouco', '🛏️', falta(tem('B', casa), 'Sem cama em casa')),
     it('banho', 'Tomar banho', '🚿', falta(tem('C', casa), 'Sem chuveiro em casa')),
     it('cozinhar_saudavel', 'Cozinhar e comer (saudável)', '🥗', falta(tem('G', casa), 'Sem cozinha em casa')),
     it('cozinhar_rapido', 'Comer algo rápido (frito/pronto)', '🍟', falta(tem('G', casa), 'Sem cozinha em casa')),
-    ...(emTrat ? [it('remedio', 'Tomar o remédio', '💊', S.mundo.remedios[p.id].hoje ? 'Já tomou hoje' : null)] : []),
+    ...(emTrat ? [it('remedio', 'Tomar o remédio', '💊', semRem ? 'Sem remédio neste mês: compre na farmácia' : S.mundo.remedios[p.id].hoje ? 'Já tomou hoje' : null)] : []),
   ]);
   g('Lazer', [
     it('tv', 'Assistir TV', '📺', falta(tem('S', casa), 'Sem sofá em casa')),
@@ -1481,6 +1672,7 @@ export function acoesPaciente(W, S, cfg) {
     it('praca', 'Sentar na praça', '🌳', falta(tem('P', null), 'Não há praça aqui')),
     it('academia', 'Exercitar-se na academia', '🏋️', p.idade < 14 ? 'Só a partir de 14 anos' : falta(tem('A', null), 'Não há academia aqui')),
     it('lanche', 'Comer um lanche na lanchonete', '🍔', p.idade < 10 ? 'Só a partir de 10 anos' : falta(tem('L', null), 'Não há lanchonete aqui')),
+    it('pescar', 'Pescar no lago (alivia o estresse)', '🎣', p.idade < 10 ? 'Só a partir de 10 anos' : falta(tem('f', null), 'Não há lago com píer aqui')),
     ...(p.tabagismo ? [it('fumar', 'Fumar um cigarro', '🚬')] : []),
   ]);
   const ob = [];
@@ -1490,6 +1682,8 @@ export function acoesPaciente(W, S, cfg) {
   g('Saúde', [
     it('ubs_triagem', 'Pedir triagem (pressão e glicemia)', '📏', p.idade < 18 ? 'Triagem é para adultos' : aberta ? null : 'Unidade fechada agora'),
     it('ubs_consulta', 'Pedir consulta médica', '🩺', med ? null : aberta ? 'Sem médico hoje' : 'Unidade fechada agora'),
+    ...(semRem ? [it('comprar_remedio', `Comprar remédio na Farmácia Popular (R$ ${custoRem})`, '💊', falta(tem('I', null), 'Não há farmácia aqui') || (fam.saldo < custoRem ? `Saldo da família insuficiente (R$ ${fam.saldo})` : null))] : []),
+    ...itensCuidador,
   ]);
   g('Ir para', [it('ir_casa', 'Voltar para casa', '🏠'), it('ir_ubs', 'Ir até a unidade de saúde', '🏥'), ...(tem('P', null) ? [it('ir_praca', 'Ir até a praça', '🌳')] : [])]);
   return grupos;
@@ -1524,7 +1718,12 @@ export function comandar(W, S, cfg, opId, alvo) {
       case 'tv': return empilha({ k: 'acao', acao: 'tv', obj: objDaCasa('S') });
       case 'cozinhar_saudavel': return empilha({ k: 'acao', acao: 'cozinhar', saudavel: true });
       case 'cozinhar_rapido': return empilha({ k: 'acao', acao: 'cozinhar', saudavel: false, dur: 6 });
-      case 'remedio': return empilha({ k: 'acao', acao: 'remedio' });
+      case 'remedio':
+        if (p.semRemedio.length) return { ok: false, msg: 'Você está sem remédio neste mês: compre na Farmácia Popular ou procure a unidade.' };
+        return empilha({ k: 'acao', acao: 'remedio' });
+      case 'pescar': return empilha({ k: 'acao', acao: 'pescar', obj: obj && obj.t === 'f' ? obj : undefined });
+      case 'comprar_remedio': { if (!p.semRemedio.length) return { ok: false, msg: 'Você não precisa comprar remédio agora.' }; return empilha({ k: 'acao', acao: 'farmacia', obj: obj && obj.t === 'I' ? obj : undefined }); }
+      case 'pedir_cuidador': { const r = pedirCuidador(S, cfg, p.id); sincronizarCuidadores(W, S); if (r.ok) avisar(W, S, `🤲 ${r.msg}`, 'bom', { pessoaId: p.id }); return r; }
       case 'banho': return empilha({ k: 'acao', acao: 'banho', obj: objDaCasa('C') });
       case 'praca': case 'academia': case 'lanche': case 'trabalho': case 'roca': case 'escola': return empilha({ k: 'acao', acao: id, obj });
       case 'ubs_triagem': return empilha({ k: 'ubs', tipo: 'triagem' });
@@ -1541,7 +1740,22 @@ export function comandar(W, S, cfg, opId, alvo) {
     }
   }
   // profissional
-  if (id === 'mutirao') { if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' }; ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' }; }
+  if (id === 'mutirao') {
+    if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' };
+    if (ag.papel === 'acs' && !W.pedidos.some((x) => x.tipo === 'mutirao' && x.estado === 'aprovado' && x.dia === diaDoJogo(S))) { // mutirão também passa pela coordenação
+      if (W.pedidos.some((x) => x.tipo === 'mutirao' && x.estado === 'pendente')) return { ok: false, msg: 'O pedido de mutirão já aguarda a enfermeira.' };
+      criarPedido(W, S, cfg, ag, { tipo: 'mutirao', rot: 'Mutirão contra focos do mosquito' });
+      return { ok: true, msg: '📤 Pedido de mutirão enviado à enfermeira coordenadora.' };
+    }
+    ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' };
+  }
+  if (id === 'pedido_sim' || id === 'pedido_nao') {
+    if (ag.papel !== 'enfermeiro') return { ok: false, msg: 'Só a enfermeira coordenadora decide os pedidos.' };
+    const ped = W.pedidos.find((x) => String(x.id) === arg);
+    if (!ped || ped.estado !== 'pendente') return { ok: false, msg: 'Pedido não está mais pendente.' };
+    decidirPedido(W, S, cfg, ped, id === 'pedido_sim', id === 'pedido_nao' ? 'decisão da coordenação' : '');
+    return { ok: true, msg: id === 'pedido_sim' ? `✅ Aprovado: ${ped.rot}.` : `❌ Negado: ${ped.rot}.` };
+  }
   if (id === 'equipe_reuniao') {
     if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
     if (!ag.vis) return { ok: false, msg: 'Fora do expediente.' };
@@ -1563,6 +1777,12 @@ export function comandar(W, S, cfg, opId, alvo) {
     if (!it) return { ok: false, msg: 'Afazer não encontrado.' };
     if (it.feito) return { ok: false, msg: 'Este afazer já foi concluído hoje.' };
     if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
+    if (it.def.pedido && ag.papel !== 'enfermeiro' && !it.aprovado) { // sai do território só com a aprovação da coordenação
+      if (it.negado) return { ok: false, msg: 'A enfermeira já negou este pedido hoje.' };
+      if (it.pedidoRef && it.pedidoRef.estado === 'pendente') return { ok: false, msg: 'Seu pedido ainda aguarda a resposta da enfermeira.' };
+      it.pedidoRef = criarPedido(W, S, cfg, ag, { tipo: 'afazer', item: it, rot: it.def.rot });
+      return { ok: true, msg: '📤 Pedido enviado à enfermeira coordenadora.' };
+    }
     ag.fila.push({ k: 'afazer', uid: arg });
     return { ok: true, msg: `${it.def.ic} ${it.def.rot}: na sua fila.` };
   }
@@ -1607,6 +1827,14 @@ export function iniciarAtendimento(W, S, cfg, opts = {}) {
 export function finalizarAtendimento(W, S, cfg, destino) {
   const a = agenteJogador(W);
   if (!a || !a.tarefa || a.tarefa.fase !== 'resultado') return { ok: false, msg: 'Nada a concluir.' };
+  if (destino === 'referencia') {
+    const p = achaPessoa(S, a.tarefa.ord.pid), motivo = criterioReferencia(S, p);
+    if (!motivo) return { ok: false, msg: 'Este caso pode ser resolvido na atenção primária: a UPA/hospital é só para o que extrapola a sua competência.' };
+    const ped = criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: p.id, rot: `Referência de ${p.nome}: ${motivo}` });
+    if (a.papel === 'enfermeiro') decidirPedido(W, S, cfg, ped, true, ''); // a enfermeira é a própria regulação
+    concluirAtendimento(W, S, cfg, a, 'liberar');
+    return { ok: true, msg: a.papel === 'enfermeiro' ? 'Encaminhado(a) à UPA/hospital.' : 'Pedido de referência enviado à enfermeira (regulação). Ela decide o encaminhamento.' };
+  }
   concluirAtendimento(W, S, cfg, a, destino);
   return { ok: true, msg: destino === 'liberar' ? 'Atendimento concluído.' : 'Encaminhado.' };
 }
@@ -1620,6 +1848,10 @@ export function atendimentoAtual(W, S) {
 /* ---------- Simulação ---------- */
 function fimDoDia(W, S, cfg) {
   const M = S.mundo;
+  M.cuidadosDia = M.cuidadosDia || {}; M.cuidou = M.cuidou || {};
+  for (const q of todasPessoas(S)) if (q.acamado) q.acamado.cuidadosHoje = M.cuidadosDia[q.id] || 0;
+  cuidadoDiario(S, cfg, (tipo, texto, pessoa) => avisar(W, S, texto, tipo, { pessoaId: pessoa.id }));
+  M.cuidadosDia = {};
   for (const p of todasPessoas(S)) {
     const c = M.dia[p.id], int = M.intencao[p.id];
     if (p.idade >= 12 && !p.internado) {
@@ -1643,8 +1875,11 @@ function passoCurto(W, S, cfg, dt) {
   const M = S.mundo;
   const diaAntes = Math.floor(M.min / MIN_DIA);
   M.min += dt;
+  CTX = { W, S, cfg };
+  if (W.pedidos.length) expiraPedidos(W, S, cfg);
   for (const a of W.agentes) {
     if (a.k === 'res') passoMorador(W, S, cfg, a, dt);
+    else if (a.k === 'cuid') passoCuidador(W, S, cfg, a, dt);
     else passoEquipe(W, S, cfg, a, dt);
   }
   if (Math.floor(M.min / MIN_DIA) > diaAntes) {
@@ -1659,7 +1894,7 @@ function passoCurto(W, S, cfg, dt) {
         r.dias = 0;
       }
       W.relatorio = avancarMes(S, cfg);
-      sincronizarEquipe(W, S);
+      sincronizarEquipe(W, S); sincronizarCuidadores(W, S);
       W.sinal++;
       gerarDemanda(W, S, cfg); planejarACS(W, S, cfg);
       return true;
@@ -1700,6 +1935,7 @@ export function pularMes(W, S, cfg) {
 
 /* ---------- Consultas para a interface ---------- */
 export function acaoAtual(W, S, a) {
+  if (a.k === 'cuid') return a.vis ? (a.acao ? `${ACOES[a.acao.k].ic} ${ACOES[a.acao.k].rot}` : a.path.length ? '🚶 Andando' : '🤲 Atento ao paciente') : 'Fora do horário';
   if (a.k === 'staff') {
     if (!a.vis) return 'Fora do expediente';
     if (a.afz && a.afz.reuniao && !a.tarefa) return a.afz.fase === 'indo' ? '🚶 Indo para a reunião de equipe' : '👥 Em reunião de equipe';
@@ -1723,6 +1959,7 @@ export function acaoAtual(W, S, a) {
 }
 
 export function bolhaDe(W, S, a) {
+  if (a.k === 'cuid') return a.acao && ACOES[a.acao.k] ? ACOES[a.acao.k].ic : null;
   if (a.k === 'staff' && a.afz && !a.tarefa && a.afz.fase === 'fazendo') return a.afz.def.ic;
   if (a.k === 'staff') return a.tarefa ? (a.tarefa.tipo === 'mutirao' ? '🧹' : a.tarefa.tipo === 'visita' ? '🏠' : a.tarefa.fase === 'atendendo' ? '🩺' : null) : null;
   const p = achaPessoa(S, a.pid);

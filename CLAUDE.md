@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 55 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 68 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -55,6 +55,13 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - **Cada personagem é uma vida independente** (mundo, saúde, diário, vínculo da equipe): `trocaPersonagemJogo` em `main.js` arquiva o estado atual (`arquivo.itens[chave]`, `localStorage` `saude-sim-arq-v1`) e carrega a vida arquivada daquele personagem ou cria uma nova com a mesma semente (mesmo bairro e mesmas pessoas). Nada do diário/progresso passa de um personagem para outro. A folha "Trocar de personagem" mostra "Em jogo agora / Vida arquivada (dia N) / Vida nova" e permite recomeçar do zero. Novo cenário ou "sortear bairro" limpa o arquivo. `trocarPersonagem` de `mundo.js` (troca no mesmo mundo) não é mais usado pela interface.
 - **Bug de tela em branco corrigido:** ao reabrir com jogo salvo, `iniciar()` não removia a classe `sem-jogo` (que esconde topo/mapa/rodapé) — causa provável dos "tudo branco" reportados; há teste de regressão.
 - No modo 2D (plano B) as paredes começam baixas e ⟳/⟲ tentam ligar o 3D.
+
+## Saúde, renda e coordenação (v1.0)
+- **Classes e renda** (`game.json › familia`, `classe` por família em `cenarios.json`): baixa/média/alta com renda mensal e folga; `f.saldo`, `f.aperto` (aperto financeiro reduz a adesão). Medicamento: farmácia básica da UBS (grátis, com estoque `S.insumos`) → Farmácia Popular (privada conveniada, copagamento `copagamento()`) → sem acesso (`p.semRemedio`). Paciente compra no balcão `I` (ação `comprar_remedio`). Procura da UBS muda com a classe.
+- **UPA/hospital de referência**: construção de fundo (`decoracao` tipo `hospital`, sem atendimento). `criterioReferencia` / `encaminharReferencia` / `internarPessoa` (engine); a alta devolve a pessoa com `p.posAlta` (contrarreferência: orientação pós-procedimento em até 1 mês; sem isso há risco de reinternação).
+- **Acamados e cuidadores** (não são profissionais): `p.acamado` {causa, lesao}, `p.cuidador` {tipo familiar|contratado, qualidade, sobrecarga}; `cuidadoDiario` (engine) sorteia erros do cuidador (esquece remédio, não muda de posição, higiene) e a lesão por pressão leva à internação; o cuidador familiar é um morador que vai ao leito (`cuidar`), o contratado é um agente `cuid` no mapa. Profissionais orientam via afazer `visita_acam` (`acaoCuidador`). O paciente pode **pedir cuidador** (`pedirCuidador`): recusa se não há dependência (`dependencia`) ou se faltam condições financeiras; com cuidador a adesão tem piso 0,6 mas o cuidador não faz exercício/alimentação por ele.
+- **Fluxo de coordenação**: a enfermeira é a coordenadora. Afazeres com `pedido: true` (visita do médico, busca ativa do ACS, curativo domiciliar do técnico, reposição de insumos, mutirão, referência à UPA) geram `W.pedidos` que a enfermeira aprova/nega (NPC decide por vínculo e limite diário; jogador usa 🎬 Ações → Pedidos da equipe). Nada sai sem aprovação (teste cobre). Pedido sem resposta em 3h expira.
+- **Mapa**: farmácia popular (`farmacia`, balcão `I`), lago com píer (`f`) + ação `pescar` (alivia o estresse), praça e academia também no rural, grupo de atividade física (`grupo_atividade`).
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

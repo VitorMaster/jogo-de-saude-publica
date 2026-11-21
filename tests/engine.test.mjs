@@ -30,7 +30,7 @@ test('território tem todas as idades e começa com doenças ocultas, incluindo 
     assert.ok(pess.some((p) => p.idade < 5) && pess.some((p) => p.idade >= 65));
     const ocultas = pess.flatMap((p) => CONDS.filter((id) => p.cond[id].estagio >= 2));
     assert.ok(ocultas.length >= 3 && ocultas.includes('has'), `semente ${seed}`);
-    assert.ok(pess.every((p) => CONDS.every((id) => !p.cond[id].diag)), 'nada começa diagnosticado');
+    assert.ok(pess.filter((p) => !p.acamado).every((p) => CONDS.every((id) => !p.cond[id].diag)), 'nada começa diagnosticado');
   }
 });
 

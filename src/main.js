@@ -1,12 +1,12 @@
 // Interface (mobile-first). O jogador escolhe UM personagem (paciente ou profissional) e joga só com ele: toca em
 // móveis, pessoas e no chão para dar ordens. Nenhuma regra de jogo mora aqui.
 import {
-  CONDS, FOCOS, newGame, todasPessoas, achaPessoa, achaFamilia, indicadores, acaoTratamento, rotuloData, sintomasDengueVisiveis,
+  CONDS, FOCOS, copagamento, dependencia, criterioReferencia, newGame, todasPessoas, achaPessoa, achaFamilia, indicadores, acaoTratamento, rotuloData, sintomasDengueVisiveis,
 } from './engine.js';
 import {
   montarCfg, iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, pularMes, pularDia, minutosPorSegundo,
   rotuloRelogio, diaDoMes, ubsAberta, agenteJogador, acaoAtual, opcoesPara, comandar, cancelarFila, alternaVontade,
-  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, afazeresDoDia, trocarPersonagem, vinculosEquipe, coesaoDe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
+  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, afazeresDoDia, trocarPersonagem, vinculosEquipe, coesaoDe, pedidosPendentes, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
@@ -99,6 +99,7 @@ function emojiPessoa(p) {
   if (p.idade >= 60) return p.sexo === 'F' ? '👵' : '👴';
   return p.sexo === 'F' ? '👩' : '👨';
 }
+const CLASSE_ROT = { baixa: 'de baixa renda', media: 'de classe média', alta: 'de alta renda' };
 const EMOJI_PAPEL = { acs: '🧑‍🌾', tecnico: '🧑‍🔬', enfermeiro: '🧑‍⚕️', medico: '🧑‍⚕️' };
 
 let toastTimer;
@@ -187,7 +188,7 @@ function montaPainel(forcar = false) {
   const ag = meuAgente();
   let assin = `${modo()}|${papel()}|${ag.id}`;
   if (modo() === 'paciente') { const p = minhaPessoa(); assin += `|${p.tabagismo}|${CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)}|${S.jogador.vontade}|${ag.fila.length}|${sintomasDe(S, cfg, p.id).length}`; }
-  else assin += `|${ag.fila.length}|${atendimentoAtual(W, S) ? 1 : 0}|${afazeresDoDia(W, S, cfg).feitos}`;
+  else assin += `|${ag.fila.length}|${atendimentoAtual(W, S) ? 1 : 0}|${afazeresDoDia(W, S, cfg).feitos}|${pedidosPendentes(W).length}`;
   if (!forcar && assin === assinaturaCartao) return;
   assinaturaCartao = assin;
   el.hidden = false;
@@ -212,7 +213,7 @@ function montaPainel(forcar = false) {
     el.innerHTML = `<div class="c-topo"><span class="emoji">${EMOJI_PAPEL[papel()]}</span>
         <div class="c-id"><b>${esc(cfg.papeis[papel()].nome)}</b><div class="c-acao" id="c-acao"></div></div>
         ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar">✕ ${ag.fila.length} na fila</button>` : ''}</div>
-      ${(() => { const af = afazeresDoDia(W, S, cfg); return af.aberto ? `<div class="alerta-sint af">📋 Afazeres do dia: <b>${af.feitos}/${af.total}</b></div>` : ''; })()}
+      ${(() => { const af = afazeresDoDia(W, S, cfg); const pend = papel() === 'enfermeiro' ? pedidosPendentes(W).length : 0; return af.aberto ? `<div class="alerta-sint af">📋 Afazeres do dia: <b>${af.feitos}/${af.total}</b>${pend ? ` · 📥 <b>${pend} pedido(s)</b> da equipe` : ''}</div>` : ''; })()}
       <div class="c-btns um"><button class="btn primario" data-act="abrir-acoes">🎬 Ações…</button></div>
       <div class="c-btns" style="grid-template-columns:repeat(2,1fr)">
         ${papel() === 'acs' ? '<button class="btn peq" data-act="abrir-territorio">🏘️ Minhas famílias</button><button class="btn peq" data-act="cartao-mutirao">🧹 Mutirão</button>'
@@ -291,6 +292,11 @@ function viewSaude() {
     <div class="card">${diag.length ? diag.map((id) => `<div class="rotulo"><strong>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}</strong><span>${p.cond[id].trat ? 'em tratamento' : 'sem tratamento'}</span></div>`).join('') + (diag.some((id) => p.cond[id].trat) ? `<p class="dica-t" style="margin-top:8px">💊 Remédio tomado neste mês: <b>${r.dias}</b> dia(s) ${r.hoje ? '· já tomou hoje' : '· ainda não tomou hoje'}. A adesão do mês decide se a doença fica controlada.</p>` : '') : '<p class="dica-t">Nenhum diagnóstico até agora.</p>'}
       ${p.conhecido.suspeitas.length ? `<p class="dica-t">⚠ Valores alterados na última medida: ${p.conhecido.suspeitas.map((id) => esc(cfg.cond[id].nome)).join(', ')}. Vale uma consulta.</p>` : ''}</div>
     <div class="card" style="margin-top:10px">${medidas}</div>
+    <h2 class="secao">💰 Dinheiro da família</h2>
+    ${(() => { const f = achaFamilia(S, p.familiaId); const dep = dependencia(p); return `<div class="card"><div class="kv"><span>Classe</span><span>${esc(cfg.game.familia.classes[f.classe].rotulo)}</span><span>Renda mensal</span><span>R$ ${f.renda}</span><span>Saldo</span><span>R$ ${f.saldo}${f.aperto ? ' ⚠' : ''}</span></div>
+      <p class="dica-t">Remédio: a farmácia da UBS é gratuita enquanto houver estoque; faltando, compra-se na Farmácia Popular (privada conveniada), pagando uma parte. ${f.aperto ? '<b>Aperto financeiro: fica mais difícil seguir o tratamento.</b>' : ''}</p>
+      ${p.semRemedio && p.semRemedio.length ? `<p class="dica-t">⚠️ Sem remédio neste mês: ${p.semRemedio.map((id) => esc(cfg.cond[id].nome)).join(', ')}. Compre na farmácia (🎬 Fazer algo → Saúde).</p>` : ''}
+      <p class="dica-t">🤲 Cuidador: ${p.cuidador ? `${esc(p.cuidador.nome)} (${p.cuidador.tipo}), qualidade do cuidado ${Math.round(p.cuidador.qualidade)}%.` : dep ? `não tem. Motivo que pode justificar: ${esc(dep)}. Você pode pedir em 🎬 Fazer algo → Saúde (o jogo aceita ou recusa).` : 'não precisa agora.'}</p></div>`; })()}
     <h2 class="secao">Meu estilo de vida</h2>
     <div class="card">${p.idade >= 12 ? `${linhaHabito('Atividade física', h.atividade)}${linhaHabito('Alimentação', h.alimentacao)}${linhaHabito('Sono', h.sono)}${linhaHabito('Estresse (menos é melhor)', h.estresse, true)}` : '<p class="dica-t">Cuide da rotina: sono, comida e brincadeira.</p>'}
       <div class="kv" style="margin-top:8px"><span>Fuma</span><span>${p.tabagismo ? 'Sim' : 'Não'}</span>${p.idade >= 18 ? `<span>IMC</span><span>${p.imc}</span>` : ''}</div>
@@ -321,6 +327,9 @@ function viewUnidade() {
     <h2 class="secao">🤝 Vínculo entre os profissionais</h2>
     <div class="card">${vinculosEquipe(S, cfg).map((x) => barraIndicador(`${EMOJI_PAPEL[x.a]} ${esc(cfg.papeis[x.a].curto || cfg.papeis[x.a].nome)} ↔ ${EMOJI_PAPEL[x.b]} ${esc(cfg.papeis[x.b].curto || cfg.papeis[x.b].nome)}`, x.v / 100)).join('')}
       <p class="dica-t">Equipe afinada atende mais rápido e perde menos encaminhamentos; equipe desencontrada atrasa e se perde (até 30% mais lento). O vínculo esfria sem convivência: converse, discuta casos, faça reuniões e pausas na copa.</p></div>
+    <h2 class="secao">🏥 UPA / hospital de referência</h2>
+    <div class="card"><p class="dica-t">Não há atendimento no mapa: é a referência para o que extrapola a atenção primária (média e alta complexidade). A equipe encaminha pela regulação da enfermeira e, na alta, a pessoa volta para <b>orientação e acompanhamento pós-cirurgia/procedimento</b> na unidade.</p>
+      <div class="kv"><span>Internados agora</span><span>${todasPessoas(S).filter((q) => q.internado).length}</span><span>Pós-alta aguardando acompanhamento</span><span>${todasPessoas(S).filter((q) => q.posAlta && !q.posAlta.orientado).length}</span><span>Pessoas acamadas</span><span>${todasPessoas(S).filter((q) => q.acamado).length}</span><span>Pedidos pendentes à coordenação</span><span>${pedidosPendentes(W).length}</span></div></div>
     <h2 class="secao">Vigilância do território</h2>
     <div class="card"><div class="rotulo"><strong>🦟 Índice de infestação do mosquito</strong><span>${inf}%</span></div>
       <div class="barra ${inf >= 60 ? 'perigo' : inf >= 35 ? 'alerta' : ''}"><i style="width:${inf}%"></i></div>
@@ -401,11 +410,20 @@ async function enviaFeedbackAgora() {
 }
 
 /* ---------- Folhas (modais) ---------- */
+const ROTULO_ESTADO = { aguardando: '⏳ aguardando a enfermeira', aprovado: '✅ aprovado: toque para iniciar', negado: '✖ negado pela enfermeira', precisa: '📤 pede aprovação da enfermeira', andamento: 'em andamento', feito: 'feito' };
 function blocoAfazeres() {
   const af = afazeresDoDia(W, S, cfg);
   if (!af.aberto) return '<p class="dica-t">Fora do expediente: os afazeres do dia aparecem quando a unidade abre.</p>';
   const ocupado = !!meuAgente().tarefa;
-  return `<h2 class="secao">📋 Afazeres do dia (${af.feitos}/${af.total})</h2>${af.lista.map((i) => `<button class="btn" data-act="afazer" data-id="${i.uid}" ${i.feito || ocupado ? 'disabled' : ''}><span>${i.feito ? '✅' : i.ic} ${esc(i.rot)}</span>${i.feito ? '<small>feito</small>' : i.andamento ? '<small>em andamento</small>' : i.campo ? '<small>em campo</small>' : ''}</button>`).join('')}`;
+  return `<h2 class="secao">📋 Afazeres do dia (${af.feitos}/${af.total})</h2>${af.lista.map((i) => `<button class="btn" data-act="afazer" data-id="${i.uid}" ${i.feito || ocupado || i.estado === 'aguardando' || i.estado === 'negado' ? 'disabled' : ''}><span>${i.estado === 'feito' ? '✅' : i.ic} ${esc(i.rot)}</span>${ROTULO_ESTADO[i.estado] ? `<small>${ROTULO_ESTADO[i.estado]}</small>` : i.campo ? '<small>em campo</small>' : ''}</button>`).join('')}`;
+}
+
+/** A enfermeira é a coordenadora: aprova ou nega o que sai para o território e as referências. */
+function blocoPedidos() {
+  if (papel() !== 'enfermeiro') return '';
+  const l = pedidosPendentes(W);
+  return `<h2 class="secao">📥 Pedidos da equipe (${l.length})</h2>${l.length ? l.map((q) => `<div class="card eq"><div class="rotulo"><strong>${EMOJI_PAPEL[q.papel]} ${esc(cfg.papeis[q.papel].nome)}</strong><span>há ${Math.round(S.mundo.min - q.t0)} min</span></div><div class="dica-t">${esc(q.rot)}</div>
+    <div class="c-btns" style="grid-template-columns:repeat(2,1fr);margin-top:6px"><button class="btn peq primario" data-act="pedido-op" data-op="pedido_sim" data-id="${q.id}">✅ Aprovar</button><button class="btn peq" data-act="pedido-op" data-op="pedido_nao" data-id="${q.id}">✖ Negar</button></div></div>`).join('') : '<p class="dica-t">Nenhum pedido pendente. Visitas domiciliares, busca ativa, mutirões, reposição de insumos e referências à UPA/hospital passam por você.</p>'}`;
 }
 
 /** Interações com os outros profissionais: ninguém faz nada sozinho. */
@@ -432,11 +450,11 @@ function folhaAcoes() {
   if (modo() === 'paciente') {
     corpo = acoesPaciente(W, S, cfg).map((g) => `<h2 class="secao">${esc(g.nome)}</h2>${g.itens.map((i) => `<button class="btn" data-act="acao-op" data-op="${i.id}" ${i.desab ? 'disabled' : ''}><span>${i.ic} ${esc(i.rot)}</span>${i.desab ? `<small>${esc(i.desab)}</small>` : ''}</button>`).join('')}`).join('');
   } else if (papel() === 'acs') {
-    corpo = `${blocoAfazeres()}${blocoEquipe()}<h2 class="secao">Visitas e orientações</h2><button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
+    corpo = `${blocoAfazeres()}${blocoPedidos()}${blocoEquipe()}<h2 class="secao">Visitas e orientações</h2><button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
       <button class="btn" data-act="abrir-pessoas"><span>🧑 Atender uma pessoa (aferir, orientar, convidar)</span></button>
       <button class="btn" data-act="cartao-mutirao"><span>🧹 Mutirão contra focos do mosquito</span></button>`;
   } else {
-    corpo = `${blocoAfazeres()}${blocoEquipe()}<h2 class="secao">Atendimento</h2><button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
+    corpo = `${blocoAfazeres()}${blocoPedidos()}${blocoEquipe()}<h2 class="secao">Atendimento</h2><button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
       <button class="btn" data-act="abrir-fila"><span>📋 Ver a fila e escolher quem chamar</span></button>
       <button class="btn" data-act="abrir-atend" ${atendimentoAtual(W, S) ? '' : 'disabled'}><span>🩺 Voltar ao atendimento atual</span></button>`;
   }
@@ -520,12 +538,16 @@ function folhaAtendimento() {
   if (at.fase === 'resultado') {
     corpo = `<div class="card"><strong>Resultado</strong><p style="margin-top:4px">${esc(at.resultado || '')}</p></div>`;
     if (at.tipo === 'consulta') {
-      corpo += CONDS.filter((id) => p.cond[id].diag).map((id) => `<button class="btn ${p.cond[id].trat ? '' : 'primario'}" data-act="tratar" data-id="${p.id}" data-cond="${id}" data-ligar="${p.cond[id].trat ? 0 : 1}"><span>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}: ${p.cond[id].trat ? 'suspender tratamento' : 'iniciar tratamento'}</span><small>💊 1/mês</small></button>`).join('');
+      corpo += CONDS.filter((id) => p.cond[id].diag).map((id) => `<button class="btn ${p.cond[id].trat ? '' : 'primario'}" data-act="tratar" data-id="${p.id}" data-cond="${id}" data-ligar="${p.cond[id].trat ? 0 : 1}"><span>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}: ${p.cond[id].trat ? 'suspender tratamento' : 'iniciar tratamento'}</span><small>💊 UBS grátis (c/ estoque) · Farm. Popular R$ ${copagamento(cfg, id)}/mês · família ${esc(CLASSE_ROT[achaFamilia(S, p.familiaId).classe])}</small></button>`).join('');
+      const ref = criterioReferencia(S, p);
+      if (ref) corpo += `<div class="alerta-sint">🚑 Extrapola a atenção primária: ${esc(ref)}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>${papel() === 'enfermeiro' ? 'regulação' : 'pede à enfermeira'}</small></button>`;
       corpo += '<button class="btn primario" style="margin-top:8px" data-act="concluir" data-destino="liberar"><span>✔ Concluir atendimento</span></button>';
     } else {
       corpo += '<p class="dica-t">Para onde encaminhar?</p>';
       if (at.tipo === 'triagem') corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem</span></button>';
-      corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button><button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+      corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
+      if (criterioReferencia(S, p)) corpo += `<div class="alerta-sint">🚑 ${esc(criterioReferencia(S, p))}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>${papel() === 'enfermeiro' ? 'regulação' : 'pede à enfermeira'}</small></button>`;
+      corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
     }
   }
   return `<div class="folha-topo"><h2>${nomeServ}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
@@ -543,7 +565,7 @@ function folhaFila() {
 function folhaTerritorio() {
   const itens = S.familias.map((f) => {
     const r = f.pessoas.some((p) => p.conhecido.suspeitas.length || CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat)) ? '<span class="selo warn">⚠ atenção</span>' : '';
-    return `<div class="pessoa"><span class="emoji">🏠</span><span class="info"><div class="nome">${esc(f.nome)}</div><div class="sub">vínculo ${Math.round(f.vinculo)}% · ${f.visTurno === S.turno ? 'visitada neste mês' : 'sem visita neste mês'}</div><div class="tags">${r}</div></span><button class="btn peq" style="width:auto" data-act="visitar" data-id="${f.id}" ${f.visTurno === S.turno ? 'disabled' : ''}>Visitar</button></div>`;
+    return `<div class="pessoa"><span class="emoji">🏠</span><span class="info"><div class="nome">${esc(f.nome)}</div><div class="sub">vínculo ${Math.round(f.vinculo)}% · ${f.visTurno === S.turno ? 'visitada neste mês' : 'sem visita neste mês'}</div><div class="sub">💰 ${esc(cfg.game.familia.classes[f.classe].rotulo)} · renda R$ ${f.renda}/mês · saldo R$ ${f.saldo}${f.aperto ? ' · ⚠ aperto financeiro' : ''}</div>${f.pessoas.filter((q) => q.acamado).map((q) => `<div class="sub">🛏️ ${esc(q.nome)} acamado(a) · cuidador: ${q.cuidador ? `${esc(q.cuidador.nome)} (${q.cuidador.tipo}, qualidade ${Math.round(q.cuidador.qualidade)}%, sobrecarga ${Math.round(q.cuidador.sobrecarga)}%)` : '<b>nenhum</b>'} · lesão ${Math.round(q.acamado.lesao * 10) / 10}</div>`).join('')}<div class="tags">${r}</div></span><button class="btn peq" style="width:auto" data-act="visitar" data-id="${f.id}" ${f.visTurno === S.turno ? 'disabled' : ''}>Visitar</button></div>`;
   }).join('');
   return `<div class="folha-topo"><h2>🏘️ Minhas famílias</h2><button class="fechar" data-act="fechar">✕</button></div>${itens}
     <p class="dica-t">Tocar numa pessoa no mapa permite aferir a pressão, orientar e convidar para a unidade.</p>`;
@@ -590,7 +612,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v0.8 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.0 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
@@ -845,6 +867,7 @@ document.addEventListener('click', (ev) => {
     case 'pers-prof': (folha && folha.troca ? trocaPersonagemJogo : comecarComPersonagem)({ modo: 'profissional', papel: id }); break;
     case 'pers-reiniciar': if (confirmaReinicio === id) reiniciarVida(id); else { confirmaReinicio = id; renderFolha(); } break;
     case 'trocar-personagem': velAntes = vel || velAntes || 1; vel = 0; abaPers = modo() === 'paciente' ? 'paciente' : 'profissional'; abrirFolha({ tipo: 'personagem', troca: true }); break;
+    case 'pedido-op': { const r = comandar(W, S, cfg, `${el.dataset.op}:${id}`, { tipo: 'auto' }); resultado(r); renderFolha(); break; }
     case 'equipe-op': { const r = comandar(W, S, cfg, el.dataset.op, { tipo: 'agente', id }); fecharFolha(); resultado(r); break; }
     case 'painel': { painelOculto = !painelOculto; const b = $('#b-painel'); if (b) { b.textContent = painelOculto ? '🔼' : '🔽'; b.setAttribute('aria-label', painelOculto ? 'Mostrar a barra de ações' : 'Ocultar a barra de ações'); } assinaturaCartao = ''; montaPainel(true); atualizaDica(); break; }
     case 'zoom-mais': R.zoom(1.25); break;

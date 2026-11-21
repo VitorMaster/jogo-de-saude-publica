@@ -46,6 +46,10 @@ function novaPessoa(s, cfg, tpl, famId, idx) {
     dengue: { ativa: false, atendido: false },
     imune: 0,
     internado: false,
+    acamado: tpl.acamado ? { causa: tpl.acamado, lesao: 0, erros: 0 } : null, // pessoa acamada (precisa de cuidador)
+    cuidador: null, // { tipo: 'familiar'|'contratado', pid, nome, qualidade, sobrecarga }
+    posAlta: null, // { turno, orientado, tipo }: acompanhamento depois de UPA/hospital
+    semRemedio: [],
     conhecido: { habitos: null, visTurno: null, medidas: null, medidasTurno: null, suspeitas: [], risco: [] },
   };
 }
@@ -65,17 +69,27 @@ function estagioInicial(s, cfg, p, id) {
 function gerarTerritorio(s, cfg) {
   for (let tent = 0; tent < 40; tent++) {
     const familias = cfg.territorio.familias.map((ft) => {
+      const E = cfg.game.familia, cl = E.classes[ft.classe || 'media'];
       const f = {
         id: ft.id, nome: ft.nome,
         vinculo: rint(s, ft.vinculo[0], ft.vinculo[1]),
         visTurno: -99, pessoas: [],
+        classe: ft.classe || 'media', renda: cl.renda, saldo: Math.round(cl.renda * cl.folga * 2), aperto: false,
       };
       ft.membros.forEach((m, i) => f.pessoas.push(novaPessoa(s, cfg, m, ft.id, i)));
+      if (ft.cuidador !== undefined) { // quem cuida da pessoa acamada neste lar
+        const cuid = f.pessoas[ft.cuidador], acam = f.pessoas.find((p) => p.acamado);
+        if (cuid && acam) acam.cuidador = { tipo: 'familiar', pid: cuid.id, nome: cuid.nome, qualidade: 35, sobrecarga: 45 };
+      }
       return f;
     });
     for (const f of familias) for (const p of f.pessoas) for (const id of CONDS) p.cond[id].estagio = estagioInicial(s, cfg, p, id);
+    for (const f of familias) for (const p of f.pessoas) if (p.acamado) { // a causa da dependência já é conhecida e tratada
+      const id = p.acamado.causa === 'AVC' || p.acamado.causa === 'fragilidade' ? 'has' : 'dm';
+      p.cond[id] = { estagio: p.acamado.causa === 'fragilidade' ? 2 : 3, diag: true, trat: true, ctrl: false };
+    }
     // Garante um começo com algo a descobrir: ≥3 doenças ocultas, incluindo hipertensão.
-    const ocultas = familias.flatMap((f) => f.pessoas).flatMap((p) => CONDS.filter((id) => p.cond[id].estagio >= 2).map((id) => id));
+    const ocultas = familias.flatMap((f) => f.pessoas).flatMap((p) => CONDS.filter((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag).map((id) => id));
     if (ocultas.length >= 3 && ocultas.includes('has')) return familias;
     if (tent === 39) return familias;
   }
@@ -116,7 +130,19 @@ export function sintomasDengueVisiveis(s, p) {
 }
 
 export function adesao(f) {
-  return 0.35 + 0.6 * (f.vinculo / 100);
+  return (0.35 + 0.6 * (f.vinculo / 100)) * (f.aperto ? 0.75 : 1); // sem dinheiro sobrando, o tratamento é mais difícil de seguir
+}
+
+/** Quanto a família paga por mês na Farmácia Popular (copagamento) por um tratamento. */
+export const copagamento = (cfg, id) => { const m = cfg.game.familia.medicamento[id]; return Math.round(m.preco * m.popular); };
+export const precoPrivado = (cfg, id) => cfg.game.familia.medicamento[id].preco;
+/** Pessoas que dependem de cuidado de outra pessoa (acamadas, muito idosas ou com complicação grave). */
+export function dependencia(p) {
+  if (p.acamado) return 'acamado(a)';
+  if (p.idade >= 75) return 'idade avançada';
+  if (p.idade >= 60 && CONDS.some((id) => p.cond[id].estagio >= 3)) return 'sequela de doença crônica';
+  if (p.posAlta && !p.posAlta.orientado) return 'recuperação pós-alta';
+  return null;
 }
 
 /* ---------- Ações do jogador ---------- */
@@ -146,6 +172,7 @@ export function acaoVisita(s, cfg, famId) {
     if (p.internado) continue;
     lembraHabitos(p);
     p.conhecido.visTurno = s.turno;
+    if (p.posAlta) p.posAlta.orientado = true;
     if (p.dengue.ativa) achados.push(`${p.nome} está com sintomas de dengue`);
     for (const id of ['dm', 'dep']) {
       if (p.cond[id].estagio >= 2 && !p.cond[id].diag && rnd(s) < 0.5) {
@@ -200,6 +227,7 @@ export function acaoConsulta(s, cfg, pid) {
   if (!gasta(s, cfg.game.custos.consulta)) return falha('Sem horas de equipe suficientes neste mês.');
   lembraHabitos(p);
   p.conhecido.visTurno = s.turno;
+  if (p.posAlta) p.posAlta.orientado = true; // acompanhamento pós-alta feito
   const achados = [];
   if (p.idade >= 18) registraMedidas(s, p);
 
@@ -245,6 +273,7 @@ export function acaoOrientar(s, cfg, pid, foco) {
   const p = achaPessoa(s, pid);
   const f = familiaDe(s, p);
   if (p.internado) return falha(`${p.nome} está internado(a).`);
+  if (p.posAlta) p.posAlta.orientado = true;
   if (!gasta(s, cfg.game.custos.orientar)) return falha('Sem horas de equipe suficientes neste mês.');
   f.vinculo = clamp(f.vinculo + 3, 0, 100);
   if (foco === 'fumo') {
@@ -312,6 +341,108 @@ export function indicadores(s, cfg) {
 
 /* ---------- Passagem do mês ---------- */
 
+/** O caso extrapola a atenção primária? Devolve o motivo (ou null). */
+export function criterioReferencia(s, p) {
+  if (p.internado) return null;
+  if (s.turno - (p.refTurno === undefined ? -99 : p.refTurno) < 6) return null;
+  if (p.dengue.ativa && !p.dengue.referido && (p.idade >= 65 || p.idade < 5 || p.cond.has.diag || p.cond.dm.diag)) return 'dengue com risco de sinais de alarme (idoso, criança ou com doença crônica)';
+  if (p.acamado && p.acamado.lesao >= 2) return 'lesão por pressão avançada: precisa de avaliação e procedimento hospitalar';
+  if (p.cond.has.estagio >= 3 || p.cond.dm.estagio >= 3) { if (p.cond.has.diag || p.cond.dm.diag) return 'complicação grave de doença crônica: avaliação especializada'; }
+  return null;
+}
+
+/** Encaminha para a UPA/hospital de referência (média/alta complexidade). Não há atendimento no jogo: a pessoa fica fora do mapa e volta com alta. */
+export function internarPessoa(s, cfg, p, motivo, add, extra = {}) {
+  const G = cfg.game;
+  p.internado = true;
+  p.altaInfo = { tipo: extra.tipo || 'clinica', causa: extra.causa || null };
+  const f = familiaDe(s, p);
+  f.vinculo = clamp(f.vinculo - 6, 0, 100);
+  s.verba = Math.max(0, s.verba - G.economia.custoInternacao);
+  s.internacoes.push(s.turno);
+  const msg = `🏥 ${p.nome} ${motivo}. (custo de internação: −${G.economia.custoInternacao} de verba)`;
+  if (add) add('alerta', msg, { pessoaId: p.id }); else s.diario.push({ mes: s.mes, ano: s.ano, tipo: 'alerta', texto: msg, pessoaId: p.id });
+}
+
+/** Referência pedida pela equipe (via regulação da enfermeira): evita o agravamento e prepara o retorno com orientação pós-alta. */
+export function encaminharReferencia(s, cfg, pid) {
+  const p = achaPessoa(s, pid);
+  if (p.internado) return falha(`${p.nome} já está na UPA/hospital.`);
+  p.refTurno = s.turno;
+  const motivo = p.dengue.ativa ? 'com dengue com sinais de alarme foi encaminhado(a) à UPA' : p.acamado && p.acamado.lesao >= 2 ? 'com lesão por pressão infectada foi encaminhado(a) ao hospital' : 'foi encaminhado(a) à UPA/hospital de referência (fora da competência da atenção primária)';
+  if (p.dengue.ativa) p.dengue.referido = true;
+  const tipo = !p.dengue.ativa && (CONDS.some((id) => p.cond[id].estagio >= 3) || (p.acamado && p.acamado.lesao >= 2)) ? 'procedimento' : 'clinica';
+  if (p.acamado) p.acamado.lesao = Math.max(0, p.acamado.lesao - 1.5);
+  internarPessoa(s, cfg, p, motivo, null, { tipo });
+  return sucesso(`${p.nome} foi encaminhado(a) à UPA/hospital. Na alta, volta para orientação e acompanhamento na unidade.`);
+}
+
+/** Orientação/atendimento domiciliar a uma pessoa acamada e ao seu cuidador (ACS, técnico, enfermeiro ou médico). */
+export function acaoCuidador(s, cfg, pid, papel) {
+  const p = achaPessoa(s, pid), f = familiaDe(s, p);
+  if (p.internado) return falha(`${p.nome} está internado(a).`);
+  const ac = p.acamado, cu = p.cuidador, partes = [];
+  if (cu) {
+    const ganho = { acs: 12, tecnico: 14, enfermeiro: 22, medico: 16 }[papel] || 12;
+    cu.qualidade = clamp(cu.qualidade + ganho, 0, 100);
+    cu.sobrecarga = clamp(cu.sobrecarga - (papel === 'acs' ? 14 : 8), 0, 100);
+    partes.push(`${cu.nome} foi orientado(a) sobre posição no leito, higiene, alimentação e remédios (qualidade do cuidado ${Math.round(cu.qualidade)}%, sobrecarga ${Math.round(cu.sobrecarga)}%)`);
+  } else partes.push('Não há cuidador em casa: converse com a família sobre apoio');
+  if (ac && (papel === 'enfermeiro' || papel === 'tecnico')) { ac.lesao = clamp(ac.lesao - (papel === 'enfermeiro' ? 1 : 0.7), 0, 5); partes.push('pele avaliada e curativo feito (risco de lesão reduzido)'); }
+  if (ac && papel === 'medico') { ac.lesao = clamp(ac.lesao - 0.8, 0, 5); partes.push('avaliação médica em casa e prescrição revisada'); for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) p.cond[id].trat = true; }
+  f.vinculo = clamp(f.vinculo + 2, 0, 100);
+  if (p.posAlta) p.posAlta.orientado = true;
+  return sucesso(`${partes.join('. ')}.`);
+}
+
+/** O paciente pede um cuidador: o jogo aceita ou recusa conforme a necessidade de saúde e a renda da família. */
+export function pedirCuidador(s, cfg, pid) {
+  const p = achaPessoa(s, pid), f = familiaDe(s, p), C = cfg.game.familia.cuidador;
+  if (p.cuidador) return falha('Você já conta com um cuidador.');
+  const motivo = dependencia(p);
+  if (!motivo) return falha('Pedido recusado: não há limitação de saúde que justifique um cuidador. Alimentação, atividade física, sono e remédio continuam sendo com você.');
+  const fam = f.pessoas.filter((q) => q !== p && q.idade >= 18 && q.idade <= 75 && !q.internado && !q.acamado && q.ocupacao !== 'trabalho');
+  if (fam.length) {
+    const q = fam[0];
+    p.cuidador = { tipo: 'familiar', pid: q.id, nome: q.nome, qualidade: 35, sobrecarga: 40 };
+    return sucesso(`Pedido aceito (${motivo}): ${q.nome} passa a ajudar nos cuidados. Cuidador familiar sem orientação pode errar: peça apoio da equipe.`);
+  }
+  if (f.saldo >= C.preco) {
+    f.saldo -= C.preco;
+    p.cuidador = { tipo: 'contratado', pid: null, nome: 'cuidador(a) contratado(a)', qualidade: C.qualidadeContratado, sobrecarga: 0 };
+    return sucesso(`Pedido aceito (${motivo}): cuidador contratado por R$ ${C.preco}/mês. O cuidador ajuda no remédio e no dia a dia, mas não faz o seu exercício nem a sua alimentação por você.`);
+  }
+  return falha(`Pedido recusado por falta de condições: um cuidador custa R$ ${C.preco}/mês e o saldo da família é R$ ${f.saldo}. Procure o ACS/UBS: a equipe pode orientar a família e articular apoio.`);
+}
+
+/** Cuidado diário das pessoas acamadas: o cuidador pode errar; a orientação dos profissionais reduz os erros. */
+export function cuidadoDiario(s, cfg, avisa) {
+  const C = cfg.game.familia.cuidador;
+  for (const f of s.familias) for (const p of f.pessoas) {
+    if (!p.acamado || p.internado) continue;
+    const ac = p.acamado, cu = p.cuidador;
+    if (!cu) { ac.lesao = clamp(ac.lesao + 0.3, 0, 5); ac.semCuidador = (ac.semCuidador || 0) + 1; if (ac.semCuidador === 1) avisa('alerta', `⚠️ ${p.nome} está acamado(a) e sem cuidador: o risco de lesão e de piora é alto.`, p); }
+    else {
+      cu.sobrecarga = clamp(cu.sobrecarga + (cu.tipo === 'familiar' ? C.sobrecargaDia : 0.2), 0, 100);
+      cu.qualidade = clamp(cu.qualidade - 0.5, 0, 100); // sem reforço, as orientações se perdem
+      const base = cu.tipo === 'familiar' ? C.erroFamiliar : C.erroContratado;
+      const visitas = ac.cuidadosHoje || 0; // quantas vezes o cuidador foi até o leito hoje
+      const rotina = visitas >= 3 ? 0.8 : visitas >= 1 ? 1 : 1.5;
+      const pErro = clamp(base * rotina * (1 + cu.sobrecarga / 60) * (1.4 - cu.qualidade / 100), 0, 0.85);
+      if (rnd(s) < pErro) {
+        ac.erros = (ac.erros || 0) + 1;
+        const tipo = ['esqueceu o remédio', 'não fez a mudança de posição no leito', 'fez a higiene de forma inadequada'][rint(s, 0, 2)];
+        if (tipo !== 'esqueceu o remédio') ac.lesao = clamp(ac.lesao + 0.5, 0, 5); else p.adesaoOverride = clamp((typeof p.adesaoOverride === 'number' ? p.adesaoOverride : 0.8) - 0.05, 0.2, 1);
+        if (ac.erros % 4 === 1) avisa('info', `🤲 ${cu.nome} ${tipo} no cuidado de ${p.nome} (cuidador ${cu.tipo === 'familiar' ? `sobrecarregado: ${Math.round(cu.sobrecarga)}%` : 'contratado'}). Orientação e apoio da equipe reduzem esses erros.`, p);
+      } else ac.lesao = clamp(ac.lesao - 0.05, 0, 5);
+    }
+    if (ac.lesao >= C.lesaoLimite) { // lesão por pressão infectada: precisa de média complexidade
+      internarPessoa(s, cfg, p, 'foi internado(a) com lesão por pressão infectada (falha no cuidado do acamado)', null, { tipo: 'procedimento', causa: ac.causa });
+      ac.lesao = 1.5;
+    }
+  }
+}
+
 export function avancarMes(s, cfg) {
   const G = cfg.game, D = G.dengue;
   const saida = [];
@@ -325,19 +456,32 @@ export function avancarMes(s, cfg) {
     s.licoes[chave] = true;
     add('aprendizado', `${titulo} — ${texto}`);
   };
-  const internar = (p, motivo) => {
-    p.internado = true;
-    const f = familiaDe(s, p);
-    f.vinculo = clamp(f.vinculo - 6, 0, 100);
-    s.verba = Math.max(0, s.verba - G.economia.custoInternacao);
-    s.internacoes.push(s.turno);
-    add('alerta', `🏥 ${p.nome} ${motivo}. (custo de internação: −${G.economia.custoInternacao} de verba)`, { pessoaId: p.id });
-  };
+  const internar = (p, motivo, extra) => internarPessoa(s, cfg, p, motivo, add, extra);
 
-  // 0. altas hospitalares do mês anterior
+  // 0. altas da UPA/hospital de referência do mês anterior: a pessoa volta para o acompanhamento na atenção primária
   for (const p of todasPessoas(s)) if (p.internado) {
     p.internado = false;
-    add('info', `${p.nome} teve alta e precisa de acompanhamento na unidade.`, { pessoaId: p.id });
+    const tipo = (p.altaInfo && p.altaInfo.tipo) || 'clinica';
+    p.posAlta = { turno: s.turno, orientado: false, tipo };
+    let extra = '';
+    if (tipo === 'procedimento' && p.idade >= 50 && !p.acamado && rnd(s) < 0.45) { // sequela: passa a depender de cuidador
+      p.acamado = { causa: p.altaInfo.causa || 'sequela', lesao: 0, erros: 0 };
+      const cand = familiaDe(s, p).pessoas.filter((q) => q !== p && q.idade >= 18 && q.idade <= 75 && !q.acamado && !q.internado).sort((x, y) => (x.ocupacao === 'trabalho') - (y.ocupacao === 'trabalho'))[0];
+      if (cand) p.cuidador = { tipo: 'familiar', pid: cand.id, nome: cand.nome, qualidade: 30, sobrecarga: 30 };
+      extra = ` Ficou acamado(a)${cand ? ` e ${cand.nome} assumiu o cuidado` : ' e ainda não tem cuidador'}: oriente e acompanhe.`;
+    }
+    p.altaInfo = null;
+    add('info', `🏥➡️🏠 ${p.nome} teve alta da UPA/hospital${tipo === 'procedimento' ? ' (pós-procedimento/cirurgia)' : ''} e precisa de acompanhamento e orientação na unidade em até 1 mês.${extra}`, { pessoaId: p.id });
+  }
+  // pós-alta sem acompanhamento: risco de reinternação
+  for (const p of todasPessoas(s)) {
+    if (!p.posAlta || p.internado) continue;
+    if (p.posAlta.orientado) { p.posAlta = null; continue; }
+    if (s.turno - p.posAlta.turno >= 1) {
+      if (rnd(s) < 0.3) internar(p, 'foi reinternado(a): ficou sem acompanhamento depois da alta', { tipo: 'clinica' });
+      else add('alerta', `⚠️ ${p.nome} ainda não recebeu o acompanhamento pós-alta: o risco de reinternação continua.`, { pessoaId: p.id });
+      if (p.posAlta) p.posAlta.turno = s.turno;
+    }
   }
 
   // 1. desfecho da dengue do mês anterior
@@ -345,7 +489,7 @@ export function avancarMes(s, cfg) {
     if (!p.dengue.ativa) continue;
     const idoso = p.idade >= 65 || p.idade < 5;
     const comorb = (p.cond.has.diag || p.cond.dm.diag) ? 1.3 : 1;
-    const pg = (p.dengue.atendido ? D.pGraveComAtendimento : D.pGraveSemAtendimento) * (idoso ? 1.8 : 1) * comorb;
+    const pg = (p.dengue.referido ? D.pGraveComAtendimento / 4 : p.dengue.atendido ? D.pGraveComAtendimento : D.pGraveSemAtendimento) * (idoso ? 1.8 : 1) * comorb;
     p.dengue = { ativa: false, atendido: false };
     p.imune = D.imunidadeMeses;
     if (rnd(s) < pg) {
@@ -356,18 +500,45 @@ export function avancarMes(s, cfg) {
     }
   }
 
-  // 2. tratamento: insumos e adesão
-  let precisam = 0, faltou = 0, naoAderiu = 0;
-  for (const f of s.familias) for (const p of f.pessoas) for (const id of CONDS) {
-    const st = p.cond[id];
-    st.ctrl = false;
-    if (!st.trat || !st.diag) continue;
-    precisam++;
-    if (s.insumos < 1) { faltou++; continue; }
-    s.insumos -= 1;
-    if (rnd(s) < (typeof p.adesaoOverride === 'number' ? p.adesaoOverride : adesao(f))) st.ctrl = true; else naoAderiu++;
+  // 2. economia da família, medicamentos (farmácia básica da UBS → Farmácia Popular) e adesão
+  const E = G.familia;
+  for (const f of s.familias) { const cl = E.classes[f.classe]; const folga = f.renda * cl.folga; f.saldo = Math.round(Math.min(f.saldo + folga, folga * 8)); }
+  let precisam = 0, faltou = 0, semDinheiro = 0, naoAderiu = 0, gastoFarmacia = 0;
+  for (const f of s.familias) for (const p of f.pessoas) {
+    p.semRemedio = [];
+    for (const id of CONDS) {
+      const st = p.cond[id];
+      st.ctrl = false;
+      if (!st.trat || !st.diag) continue;
+      precisam++;
+      let obteve = false;
+      if (s.insumos >= 1) { s.insumos -= 1; obteve = true; } // farmácia básica da UBS (gratuita, com estoque limitado)
+      else {
+        const copag = copagamento(cfg, id);
+        if (f.saldo >= copag) { f.saldo -= copag; gastoFarmacia += copag; obteve = true; } // Farmácia Popular (conveniada, privada): paga parte
+        else semDinheiro++;
+      }
+      if (!obteve) { faltou++; p.semRemedio.push(id); continue; }
+      let ad = typeof p.adesaoOverride === 'number' ? p.adesaoOverride : adesao(f);
+      if (p.cuidador && !p.acamado) ad = Math.max(ad, 0.6); // o cuidador lembra do remédio, mas não substitui o esforço da pessoa
+      if (rnd(s) < ad) st.ctrl = true; else naoAderiu++;
+    }
   }
-  if (faltou > 0) add('alerta', `💊 Faltou medicamento/insumo para ${faltou} tratamento(s) neste mês. Melhore a farmácia da unidade.`);
+  for (const p of todasPessoas(s)) if (p.cuidador && !p.acamado && !dependencia(p)) { // a necessidade passou: o cuidador deixa de ser necessário
+    add('info', `${p.nome} se recuperou e não precisa mais de cuidador.`, { pessoaId: p.id }); p.cuidador = null;
+  }
+  // cuidador contratado é pago pela família; sem dinheiro, é dispensado
+  for (const f of s.familias) {
+    for (const p of f.pessoas) {
+      if (!p.cuidador || p.cuidador.tipo !== 'contratado') continue;
+      if (f.saldo >= E.cuidador.preco) { f.saldo -= E.cuidador.preco; }
+      else { p.cuidador = null; add('alerta', `💸 A família ${f.nome.replace('Família ', '')} não conseguiu mais pagar o cuidador de ${p.nome}: ele(a) ficou sem cuidador.`, { pessoaId: p.id }); }
+    }
+    f.aperto = f.saldo < f.renda * E.classes[f.classe].folga * 0.5;
+  }
+  s.metricas.semAcesso = (s.metricas.semAcesso || 0) + semDinheiro;
+  if (faltou > semDinheiro) add('alerta', `💊 Faltou medicamento na farmácia da unidade para ${faltou - semDinheiro} tratamento(s) neste mês (as famílias com dinheiro compraram na Farmácia Popular).`);
+  if (semDinheiro > 0) add('alerta', `💸 ${semDinheiro} tratamento(s) ficaram sem medicamento: a farmácia da unidade estava sem estoque e a família não pôde pagar a Farmácia Popular. Renda baixa pesa no cuidado.`);
   if (naoAderiu > 0) add('info', `${naoAderiu} tratamento(s) não foram seguidos direito — vínculo e orientação aumentam a adesão.`);
 
   // 3. progressão das doenças crônicas

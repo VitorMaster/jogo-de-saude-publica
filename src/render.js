@@ -278,7 +278,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     return M.pronta(new THREE.MeshLambertMaterial({ vertexColors: true }), false, true);
   }
 
-  const corParede = (l) => (l.casa ? PAREDES_CASA[hashR(l.casa) % PAREDES_CASA.length] : { ubs: '#f1f7f7', escola: '#f6d56b', trabalho: '#b3c0d3', lanche: '#f2a96c' }[l.modelo] || '#d1d5db');
+  const corParede = (l) => (l.casa ? PAREDES_CASA[hashR(l.casa) % PAREDES_CASA.length] : { ubs: '#f1f7f7', escola: '#f6d56b', trabalho: '#b3c0d3', lanche: '#f2a96c', farmacia: '#dff3e4' }[l.modelo] || '#d1d5db');
   const QUADRANTES_BAIXOS = [['S', 'E'], ['N', 'E'], ['N', 'W'], ['S', 'W']];
 
   /** Paredes finas: altas no fundo, baixas no lado da câmera (recorte), meias nas divisórias. */
@@ -506,6 +506,21 @@ export function criarRenderer(canvas, getEstado, hooks) {
           M.cilindro(cx + 0.3, y0 + 0.95, cz - 0.15, 0.1, 0.4, '#7dd3fc', 8);
           break;
         }
+        case 'I': { // balcão da Farmácia Popular
+          M.caixa(cx, 0, cz - 0.3, 0.96, 1.95, 0.3, '#e8f5e9');
+          for (let n = 0; n < 4; n++) for (let b = 0; b < 4; b++) M.caixa(cx - 0.36 + b * 0.24, y0 + 0.2 + n * 0.45, cz - 0.14, 0.18, 0.26, 0.12, ['#60a5fa', '#34d399', '#fbbf24', '#f87171'][(b + n + hh) % 4]);
+          M.caixa(cx, y0, cz + 0.2, 0.96, 0.95, 0.4, '#c6dccf'); M.caixa(cx, y0 + 0.95, cz + 0.2, 1.0, 0.05, 0.46, '#15803d');
+          M.caixa(cx + 0.22, y0 + 1.0, cz + 0.2, 0.3, 0.2, 0.2, '#1f2933');
+          M.caixa(cx, y0 + 2.05, cz - 0.28, 0.5, 0.05, 0.05, '#15803d'); M.caixa(cx, y0 + 1.82, cz - 0.28, 0.05, 0.5, 0.05, '#15803d');
+          break;
+        }
+        case 'f': { // píer de madeira avançando sobre o lago, com estacas e uma vara apoiada
+          M.caixa(cx, y0 + 0.28, cz, 1.0, 0.08, 1.0, '#a9794f');
+          for (let t = 0; t < 4; t++) M.caixa(cx, y0 + 0.37, cz - 0.38 + t * 0.26, 0.96, 0.02, 0.02, '#7a5436');
+          for (const [dx, dz] of [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]]) M.cilindro(cx + dx, y0, cz + dz, 0.05, 0.4, '#6b4a2f', 5);
+          M.caixa(cx - 0.3, y0 + 0.36, cz + 0.2, 0.04, 0.04, 0.8, '#5a4128'); M.caixa(cx - 0.3, y0 + 0.5, cz + 0.55, 0.02, 0.02, 0.3, '#e5e7eb');
+          break;
+        }
         case 'E': { // carteira escolar
           for (const [dx, dz] of [[-0.3, -0.2], [0.3, -0.2], [-0.3, 0.2], [0.3, 0.2]]) M.caixa(cx + dx, y0, cz + dz, 0.05, 0.62, 0.05, '#6b7280');
           M.caixa(cx, y0 + 0.62, cz, 0.8, 0.05, 0.56, '#d6a35a');
@@ -622,7 +637,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
       const px = q.x + 0.5, pz = q.y + 0.5;
       if (l.casa) { M.cilindro(px, y0, pz, 0.04, 0.9, '#7a5a3a', 5); M.caixa(px, y0 + 0.9, pz, 0.3, 0.2, 0.2, '#3b82c4'); }
       else {
-        const cor = { ubs: '#16a34a', escola: '#e3a70b', lanche: '#e4572e', trabalho: '#3b6fb6' }[l.modelo] || '#16a34a';
+        const cor = { ubs: '#16a34a', escola: '#e3a70b', lanche: '#e4572e', trabalho: '#3b6fb6', farmacia: '#15803d' }[l.modelo] || '#16a34a';
         M.cilindro(px, y0, pz, 0.05, 1.7, '#6b7280', 6); M.caixa(px, y0 + 1.45, pz, 0.9, 0.7, 0.08, cor, dy !== 0 ? 0 : Math.PI / 2);
         extras.texturasPlaca.push({ x: px, y: y0 + 1.8, z: pz, modelo: l.modelo, rot: dy !== 0 ? 0 : Math.PI / 2 });
       }
@@ -641,6 +656,17 @@ export function criarRenderer(canvas, getEstado, hooks) {
             const cj = acesa ? '#ffe9a8' : '#6d8fb0';
             M.caixa(x0 + k + 0.15, andar, z0 + h - 0.12, 0.7, 0.9, 0.06, cj); M.caixa(x0 + w - 0.12, andar, z0 + 0.7 + (k % 1.5), 0.06, 0.9, 0.6, cj);
           }
+          break;
+        }
+        case 'hospital': { // UPA / hospital de referência: construção de fundo, sem atendimento no jogo
+          const alt = d.alt || 3.4;
+          M.caixa(cx, 0, cz, w - 0.3, alt, h - 0.3, '#f4f6f8');
+          M.caixa(cx, alt, cz, w - 0.5, 0.3, h - 0.5, '#d5dbe1');
+          M.caixa(cx - w * 0.28, alt + 0.3, cz, w * 0.22, 0.8, h * 0.5, '#e5e9ee');
+          M.caixa(cx, alt * 0.5, z0 + h - 0.1, w * 0.3, 0.25, 0.06, '#d62828'); M.caixa(cx, alt * 0.5, z0 + h - 0.1, 0.25, w * 0.3 > 2 ? 1.5 : 1.0, 0.06, '#d62828');
+          for (let andar = 0.9; andar < alt - 0.4; andar += 1.2) for (let k = 0.7; k < w - 0.7; k += 1.0) M.caixa(x0 + k + 0.15, andar, z0 + h - 0.12, 0.6, 0.7, 0.05, '#8fb6d6');
+          M.caixa(x0 + 1.4, 0, z0 + h + 0.35, 2.6, 0.12, 1.1, '#e11d48'); // ambulância: baia coberta
+          M.caixa(x0 + 1.4, 0.35, z0 + h + 0.35, 1.6, 0.7, 0.8, '#ffffff'); M.caixa(x0 + 1.4, 1.0, z0 + h + 0.35, 1.0, 0.1, 0.5, '#2563eb');
           break;
         }
         case 'igreja': {
@@ -700,7 +726,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     for (const p of extras.texturasPlaca) {
       const c = document.createElement('canvas'); c.width = 64; c.height = 64;
       const g = c.getContext('2d'); g.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-      g.fillText({ ubs: '✚', escola: '📚', lanche: '🍔', trabalho: '💼' }[p.modelo] || '✚', 32, 36);
+      g.fillText({ ubs: '✚', escola: '📚', lanche: '🍔', trabalho: '💼', farmacia: '💊' }[p.modelo] || '✚', 32, 36);
       const t = new THREE.CanvasTexture(c);
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.55), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
       pl.position.set(p.x, p.y - 0.35, p.z); pl.rotation.y = p.rot; pl.translateZ(0.055); grupo.add(pl);
@@ -764,8 +790,9 @@ export function criarRenderer(canvas, getEstado, hooks) {
       e.vestido = e.feminino && p.idade >= 12 && (h >> 22) % 3 === 0;
     } else {
       e.papel = a.papel; e.feminino = (h >> 3) % 2 === 0; e.estilo = e.feminino ? 2 : 0;
-      e.camisa = { medico: '#f8fafc', tecnico: '#3b8be0', enfermeiro: '#2cb6a4', acs: '#18a058' }[a.papel];
-      e.calca = { medico: '#3a4a63', tecnico: '#2d6ab3', enfermeiro: '#1f8f81', acs: '#30424f' }[a.papel];
+      e.camisa = { medico: '#f8fafc', tecnico: '#3b8be0', enfermeiro: '#2cb6a4', acs: '#18a058', cuidador: '#a78bfa' }[a.papel];
+      e.calca = { medico: '#3a4a63', tecnico: '#2d6ab3', enfermeiro: '#1f8f81', acs: '#30424f', cuidador: '#4b5563' }[a.papel];
+      if (a.papel === 'cuidador') { e.feminino = true; e.estilo = 2; }
     }
     return e;
   }
@@ -824,6 +851,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     const livro = parte(gCaixa, '#c0392b', 0.2, 0.03, 0.26, 0, -0.3, 0.05, bD.cot); livro.visible = false;
     const enxada = new THREE.Group(); parte(gCil, '#8a6a3a', 0.02, 1.3, 0.02, 0, -0.1, 0.1, enxada); parte(gCaixa, '#7a808a', 0.22, 0.03, 0.12, 0, -0.75, 0.1, enxada); enxada.position.y = -0.28; enxada.visible = false; bD.cot.add(enxada);
     const cigarro = parte(gCaixa, '#ffffff', 0.015, 0.015, 0.08, 0, -0.28, 0.06, bD.cot); cigarro.visible = false;
+    const vara = new THREE.Group(); parte(gCil, '#6b4a2f', 0.012, 1.5, 0.012, 0, 0.1, 0.55, vara); parte(gCil, '#e5e7eb', 0.004, 0.7, 0.004, 0, -0.45, 1.25, vara); vara.rotation.x = -0.9; vara.position.y = -0.28; vara.visible = false; bD.cot.add(vara);
     // cadeira dinâmica (aparece quando a pessoa senta numa cadeira comum)
     const cadeira = new THREE.Group();
     const peca = (hex, sx, sy, sz, x, y, z) => { const m = new THREE.Mesh(gCaixa, mat(hex)); m.scale.set(sx, sy, sz); m.position.set(x, y, z); m.castShadow = true; cadeira.add(m); };
@@ -839,7 +867,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     const sombra = new THREE.Mesh(new THREE.CircleGeometry(0.42, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
     sombra.rotation.x = -Math.PI / 2; sombra.position.y = 0.02; raiz.add(sombra);
     const j = { y: 0.98, hx: 0, cx: 0, aEx: 0, aEz: 0.08, eEx: 0, aDx: 0, aDz: -0.08, eDx: 0, lEx: 0, kEx: 0, lDx: 0, kDx: 0, rotX: 0 };
-    return { raiz, quadril, corpo, cabeca, boca, bE, bD, pE, pD, livro, enxada, cigarro, cadeira, pick, sombra, e, j, pos: new THREE.Vector3(), yaw: 0, fase: (hashR(a.id) % 600) / 100, ult: null, dir: new THREE.Vector2(0, 1) };
+    return { raiz, quadril, corpo, cabeca, boca, bE, bD, pE, pD, livro, enxada, cigarro, vara, cadeira, pick, sombra, e, j, pos: new THREE.Vector3(), yaw: 0, fase: (hashR(a.id) % 600) / 100, ult: null, dir: new THREE.Vector2(0, 1) };
   }
 
   /** Poses: ângulos-alvo das juntas (o desenho suaviza a transição). */
@@ -857,6 +885,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
       case 'digitar': return { ...b, y: 0.54, lEx: -1.52, kEx: 1.5, lDx: -1.52, kDx: 1.5, aEx: -1.0 + Math.sin(t / 120) * 0.05, eEx: -0.9, aDx: -1.0 - Math.sin(t / 120) * 0.05, eDx: -0.9, cx: 0.28 };
       case 'exercitar': { const q = (Math.sin(t / 280) + 1) / 2; return { ...b, aEx: -2.5 + q * 1.8, aEz: 0.25, eEx: -0.3 - q * 0.9, aDx: -0.7 - q * 1.8, aDz: -0.25, eDx: -1.2 + q * 0.9, lEx: -0.1, lDx: -0.1, y: 0.95 + q * 0.03 }; }
       case 'enxada': { const q = (Math.sin(t / 420) + 1) / 2; return { ...b, aEx: -1.3 - q * 1.2, eEx: -0.5, aDx: -1.3 - q * 1.2, eDx: -0.5, cx: 0.1 + q * 0.3, hx: 0.15 + q * 0.2, prop: 'enxada' }; }
+      case 'pescar': { const q = (Math.sin(t / 900) + 1) / 2; return { ...b, aEx: -0.7, eEx: -0.8, aDx: -0.95 - q * 0.08, eDx: -0.9, cx: 0.12, prop: 'vara' }; }
       case 'fumar': { const q = (Math.sin(t / 1200) + 1) / 2; return { ...b, aDx: -0.8 - q * 1.3, eDx: -1.5 - q * 0.3, aEx: -0.1, prop: 'cigarro' }; }
       case 'falar': return { ...b, aDx: -0.8 + Math.sin(t / 260) * 0.35, eDx: -0.8, aEx: -0.1, cx: Math.sin(t / 700) * 0.08, boca: 1.5 + Math.sin(t / 180) * 0.3 };
       case 'banho': return { ...b, aEx: -2.6, eEx: -1.3, aDx: -2.6, eDx: -1.3, cx: -0.1 };
@@ -886,6 +915,11 @@ export function criarRenderer(canvas, getEstado, hooks) {
         else if (a.acao.k === 'ler') { r.yaw = Math.PI / 2; r.extraY = -0.08; }
         else if (a.acao.k === 'praca') { r.yaw = 0; r.pos.z += 0.05; r.extraY = -0.08; }
         else if (a.acao.k === 'banho') { r.yaw = 0; }
+        else if (a.acao.k === 'pescar') { // em pé no píer, de frente para o lago
+          const lg = (W.decoracao || []).filter((d) => d.t === 'lago').sort((q, w) => Math.hypot(q.x + q.w / 2 - o.x, q.y + q.h / 2 - o.y) - Math.hypot(w.x + w.w / 2 - o.x, w.y + w.h / 2 - o.y))[0];
+          if (lg) r.yaw = yawDe(lg.x + lg.w / 2 - o.x, lg.y + lg.h / 2 - o.y);
+          r.pos.y = y0 + 0.37;
+        }
       } else if (info.onde === 'frente' && o) {
         virarPara(o.x, o.y);
         if (a.acao.k === 'comer_mesa') { r.pose = 'comer'; r.cadeira = true; }
@@ -940,7 +974,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     R3.bD.g.rotation.set(jj.aDx, 0, jj.aDz); R3.bD.cot.rotation.x = jj.eDx;
     R3.pE.g.rotation.x = jj.lEx; R3.pE.jo.rotation.x = jj.kEx;
     R3.pD.g.rotation.x = jj.lDx; R3.pD.jo.rotation.x = jj.kDx;
-    R3.livro.visible = T.prop === 'livro'; R3.enxada.visible = T.prop === 'enxada'; R3.cigarro.visible = T.prop === 'cigarro';
+    R3.livro.visible = T.prop === 'livro'; R3.enxada.visible = T.prop === 'enxada'; R3.cigarro.visible = T.prop === 'cigarro'; R3.vara.visible = T.prop === 'pescar' || T.prop === 'vara';
     // cadeira dinâmica
     R3.cadeira.visible = sit.cadeira;
     if (sit.cadeira) { R3.cadeira.position.set(a.x + 0.5, alturaPiso(W, rv, Math.round(a.x), Math.round(a.y)), a.y + 0.5); R3.cadeira.rotation.y = R3.yaw + Math.PI; R3.pos.x += (a.x + 0.5 - R3.pos.x) * 0.0; }
@@ -1102,7 +1136,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     const p3 = a && agentes3d.get(a.id);
     if (a && p3 && a.vis) {
       if (!nomeDom) { nomeDom = document.createElement('div'); nomeDom.className = 'nome3d'; ov.appendChild(nomeDom); }
-      const nome = a.k === 'res' ? achaPessoa(S, a.pid).nome : { medico: 'Médico(a)', tecnico: 'Técnico(a)', enfermeiro: 'Enfermeiro(a)', acs: 'Agente comunitário' }[a.papel];
+      const nome = a.k === 'res' ? achaPessoa(S, a.pid).nome : { medico: 'Médico(a)', tecnico: 'Técnico(a)', enfermeiro: 'Enfermeiro(a)', acs: 'Agente comunitário', cuidador: 'Cuidador(a)' }[a.papel];
       if (nomeDom.textContent !== nome) nomeDom.textContent = nome;
       proj.set(p3.pos.x, p3.pos.y + 2.9 * Math.max(0.75, p3.e.escala), p3.pos.z).project(camera);
       nomeDom.style.display = '';
@@ -1113,6 +1147,10 @@ export function criarRenderer(canvas, getEstado, hooks) {
     } else { if (nomeDom) nomeDom.style.display = 'none'; prumbob.visible = false; }
     // rótulos dos lugares
     if (!rotulosDom.length) {
+      for (const d of W.decoracao || []) if (d.t === 'hospital') {
+        const el = document.createElement('div'); el.className = 'rotulo3d hospital'; el.textContent = `🏥 ${d.nome || 'Hospital de referência'}`; ov.appendChild(el);
+        rotulosDom.push({ el, l: d });
+      }
       for (const l of W.lugares) {
         let nome = null;
         if (l.casa) nome = S.familias.find((f) => f.id === l.casa).nome.replace('Família ', '').replace('Casal ', '');
@@ -1120,6 +1158,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
         else if (l.modelo === 'escola') nome = 'Escola';
         else if (l.modelo === 'trabalho') nome = cfg.cenario.id === 'metropole' ? 'Escritórios' : 'Comércio';
         else if (l.modelo === 'lanche') nome = 'Lanchonete';
+        else if (l.modelo === 'farmacia') nome = '💊 Farmácia Popular';
         if (!nome) continue;
         const el = document.createElement('div'); el.className = `rotulo3d${l.modelo === 'ubs' ? ' ubs' : ''}`; el.textContent = nome; ov.appendChild(el);
         rotulosDom.push({ el, l });

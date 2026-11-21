@@ -317,6 +317,14 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
         caixa(ctx, i + 0.1, j + 0.3, i + 0.4, j + 0.6, 22, 34, '#1f2933');
         caixa(ctx, i + 0.6, j + 0.35, i + 0.85, j + 0.6, 22, 30, '#7dd3fc');
         break;
+      case 'I':
+        caixa(ctx, i + 0.05, j + 0.1, i + 0.95, j + 0.35, 0, 44, '#e8f5e9');
+        caixa(ctx, i + 0.05, j + 0.45, i + 0.95, j + 0.9, 0, 16, '#c6dccf');
+        caixa(ctx, i + 0.05, j + 0.45, i + 0.95, j + 0.9, 16, 18, '#15803d');
+        break;
+      case 'f':
+        caixa(ctx, i + 0.05, j + 0.05, i + 0.95, j + 0.95, 6, 9, '#a9794f');
+        break;
       case 'E':
         caixa(ctx, i + 0.15, j + 0.3, i + 0.85, j + 0.85, 12, 15, '#d6a35a');
         for (const [dx, dy] of [[0.2, 0.35], [0.8, 0.35], [0.2, 0.8], [0.8, 0.8]]) caixa(ctx, i + dx - 0.03, j + dy - 0.03, i + dx + 0.03, j + dy + 0.03, 0, 12, '#7a5a35', { borda: null });
@@ -387,6 +395,7 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
       e.estilo = e.feminino ? 2 : 0;
       e.camisa = a.papel === 'medico' ? '#f8fafc' : a.papel === 'tecnico' ? '#3b8be0' : '#18a058';
       e.calca = a.papel === 'medico' ? '#3a4a63' : a.papel === 'tecnico' ? '#2d6ab3' : '#30424f';
+      if (a.papel === 'cuidador') { e.camisa = '#a78bfa'; e.calca = '#4b5563'; e.feminino = true; e.estilo = 2; }
     }
     return e;
   }
@@ -828,7 +837,7 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
       const b = bolhaDe(W, S, a);
       if (selecionado === a.id) {
         plumbob(st.sx, topo - 10, agora);
-        const nome = a.k === 'res' ? achaPessoa(S, a.pid).nome : { medico: 'Médico(a)', tecnico: 'Técnico(a)', acs: 'Agente comunitário' }[a.papel];
+        const nome = a.k === 'res' ? achaPessoa(S, a.pid).nome : { medico: 'Médico(a)', tecnico: 'Técnico(a)', acs: 'Agente comunitário', cuidador: 'Cuidador(a)' }[a.papel];
         ctx.font = '700 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const larg = ctx.measureText(nome).width + 14;
         rr(ctx, st.sx - larg / 2, topo - 42, larg, 17, 8.5, '#0f766e'); ctx.fillStyle = '#fff'; ctx.fillText(nome, st.sx, topo - 33);

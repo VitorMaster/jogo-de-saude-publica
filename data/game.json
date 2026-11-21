@@ -110,5 +110,51 @@
     "_ajuda": "Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.",
     "formAction": "",
     "campos": {}
+  },
+  "familia": {
+    "_nota": "Valores aproximados em R$/mês, só para o jogo: a validar com consultoria clínica e econômica.",
+    "classes": {
+      "baixa": {
+        "rotulo": "Baixa renda",
+        "renda": 2400,
+        "folga": 0.05
+      },
+      "media": {
+        "rotulo": "Classe média",
+        "renda": 6500,
+        "folga": 0.2
+      },
+      "alta": {
+        "rotulo": "Alta renda",
+        "renda": 16000,
+        "folga": 0.42
+      }
+    },
+    "medicamento": {
+      "has": {
+        "preco": 45,
+        "popular": 0.1
+      },
+      "dm": {
+        "preco": 80,
+        "popular": 0.1
+      },
+      "dep": {
+        "preco": 100,
+        "popular": 0.6
+      }
+    },
+    "cuidador": {
+      "preco": 2100,
+      "qualidadeContratado": 60,
+      "erroFamiliar": 0.14,
+      "erroContratado": 0.06,
+      "sobrecargaDia": 0.9,
+      "lesaoLimite": 3
+    },
+    "pesca": {
+      "humor": 14,
+      "estresse": 6
+    }
   }
 }
