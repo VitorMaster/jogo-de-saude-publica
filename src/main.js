@@ -348,6 +348,9 @@ function viewDesempenho() {
     <h2 class="secao">Desempenho da unidade</h2>
     <div class="card"><div class="rotulo"><span>Liga</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div></div>
     <div class="card" style="margin-top:10px">
+      ${(() => { const dx = todasPessoas(S).filter((q) => CONDS.some((id) => q.cond[id].diag)); const est = dx.filter((q) => q.estratoTurno !== undefined && S.turno - q.estratoTurno < 12).length; const acomp = dx.filter((q) => q.medTurno !== undefined && S.turno - q.medTurno < 12).length; return `${barraIndicador('Diagnosticados com estratificação de risco atualizada (12 meses)', dx.length ? est / dx.length : null, ` (${est}/${dx.length})`)}${barraIndicador('Diagnosticados com consulta médica nos últimos 12 meses', dx.length ? acomp / dx.length : null, ` (${acomp}/${dx.length})`)}<p class="dica-t">Indicadores sugeridos nas Diretrizes de HAS/DM da SESA-ES (cobertura, estratificação atualizada, metas e internações).</p>`; })()}
+    </div>
+    <div class="card" style="margin-top:10px">
       ${barraIndicador('Adultos com PA/glicemia medidas (12 meses)', i.rastreamento)}
       ${barraIndicador('Hipertensos diagnosticados e controlados', i.has, ` (${i.hasTotal})`)}
       ${barraIndicador('Diabéticos diagnosticados e controlados', i.dm, ` (${i.dmTotal})`)}
@@ -621,7 +624,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.2 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.3 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>

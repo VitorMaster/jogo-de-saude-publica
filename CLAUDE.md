@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 76 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 78 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -72,6 +72,10 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - Detalhes e tabela em `docs/COMPETENCIAS-PNAB.md` (texto resumido, **a validar**). Demanda espontânea: **técnico** afere (`triagem`) e entrega ao **acolhimento da enfermeira** (`acolhimento`, classificação de risco; `esperadoNoAcolhimento` define o destino ideal e dá retorno ao jogador). Sinal de alerta (`sinalDeAlerta`) → `acolhimento_urgente` com prioridade na fila. O técnico não encaminha à consulta (rejeitado em `finalizarAtendimento`). Consulta de enfermagem renova receita por protocolo de quem já tem diagnóstico.
 - `COMPETENCIAS` / `praticaCompetencia` / `competenciasDe` (`mundo.js`): registra só o que o personagem do jogador pratica e explica a regra na primeira vez (aparece no Diário); aba Desempenho mostra a cobertura.
 - Enfermeira atende duas filas (`servicosDe`): acolhimento antes de enfermagem.
+
+## Regras do Espírito Santo (v1.3)
+- Fontes lidas (SESA-ES): Diretrizes/Protocolo de HAS e DM (2016, CIB/ES 2017) e NT 06/2023 (arboviroses na APS). Tabela de como cada regra vira jogabilidade e do que **não** foi encontrado em `docs/REGRAS-ES.md`. Pontos-chave: ACS rastreia HAS ≥20 anos e encaminha à **consulta de enfermagem**; enfermeiro estratifica risco (`estratoHAS`), renova receita só se controlado e com consulta médica ≤12 meses (`p.medTurno`), senão encaminha ao médico; técnico oferece **hidratação oral** na sala de espera (NT 06/2023); notificação/cartão da dengue na consulta; indicador "% com estratificação atualizada".
+- Para ler PDFs de `saude.es.gov.br`/`mosquito.saude.es.gov.br` a rede da sessão precisa permitir esses hosts (ambiente "Saudedavida - SV"); `curl` pelo proxy funciona, o WebFetch dos subagentes pode não funcionar.
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

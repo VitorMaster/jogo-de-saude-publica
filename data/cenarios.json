@@ -1666,9 +1666,9 @@
    "curto": "Agente comunitário",
    "competencias": [
     "Cadastrar e acompanhar as famílias da microárea",
-    "Visitas domiciliares e busca ativa (sem pedir autorização)",
+    "Visitas domiciliares e busca ativa: verificar comparecimento às consultas e uso regular dos medicamentos (sem pedir autorização)",
     "Orientar famílias e cuidadores sobre hábitos, prevenção e uso dos serviços",
-    "Aferir PA e glicemia capilar no domicílio, com capacitação (Lei 13.595/2018)",
+    "Rastrear HAS em maiores de 20 anos (ao menos 1×/ano) e encaminhar suspeitos à consulta de enfermagem; aferir PA e glicemia capilar com capacitação (SESA-ES; Lei 13.595/2018)",
     "Mobilização comunitária; o mutirão contra focos é combinado com a coordenação",
     "Não faz consulta nem procedimentos privativos de enfermagem/medicina"
    ]
@@ -1704,7 +1704,7 @@
    "curto": "Enfermeiro(a)",
    "competencias": [
     "Coordenar a unidade e supervisionar ACS e técnicos",
-    "Consulta de enfermagem, solicitação de exames e prescrição conforme protocolos",
+    "Consulta de enfermagem: medir PA, estratificar o risco, solicitar exames por protocolo, acompanhar quem está controlado e encaminhar ao médico pelo menos 1×/ano ou quando não controlado (SESA-ES)",
     "Gerenciar insumos: analisar o relatório do técnico, cobrar atualização e solicitar reposição",
     "Planejar o território: agendar visitas domiciliares (médico, técnico) e mutirões",
     "Educação em saúde e grupos; encaminhar à UPA/hospital quando extrapola a APS"
@@ -1721,7 +1721,7 @@
    ],
    "curto": "Médico(a)",
    "competencias": [
-    "Consulta, diagnóstico e prescrição",
+    "Consulta, confirmação do diagnóstico, estratificação de risco, prescrição e avaliação das emergências hipertensivas (SESA-ES)",
     "Visitas domiciliares, agendadas pela enfermeira coordenadora",
     "Encaminhar direto à UPA/hospital quando extrapola a APS e acompanhar a contrarreferência",
     "Reunião de equipe e discussão de casos",

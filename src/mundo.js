@@ -5,7 +5,7 @@ import { clamp, rnd, rint } from './rng.js';
 import {
   avancarMes, achaPessoa, achaFamilia, todasPessoas, adesao, sintomasDengueVisiveis, CONDS,
   acaoVisita, acaoMedir, acaoConsulta, acaoOrientar, acaoMutirao, acaoTratamento,
-  cuidadoDiario, acaoCuidador, pedirCuidador, encaminharReferencia, criterioReferencia, dependencia, copagamento,
+  cuidadoDiario, acaoCuidador, pedirCuidador, encaminharReferencia, criterioReferencia, dependencia, copagamento, estratoHAS,
 } from './engine.js';
 
 const CAMINHAVEL = new Set(['.', ',', 'c', 'F', '_', '+']);
@@ -779,8 +779,15 @@ function aplicarServico(W, S, cfg, a, t) {
     const r = acaoOrientar(S, cfg, p.id, foco);
     if (r.ok && foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (foco in it) it[foco] = clamp(it[foco] + 0.5, 0, 1); }
     partes.push(r.msg); S.metricas.orientacoes++;
-    if (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)) { p.retornoTurno = S.turno; partes.push('Renovação de receita e solicitação de exames de rotina conforme protocolo (condição já diagnosticada e em tratamento).'); }
+    const est = p.idade >= 18 ? estratoHAS(p) : null;
+    if (est) { p.estratoTurno = S.turno; partes.push(`Estratificação de risco (SESA-ES): ${est.texto}.`); }
+    const emTrat = CONDS.some((id) => p.cond[id].diag && p.cond[id].trat);
+    const controlado = CONDS.filter((id) => p.cond[id].diag && p.cond[id].trat).every((id) => p.cond[id].ctrl);
+    const consultaMedicaRecente = p.medTurno !== undefined && S.turno - p.medTurno < 12;
+    if (emTrat && controlado && consultaMedicaRecente) { p.retornoTurno = S.turno; partes.push('Renovação de receita e solicitação de exames de rotina conforme protocolo (condição já diagnosticada, controlada e com consulta médica nos últimos 12 meses).'); }
+    else if (emTrat) { t.precisaMedico = true; partes.push(`Encaminhar ao médico: ${controlado ? 'a última consulta médica tem mais de 12 meses (o acompanhamento médico é pelo menos anual)' : 'a condição não está controlada'} (SESA-ES, Diretrizes de HAS/DM).`); }
     else if (t.ord.meta && t.ord.meta.leve) partes.push('Queixa leve resolvida na consulta de enfermagem por protocolo.');
+    if (t.ord.meta && t.ord.meta.rastreio) partes.push('Rastreamento de HAS indicado pelo agente comunitário (maiores de 20 anos, pelo menos uma vez ao ano).');
   } else {
     const leve = t.ord.meta && t.ord.meta.leve && !p.dengue.ativa && !CONDS.some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
     if (leve) partes.push(`Queixa leve (${t.ord.meta.motivo}): examinado(a), orientado(a) e liberado(a).`);
@@ -797,7 +804,7 @@ function aplicarServico(W, S, cfg, a, t) {
 const sinalDeAlerta = (p) => {
   const m = p.conhecido.medidas;
   if (!m) return null;
-  if (m.pas >= 180 || m.pad >= 110) return `PA ${m.pas}/${m.pad}`;
+  if (m.pas >= 180 || m.pad >= 110) return `PA ${m.pas}/${m.pad}, HAS estágio 3`;
   if (m.glic >= 300 || m.glic < 60) return `glicemia ${m.glic}`;
   return null;
 };
@@ -848,7 +855,7 @@ function rotearAuto(W, S, cfg, a, t) {
     if (ref) { encaminharReferencia(S, cfg, p.id); return 'liberar'; } // a enfermeira encaminha direto à UPA/hospital
     return esperadoNoAcolhimento(S, cfg, p, t.ord).destino === 'liberar' ? 'liberar' : esperadoNoAcolhimento(S, cfg, p, t.ord).destino;
   }
-  if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
+  if (t.tipo === 'enfermagem') return (p.conhecido.suspeitas.length || t.precisaMedico) ? 'consulta' : 'liberar';
   for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
   const ref = criterioReferencia(S, p);
   if (ref && (a.papel === 'medico' || a.papel === 'enfermeiro')) encaminharReferencia(S, cfg, p.id); // médico e enfermeiro encaminham direto à referência
@@ -962,23 +969,24 @@ export const COMPETENCIAS = {
   acs: [
     { id: 'cadastro', rot: 'Cadastrar e atualizar as famílias da microárea', tip: 'O ACS trabalha com adscrição de famílias em base geográfica definida e cadastra todas as pessoas da microárea.' },
     { id: 'visita', rot: 'Acompanhar as famílias por visita domiciliar', tip: 'A visita domiciliar é a principal ferramenta do ACS para acompanhar as famílias.' },
-    { id: 'busca', rot: 'Fazer busca ativa de quem precisa de acompanhamento', tip: 'Busca ativa: o ACS encontra quem não vem à unidade (faltosos, casos de risco) e integra equipe e população.' },
+    { id: 'busca', rot: 'Fazer busca ativa de quem precisa de acompanhamento', tip: 'Busca ativa: o ACS verifica o comparecimento de hipertensos e diabéticos às consultas e pergunta sobre o uso regular dos medicamentos (Diretrizes de HAS/DM da SESA-ES); na dengue, a NT 06/2023 pede busca ativa de suspeitos em territórios de alta incidência.' },
     { id: 'orientar', rot: 'Orientar famílias sobre hábitos, prevenção e uso dos serviços', tip: 'Orientar as famílias sobre a utilização dos serviços e ações de promoção é atribuição do ACS.' },
-    { id: 'aferir', rot: 'Aferir PA e glicemia capilar no domicílio (com capacitação)', tip: 'A Lei 13.595/2018 permite ao ACS aferir PA e glicemia capilar, com capacitação. Ele não faz consulta nem procedimentos privativos.' },
+    { id: 'aferir', rot: 'Rastrear HAS (maiores de 20 anos, ao menos 1×/ano) e aferir PA/glicemia com capacitação', tip: 'As Diretrizes de HAS/DM da SESA-ES pedem ao ACS rastrear hipertensão em maiores de 20 anos pelo menos uma vez ao ano e encaminhar à consulta de enfermagem os suspeitos. A Lei 13.595/2018 permite aferir PA e glicemia capilar, com capacitação.' },
     { id: 'visita_acam', rot: 'Acompanhar acamados e orientar cuidadores', tip: 'O ACS acompanha pessoas acamadas e orienta cuidadores, sem fazer curativos (privativo de enfermagem).' },
     { id: 'mobilizar', rot: 'Mobilizar a comunidade (mutirões, grupos)', tip: 'Ações coletivas e de mobilização comunitária fazem parte do trabalho do ACS, combinadas com a coordenação da equipe.' },
     { id: 'repasse', rot: 'Repassar os casos do território para a equipe', tip: 'O ACS é o elo entre a comunidade e a equipe: leva os casos do território para a unidade.' },
   ],
   tecnico: [
     { id: 'sinais', rot: 'Aferir sinais vitais e glicemia', tip: 'O técnico de enfermagem realiza procedimentos regulamentados, como a aferição de sinais vitais e da glicemia, sob supervisão do enfermeiro.' },
+    { id: 'hidratacao', rot: 'Ofertar hidratação oral na sala de espera (arboviroses)', tip: 'A Nota Técnica 06/2023 da SESA-ES orienta ofertar hidratação oral desde a sala de espera para quem tem suspeita de dengue e outras arboviroses.' },
     { id: 'alerta', rot: 'Identificar sinal de alerta e comunicar a enfermeira com prioridade', tip: 'Ao notar valores de alerta, o técnico comunica a enfermeira na hora: ele não classifica o risco nem decide o destino.' },
     { id: 'procedimentos', rot: 'Curativos e procedimentos de enfermagem', tip: 'Curativos e procedimentos são do técnico, sob supervisão do enfermeiro; no domicílio, só quando indicado e agendado pela enfermeira.' },
     { id: 'insumos', rot: 'Conferir o estoque de medicamentos e entregar o relatório', tip: 'O técnico participa do gerenciamento de insumos: confere o estoque e entrega o relatório; a enfermeira analisa e solicita a reposição.' },
     { id: 'sala', rot: 'Organizar e esterilizar a sala, fazer os registros', tip: 'Preparo da sala, esterilização de material e registros fazem parte da rotina do técnico.' },
   ],
   enfermeiro: [
-    { id: 'acolhimento', rot: 'Acolhimento com classificação de risco', tip: 'A enfermeira faz o acolhimento e a classificação de risco da demanda espontânea e decide o destino (orientar, consulta de enfermagem, consulta médica ou referência).' },
-    { id: 'consulta_enf', rot: 'Consulta de enfermagem (inclui prescrição e exames por protocolo)', tip: 'O enfermeiro realiza consulta de enfermagem, solicita exames e prescreve medicamentos conforme protocolos e normas legais, por exemplo na renovação de receitas de hipertensão e diabetes já diagnosticadas.' },
+    { id: 'acolhimento', rot: 'Acolhimento com classificação de risco', tip: 'A enfermeira faz o acolhimento e a classificação de risco da demanda espontânea e decide o destino (orientar, consulta de enfermagem, consulta médica ou referência). A NT 06/2023 da SESA-ES pede acolhimento com classificação de risco dos casos suspeitos de arboviroses.' },
+    { id: 'consulta_enf', rot: 'Consulta de enfermagem (inclui prescrição e exames por protocolo)', tip: 'Na consulta de enfermagem em hipertensão e diabetes (Diretrizes da SESA-ES): medir a PA, investigar fatores de risco, estratificar o risco, orientar, solicitar exames por protocolo, acompanhar quem está controlado, controlar retornos e faltosos e encaminhar ao médico pelo menos anualmente — e mais vezes se a PA não estiver controlada.' },
     { id: 'gestao', rot: 'Gerenciar insumos (analisar relatório e solicitar reposição)', tip: 'O enfermeiro participa do gerenciamento de insumos: analisa o relatório do técnico, cobra atualização e solicita a reposição.' },
     { id: 'coordenacao', rot: 'Planejar e avaliar o trabalho de ACS e técnicos', tip: 'O enfermeiro planeja, gerencia e avalia as ações dos ACS e dos técnicos em conjunto com a equipe, incluindo a agenda de visitas e mutirões.' },
     { id: 'educacao', rot: 'Educação em saúde e grupos', tip: 'Educação em saúde e atividades de grupo (como atividade física) são atribuições do enfermeiro e de toda a equipe.' },
@@ -987,7 +995,7 @@ export const COMPETENCIAS = {
     { id: 'equipe', rot: 'Reunião de equipe e educação permanente', tip: 'A reunião de equipe e a educação permanente fortalecem o trabalho em equipe, base da atenção primária.' },
   ],
   medico: [
-    { id: 'consulta', rot: 'Consulta clínica, diagnóstico e prescrição', tip: 'O médico realiza consultas clínicas, diagnostica e prescreve, com responsabilização pelo plano terapêutico do usuário.' },
+    { id: 'consulta', rot: 'Consulta clínica, diagnóstico e prescrição', tip: 'Na consulta médica (Diretrizes de HAS/DM da SESA-ES): confirmar o diagnóstico, estratificar o risco, identificar comorbidades, solicitar exames, decidir o tratamento pela estratificação, prescrever e avaliar/encaminhar as emergências hipertensivas, mantendo a responsabilização pelo plano terapêutico.' },
     { id: 'visita', rot: 'Atenção domiciliar (visita agendada pela enfermeira)', tip: 'O médico faz visita domiciliar quando indicado ou necessário, com o agendamento organizado pela coordenação da equipe.' },
     { id: 'referencia', rot: 'Encaminhar e coordenar o cuidado (UPA/hospital)', tip: 'O médico encaminha a outros pontos de atenção, respeitando os fluxos locais, e mantém a responsabilização pelo cuidado, inclusive depois da alta.' },
     { id: 'equipe', rot: 'Reunião de equipe e discussão de casos', tip: 'Discutir casos com a equipe e participar de educação permanente fazem parte do trabalho do médico na atenção primária.' },
@@ -996,7 +1004,7 @@ export const COMPETENCIAS = {
 };
 const COMP_AFAZER = {
   acs: { cadastro_acs: 'cadastro', busca_ativa: 'busca', visita_acam: 'visita_acam', repasse: 'repasse', grupo_atividade: 'mobilizar' },
-  tecnico: { sala_espera: 'sinais', estoque: 'insumos', esterilizar: 'sala', registros: 'sala', curativos: 'procedimentos', visita_acam: 'procedimentos' },
+  tecnico: { sala_espera: 'sinais', hidratacao: 'hidratacao', estoque: 'insumos', esterilizar: 'sala', registros: 'sala', curativos: 'procedimentos', visita_acam: 'procedimentos' },
   enfermeiro: { educacao: 'educacao', gestao_estoque: 'gestao', supervisao: 'coordenacao', cadastro: 'coordenacao', visita_enf: 'visita', visita_acam: 'visita', grupo_atividade: 'educacao', caso: 'equipe', reuniao: 'equipe' },
   medico: { prontuarios: 'consulta', receitas: 'consulta', visita_med: 'visita', visita_acam: 'visita', propor_mutirao: 'coletivo', caso: 'equipe', reuniao: 'equipe' },
 };
@@ -1037,6 +1045,7 @@ export const AFAZERES = {
   ],
   tecnico: [
     { id: 'sala_espera', rot: 'Aferir a pressão de quem aguarda', ic: '📏', local: 'H', dur: 20 },
+    { id: 'hidratacao', rot: 'Ofertar hidratação oral na sala de espera (suspeitas de dengue)', ic: '🥤', local: 'H', dur: 15 },
     { id: 'estoque', rot: 'Conferir o estoque de medicamentos e entregar o relatório à enfermeira', ic: '📦', local: 'Y', dur: 25 },
     { id: 'esterilizar', rot: 'Esterilizar e organizar a sala', ic: '🧼', local: 'D', dur: 25 },
     { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'Z', dur: 25 },
@@ -1459,6 +1468,11 @@ function efeitoAfazer(W, S, cfg, a, z) {
     S.metricas.orientacoes += n;
     return n ? `Roda de conversa: ${n} pessoa(s) orientada(s) sobre hábitos.` : 'Sala de espera vazia: material educativo preparado para os próximos.';
   }
+  if (id === 'hidratacao') {
+    let n = 0;
+    for (const p of espera) if (p.dengue.ativa && !p.dengue.hidratado) { p.dengue.hidratado = true; n++; }
+    return n ? `Hidratação oral oferecida a ${n} pessoa(s) com suspeita de dengue (NT 06/2023 SESA-ES): menor risco de agravamento.` : 'Nenhuma pessoa com suspeita de dengue na sala de espera agora: soro de hidratação oral deixado à disposição.';
+  }
   if (id === 'sala_espera') {
     let n = 0;
     for (const p of espera) if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno && acaoMedir(S, cfg, p.id).ok) n++;
@@ -1488,7 +1502,7 @@ function efeitoAfazer(W, S, cfg, a, z) {
     for (const p of f.pessoas) {
       if (p.internado || p.acamado || W.ordens.some((o) => o.pid === p.id)) continue;
       const precisaMed = p.posAlta || p.conhecido.suspeitas.length || CONDS.some((c) => p.cond[c].diag && p.cond[c].trat) || p.dengue.ativa;
-      const r = precisaMed ? ordenarUnidade(W, S, cfg, p.id, 'consulta', { origem: 'acs', permiteCrianca: true }) : (p.idade >= 18 && p.conhecido.medidasTurno === null ? ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }) : { ok: false });
+      const r = precisaMed ? ordenarUnidade(W, S, cfg, p.id, 'consulta', { origem: 'acs', permiteCrianca: true }) : (p.idade >= 20 && (p.conhecido.medidasTurno === null || S.turno - p.conhecido.medidasTurno >= 12) ? ordenarUnidade(W, S, cfg, p.id, 'enfermagem', { origem: 'acs', meta: { rastreio: true, motivo: 'rastreamento indicado pelo ACS' } }) : { ok: false });
       if (r.ok) chamados.push(p.nome.split(' ')[0]);
     }
     return chamados.length ? `${f.nome}: ${chamados.join(', ')} convidado(s) para a unidade.` : `${f.nome}: ninguém precisa ser chamado agora.`;
@@ -1537,7 +1551,7 @@ function passoACS(W, S, cfg, a, dt) {
     let r;
     if (t.acao === 'medir') { r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: false, msg: 'A aferição de rotina é para adultos.' }; }
     else if (t.acao === 'orientar') { r = acaoOrientar(S, cfg, p.id, t.foco); if (r.ok && t.foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (t.foco in it) it[t.foco] = clamp(it[t.foco] + 0.5, 0, 1); S.metricas.orientacoes++; } }
-    else if (t.acao === 'convidar') { r = ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }); }
+    else if (t.acao === 'convidar') { r = ordenarUnidade(W, S, cfg, p.id, 'enfermagem', { origem: 'acs', meta: { rastreio: true, motivo: 'rastreamento indicado pelo ACS' } }); }
     else { const f = achaFamilia(S, p.familiaId); f.vinculo = clamp(f.vinculo + 3, 0, 100); r = { ok: true, msg: 'Conversa amigável (vínculo +3).' }; }
     avisar(W, S, `${t.acao === 'medir' ? '📏' : t.acao === 'orientar' ? '💬' : t.acao === 'convidar' ? '📣' : '🙂'} ${p.nome}: ${r.msg}`, 'info', { pessoaId: p.id });
     if (a.jogador) praticaCompetencia(W, S, cfg, a, { medir: 'aferir', orientar: 'orientar', convidar: 'repasse', conversar: 'orientar' }[t.acao]);

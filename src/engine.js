@@ -84,7 +84,7 @@ function gerarTerritorio(s, cfg) {
       return f;
     });
     for (const f of familias) for (const p of f.pessoas) for (const id of CONDS) p.cond[id].estagio = estagioInicial(s, cfg, p, id);
-    for (const f of familias) for (const p of f.pessoas) if (p.acamado) { // a causa da dependência já é conhecida e tratada
+    for (const f of familias) for (const p of f.pessoas) if (p.acamado) { p.medTurno = 0; // a causa da dependência já é conhecida e tratada
       const id = p.acamado.causa === 'AVC' || p.acamado.causa === 'fragilidade' ? 'has' : 'dm';
       p.cond[id] = { estagio: p.acamado.causa === 'fragilidade' ? 2 : 3, diag: true, trat: true, ctrl: false };
     }
@@ -131,6 +131,24 @@ export function sintomasDengueVisiveis(s, p) {
 
 export function adesao(f) {
   return (0.35 + 0.6 * (f.vinculo / 100)) * (f.aperto ? 0.75 : 1); // sem dinheiro sobrando, o tratamento é mais difícil de seguir
+}
+
+/** Estratificação de risco do hipertenso (SESA-ES, Diretrizes de HAS/DM 2016, Quadro 3 das VII Diretrizes Brasileiras de Hipertensão). */
+export function estratoHAS(p) {
+  const m = p.conhecido.medidas;
+  if (!m) return null;
+  const est = (m.pas >= 180 || m.pad >= 110) ? 3 : (m.pas >= 160 || m.pad >= 100) ? 2 : (m.pas >= 140 || m.pad >= 90) ? 1 : (m.pas >= 130 || m.pad >= 85) ? 0 : -1;
+  const fatores = (p.tabagismo ? 1 : 0) + (p.imc >= 30 ? 1 : 0) + (p.habitos.atividade < 40 ? 1 : 0) + (p.idade >= 55 ? 1 : 0);
+  const diab = p.cond.dm.diag || m.glic >= 126;
+  let risco;
+  if (est < 0) risco = 'sem risco adicional';
+  else if (diab) risco = 'alto';
+  else if (est === 3) risco = 'alto';
+  else if (est === 2) risco = fatores >= 1 ? 'alto' : 'moderado';
+  else if (est === 1) risco = fatores >= 3 ? 'alto' : fatores >= 1 ? 'moderado' : 'baixo';
+  else risco = fatores >= 3 ? 'moderado' : fatores >= 1 ? 'baixo' : 'sem risco adicional';
+  const nomeEst = est === 3 ? 'HAS estágio 3' : est === 2 ? 'HAS estágio 2' : est === 1 ? 'HAS estágio 1' : est === 0 ? 'pré-hipertensão' : 'PA normal';
+  return { estagio: nomeEst, risco, fatores, alto: risco === 'alto', texto: `${nomeEst}, ${fatores} fator(es) de risco${diab ? ', diabetes' : ''}: risco cardiovascular ${risco}` };
 }
 
 /** Quanto a família paga por mês na Farmácia Popular (copagamento) por um tratamento. */
@@ -227,13 +245,15 @@ export function acaoConsulta(s, cfg, pid) {
   if (!gasta(s, cfg.game.custos.consulta)) return falha('Sem horas de equipe suficientes neste mês.');
   lembraHabitos(p);
   p.conhecido.visTurno = s.turno;
+  p.medTurno = s.turno; // última consulta médica (a enfermagem só renova receita com consulta médica nos últimos 12 meses)
   if (p.posAlta) p.posAlta.orientado = true; // acompanhamento pós-alta feito
   const achados = [];
   if (p.idade >= 18) registraMedidas(s, p);
 
   if (p.dengue.ativa) {
     p.dengue.atendido = true;
-    achados.push('Quadro compatível com dengue: hidratação, repouso e sinais de alarme orientados');
+    achados.push('Quadro compatível com dengue: hidratação, repouso e sinais de alarme orientados; caso notificado e cartão da dengue preenchido (NT 06/2023 SESA-ES)');
+    s.metricas.notificacoes = (s.metricas.notificacoes || 0) + 1;
   }
   for (const id of CONDS) {
     const c = cfg.cond[id], st = p.cond[id];
@@ -489,7 +509,7 @@ export function avancarMes(s, cfg) {
     if (!p.dengue.ativa) continue;
     const idoso = p.idade >= 65 || p.idade < 5;
     const comorb = (p.cond.has.diag || p.cond.dm.diag) ? 1.3 : 1;
-    const pg = (p.dengue.referido ? D.pGraveComAtendimento / 4 : p.dengue.atendido ? D.pGraveComAtendimento : D.pGraveSemAtendimento) * (idoso ? 1.8 : 1) * comorb;
+    const pg = (p.dengue.referido ? D.pGraveComAtendimento / 4 : p.dengue.atendido ? D.pGraveComAtendimento : D.pGraveSemAtendimento) * (idoso ? 1.8 : 1) * comorb * (p.dengue.hidratado ? 0.7 : 1); // hidratação oral desde a sala de espera (NT 06/2023)
     p.dengue = { ativa: false, atendido: false };
     p.imune = D.imunidadeMeses;
     if (rnd(s) < pg) {

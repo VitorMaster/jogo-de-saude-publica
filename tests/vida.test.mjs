@@ -268,7 +268,7 @@ test('PNAB: o técnico confere o estoque e entrega o relatório; a enfermeira an
   const r = comandar(W, S, cfg, 'cobrar_estoque', { tipo: 'auto' });
   assert.ok(r.ok, r.msg);
   assert.ok(W.cobrancaEstoque);
-  for (let i = 0; i < 400 && S.mundo.estoqueRel.dia < 0; i++) passoMundo(W, S, cfg, 2);
+  for (let i = 0; i < 1800 && S.mundo.estoqueRel.dia < 0; i++) passoMundo(W, S, cfg, 2);
   assert.ok(S.mundo.estoqueRel.dia >= 0 && Number.isFinite(S.mundo.estoqueRel.valor), 'o técnico entregou o relatório atualizado');
   assert.equal(W.cobrancaEstoque, false);
   assert.equal(comandar(W, S, cfg, 'cobrar_estoque', { tipo: 'auto' }).ok, false, 'relatório recente: não cobra');
@@ -352,7 +352,7 @@ test('PNAB: a enfermeira classifica o risco no acolhimento e recebe retorno sobr
 });
 
 test('PNAB: a consulta de enfermagem renova receita de quem já tem diagnóstico (protocolo)', () => {
-  const r = atendeComoJogador('enfermeiro', 'enfermagem', (p) => { p.cond.has = { estagio: 2, diag: true, trat: true, ctrl: true }; p.retornoTurno = -5; });
+  const r = atendeComoJogador('enfermeiro', 'enfermagem', (p, S) => { p.cond.has = { estagio: 2, diag: true, trat: true, ctrl: true }; p.retornoTurno = -5; p.medTurno = S.turno; });
   assert.match(atendimentoAtual(r.W, r.S).resultado, /Renovação de receita/);
   assert.equal(r.p.retornoTurno, r.S.turno);
 });
@@ -366,4 +366,29 @@ test('toda competência listada existe nos quatro papéis e a equipe do computad
   for (let i = 0; i < 10 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
   assert.ok(S.metricas.acolhimentos >= 10, `acolhimentos: ${S.metricas.acolhimentos}`);
   assert.ok(S.metricas.triagens >= 5);
+});
+
+test('SESA-ES: a consulta de enfermagem estratifica o risco e encaminha ao médico quando a última consulta médica tem mais de 12 meses', () => {
+  const r = atendeComoJogador('enfermeiro', 'enfermagem', (p, S) => { p.cond.has = { estagio: 2, diag: true, trat: true, ctrl: true }; p.medTurno = S.turno - 14; });
+  const txt = atendimentoAtual(r.W, r.S).resultado;
+  assert.match(txt, /Estratificação de risco \(SESA-ES\)/);
+  assert.match(txt, /Encaminhar ao médico/);
+  assert.doesNotMatch(txt, /Renovação de receita/);
+  assert.equal(r.p.estratoTurno, r.S.turno);
+});
+
+test('SESA-ES: ACS rastreia maiores de 20 anos e encaminha à consulta de enfermagem; técnico oferece hidratação oral na sala de espera (NT 06/2023)', () => {
+  assert.ok(AFAZERES.tecnico.some((d) => d.id === 'hidratacao'));
+  const cfg = cfgDe('interior');
+  const S = newGame(cfg, 3); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S).find((p) => !p.acamado).id });
+  const W = criarMundo(S, cfg);
+  let rastreio = 0, hidratou = 0;
+  for (let i = 0; i < 20 * 24 * 12; i++) {
+    passoMundo(W, S, cfg, 5);
+    if (W.ordens.some((o) => o.meta && o.meta.rastreio && o.tipo === 'enfermagem')) rastreio++;
+    if (todasPessoas(S).some((p) => p.dengue.hidratado)) hidratou++;
+  }
+  assert.ok(rastreio > 0, 'o ACS encaminhou para a consulta de enfermagem (rastreamento)');
+  assert.ok(!W.ordens.some((o) => o.meta && o.meta.rastreio && o.tipo === 'triagem'));
 });
