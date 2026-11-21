@@ -626,9 +626,12 @@ export function avancarMes(s, cfg) {
   if (casos > 0 && notificados === 0) add('info', 'A vigilância recebeu sinais de febre no bairro. Visitas domiciliares ajudam a encontrar quem não veio à unidade.');
   if (casos > 0) licao('dengue-surto', '💡 Vigilância', 'Quem tem pouco vínculo com a unidade tende a procurar atendimento só quando o quadro piora. Visitas domiciliares e mutirões contra focos protegem quem não vem até você.');
 
-  // 6. ambiente: infestação
-  if (emTemporada) s.infestacao = clamp(s.infestacao + rfloat(s, D.crescimentoEstacao[0], D.crescimentoEstacao[1]) * (1 - 0.25 * s.predios.vigilancia), 0, 100);
-  else s.infestacao = clamp(s.infestacao - D.quedaForaEstacao, 0, 100);
+  // 6. ambiente: infestação (dias de chuva deixam água parada e aumentam os criadouros)
+  const chuvosos = (s.mundo && s.mundo.diasChuva) || 0;
+  if (s.mundo) s.mundo.diasChuva = 0;
+  if (chuvosos >= 8) licao('chuva-dengue', '💡 Chuva e dengue', 'Depois de muitos dias de chuva, a água parada em pneus, vasos e caixas deixa os criadouros do mosquito aumentarem. É hora de reforçar o mutirão e as orientações.');
+  if (emTemporada) s.infestacao = clamp(s.infestacao + (rfloat(s, D.crescimentoEstacao[0], D.crescimentoEstacao[1]) + chuvosos * 0.6) * (1 - 0.25 * s.predios.vigilancia), 0, 100);
+  else s.infestacao = clamp(s.infestacao - D.quedaForaEstacao + chuvosos * 0.4, 0, 100);
   s.infestacao = Math.round(s.infestacao);
 
   // 7. vínculo

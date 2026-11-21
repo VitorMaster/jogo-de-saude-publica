@@ -237,7 +237,7 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
     <section id="mundo" class="mundo">
       <canvas id="cv" aria-label="Mapa do bairro"></canvas>
       <div id="dica" class="dica-mundo" hidden></div>
-      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="girar-dir" aria-label="Girar a câmera">⟳</button><button data-act="girar-esq" aria-label="Girar a câmera">⟲</button><button data-act="paredes" aria-label="Paredes">🧱</button><button data-act="trocar-personagem" aria-label="Trocar de personagem">👥</button><button id="b-painel" data-act="painel" aria-label="Ocultar a barra de ações">🔽</button><button data-act="zoom-mais" aria-label="Aproximar">➕</button><button data-act="zoom-menos" aria-label="Afastar">➖</button></div>
+      <div class="ferr"><button data-act="centro" aria-label="Centralizar">🎯</button><button data-act="girar-dir" aria-label="Girar a câmera">⟳</button><button data-act="girar-esq" aria-label="Girar a câmera">⟲</button><button data-act="paredes" aria-label="Paredes">🧱</button><button data-act="trocar-personagem" aria-label="Trocar de personagem">👥</button><button id="b-painel" data-act="painel" aria-label="Ocultar a barra de ações">🔽</button><button id="b-som" data-act="som" aria-label="Som e vibração">🔊</button><button data-act="zoom-mais" aria-label="Aproximar">➕</button><button data-act="zoom-menos" aria-label="Afastar">➖</button></div>
       <div id="cartao" class="cartao" hidden></div>
     </section>
     <nav id="rodape" class="rodape"></nav>
@@ -284,6 +284,49 @@ function rnd(s) {
 const rint = (s, a, b) => a + Math.floor(rnd(s) * (b - a + 1));
 const rfloat = (s, a, b) => a + rnd(s) * (b - a);
 const pick = (s, arr) => arr[Math.floor(rnd(s) * arr.length)];
+
+// Clima do jogo (determinístico, sem DOM): estações do Sudeste, chuva de verão, calor, vento.
+// Valores aproximados para o jogo (a validar): chuva concentrada de novembro a março, inverno mais seco.
+const CHUVA_MES = [0.5, 0.42, 0.4, 0.3, 0.2, 0.15, 0.12, 0.12, 0.2, 0.3, 0.45, 0.5];
+const TEMP_MES = [30, 31, 30, 28, 26, 24, 24, 25, 26, 27, 28, 29];
+const AJUSTE_CENARIO = { metropole: 1, interior: 0, rural: -1 };
+
+function sorteio(chave) { // número estável entre 0 e 1 para uma chave de texto
+  let h = 2166136261;
+  for (let i = 0; i < chave.length; i++) { h ^= chave.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h ^= h >>> 15; h = Math.imul(h, 2246822519); h ^= h >>> 13;
+  return ((h >>> 0) % 100000) / 100000;
+}
+
+/** Clima do dia: { tipo: 'sol'|'nublado'|'chuva'|'tempestade', temp, vento, ini, fim } (ini/fim: horas em que chove). */
+function climaDoDia(mes, diaJogo, cenario) {
+  const r = sorteio(`${mes}|${diaJogo}|${cenario}|a`), r2 = sorteio(`${mes}|${diaJogo}|${cenario}|b`), r3 = sorteio(`${mes}|${diaJogo}|${cenario}|c`);
+  const pChuva = CHUVA_MES[mes];
+  let tipo = 'sol';
+  if (r < pChuva) tipo = r2 < 0.25 && [10, 11, 0, 1, 2].includes(mes) ? 'tempestade' : 'chuva';
+  else if (r < pChuva + 0.22) tipo = 'nublado';
+  const base = TEMP_MES[mes] + (AJUSTE_CENARIO[cenario] || 0) + (tipo === 'sol' ? 2 : tipo === 'nublado' ? 0 : -3) + Math.round((r3 - 0.5) * 3);
+  const dur = tipo === 'tempestade' ? 1 + Math.floor(r3 * 3) : 2 + Math.floor(r3 * 4);
+  const ini = 11 + Math.floor(r2 * 8);
+  return { tipo, temp: base, vento: tipo === 'tempestade' ? 0.9 : tipo === 'chuva' ? 0.45 : 0.2 + r3 * 0.3, ini, fim: Math.min(23, ini + dur) };
+}
+
+/** Estado instantâneo do tempo numa hora do dia (0–24). */
+function climaAgora(c, hora) {
+  const chovendo = (c.tipo === 'chuva' || c.tipo === 'tempestade') && hora >= c.ini && hora < c.fim;
+  const curva = Math.cos(((hora - 15) / 24) * Math.PI * 2); // mais quente às 15h
+  return {
+    tipo: c.tipo, chovendo, intensidade: chovendo ? (c.tipo === 'tempestade' ? 1 : 0.55) : 0,
+    tempestade: chovendo && c.tipo === 'tempestade',
+    nublado: c.tipo !== 'sol' && (chovendo || (hora >= c.ini - 2 && hora < c.fim + 1) || c.tipo === 'nublado'),
+    temp: Math.round(c.temp - 4 + curva * 4), vento: c.vento,
+  };
+}
+
+function rotuloClima(a) {
+  const ic = a.tempestade ? '⛈️' : a.chovendo ? '🌧️' : a.nublado ? '☁️' : a.temp >= 31 ? '🌡️' : '☀️';
+  return `${ic} ${a.temp}°`;
+}
 
 // Motor de simulação — puro (sem DOM). Todas as regras numéricas vêm de data/*.json.
 // O estado do jogo é um objeto simples (serializável em JSON).
@@ -912,9 +955,12 @@ function avancarMes(s, cfg) {
   if (casos > 0 && notificados === 0) add('info', 'A vigilância recebeu sinais de febre no bairro. Visitas domiciliares ajudam a encontrar quem não veio à unidade.');
   if (casos > 0) licao('dengue-surto', '💡 Vigilância', 'Quem tem pouco vínculo com a unidade tende a procurar atendimento só quando o quadro piora. Visitas domiciliares e mutirões contra focos protegem quem não vem até você.');
 
-  // 6. ambiente: infestação
-  if (emTemporada) s.infestacao = clamp(s.infestacao + rfloat(s, D.crescimentoEstacao[0], D.crescimentoEstacao[1]) * (1 - 0.25 * s.predios.vigilancia), 0, 100);
-  else s.infestacao = clamp(s.infestacao - D.quedaForaEstacao, 0, 100);
+  // 6. ambiente: infestação (dias de chuva deixam água parada e aumentam os criadouros)
+  const chuvosos = (s.mundo && s.mundo.diasChuva) || 0;
+  if (s.mundo) s.mundo.diasChuva = 0;
+  if (chuvosos >= 8) licao('chuva-dengue', '💡 Chuva e dengue', 'Depois de muitos dias de chuva, a água parada em pneus, vasos e caixas deixa os criadouros do mosquito aumentarem. É hora de reforçar o mutirão e as orientações.');
+  if (emTemporada) s.infestacao = clamp(s.infestacao + (rfloat(s, D.crescimentoEstacao[0], D.crescimentoEstacao[1]) + chuvosos * 0.6) * (1 - 0.25 * s.predios.vigilancia), 0, 100);
+  else s.infestacao = clamp(s.infestacao - D.quedaForaEstacao + chuvosos * 0.4, 0, 100);
   s.infestacao = Math.round(s.infestacao);
 
   // 7. vínculo
@@ -998,6 +1044,12 @@ function minutosPorSegundo(s) {
   if (h >= 7 && h < 17) return 3;
   if (h >= 17 && h < 22) return 5;
   return 12;
+}
+
+/** Tempo agora (4D: chuva, calor e vento mudam o que as pessoas fazem e a proliferação do mosquito). */
+function climaDe(S, cfg) {
+  const dia = climaDoDia(S.mes, diaDoJogo(S), cfg.cenario.id);
+  return { dia, agora: climaAgora(dia, minutoDoDia(S) / 60) };
 }
 
 /* ---------- Mapa ---------- */
@@ -1395,13 +1447,15 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
   const temPraca = objetosDe(W, 'P', null).length > 0, temAcad = objetosDe(W, 'A', null).length > 0;
   const ativ = p.habitos.atividade / 100 + int.atividade * 0.8;
   const fresco = (m >= 6.5 * 60 && m < 10 * 60) || (m >= 16 * 60 && m < 20 * 60);
-  const fatorEx = (fresco ? 1 : 0.15) * (c.exMin >= 60 ? 0.1 : 1) * (!util ? 1.3 : 1);
+  const tempo = climaDe(S, cfg).agora;
+  const fatorTempo = (tempo.chovendo ? 0.12 : 1) * (tempo.temp >= 32 && m >= 11 * 60 && m < 16 * 60 ? 0.5 : 1); // chuva e calor forte esvaziam a rua
+  const fatorEx = (fresco ? 1 : 0.15) * (c.exMin >= 60 ? 0.1 : 1) * (!util ? 1.3 : 1) * fatorTempo;
   const op = [['tv', 0.9 + (1 - ativ) * 1.6 + (n.humor < 40 ? 0.5 : 0)]];
   op.push(['caminhar', (0.15 + ativ * 0.9) * fatorEx]);
-  if (temPraca) op.push(['praca', 0.25 + (1 - ativ) * 0.3]);
+  if (temPraca) op.push(['praca', (0.25 + (1 - ativ) * 0.3) * fatorTempo]);
   if (temAcad && p.idade >= 14) op.push(['academia', (0.05 + ativ * 0.6 + int.atividade * 0.6) * fatorEx]);
   if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.5) * fatorEx]);
-  if (p.idade >= 10 && objetosDe(W, 'f', null).length) op.push(['pescar', (0.1 + (p.habitos.estresse / 100) * 0.9 + (n.humor < 50 ? 0.3 : 0)) * ((m >= 15 * 60 && m < 19 * 60) || !util ? 1 : 0.3)]); // o lago alivia o estresse
+  if (p.idade >= 10 && objetosDe(W, 'f', null).length) op.push(['pescar', (0.1 + (p.habitos.estresse / 100) * 0.9 + (n.humor < 50 ? 0.3 : 0)) * ((m >= 15 * 60 && m < 19 * 60) || !util ? 1 : 0.3) * fatorTempo]); // o lago alivia o estresse
   if (p.idade >= 6 && objetosDe(W, 'N', p.familiaId).length) op.push(['ler', 0.3 + (1 - ativ) * 0.4 + (p.idade >= 60 ? 0.5 : 0) + (p.ocupacao === 'escola' ? 0.2 : 0)]);
   if (temLanche && mundo.almoco === 'lanchonete' && m >= 17 * 60 && p.idade >= 14) op.push(['lanche', 0.1 + ((100 - p.habitos.alimentacao) / 100) * 0.8 - int.alimentacao * 0.4]);
   if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['caminhar', 0.5 * fatorEx], ['conversar', temPraca ? 0 : 0.5 * fatorEx]]) };
@@ -3002,6 +3056,7 @@ function passoCurto(W, S, cfg, dt) {
   }
   if (Math.floor(M.min / MIN_DIA) > diaAntes) {
     fimDoDia(W, S, cfg);
+    { const cd = climaDoDia(S.mes, diaDoJogo(S) - 1, cfg.cenario.id); if (cd.tipo === 'chuva' || cd.tipo === 'tempestade') S.mundo.diasChuva = (S.mundo.diasChuva || 0) + 1; }
     if (diaSemana(S) < 5) { const e = estadoEquipe(S, cfg); for (const k of PARES_EQUIPE) e[k] = clamp(e[k] - 1, 5, 100); } // sem convivência, o vínculo esfria
     for (const a of W.agentes) if (a.k === 'res') a.procurou = false;
     if (diaDoJogo(S) % DIAS_MES === 0) {
@@ -3098,7 +3153,7 @@ function resumoEquipe(W) {
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-const VERSAO_JOGO = 'v1.3';
+const VERSAO_JOGO = 'v1.4';
 
 const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },
@@ -3177,6 +3232,99 @@ async function enviarFeedback(resp, ctx, conf, ambiente = globalThis) {
     await ambiente.navigator.clipboard.writeText(texto);
     return { ok: true, via: 'copia' };
   } catch (e) { return { ok: false, via: 'falha', texto }; }
+}
+
+// Sons e vibração (4D sensorial). Tudo gerado por código com a Web Audio API: sem arquivos de áudio.
+// O áudio só liga depois de um toque do jogador (regra dos navegadores de celular). Sem suporte, tudo vira no-op.
+function criarSom() {
+  let ctx = null, mestre = null, chuva = null, vento = null, grilo = null, ruido = null;
+  let ligado = true, pronto = false, timerAve = null;
+  try { ligado = localStorage.getItem('saude-sim-som') !== '0'; } catch (e) { /* ok */ }
+
+  function criaRuido() {
+    const n = ctx.sampleRate * 2, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function camadaRuido(tipo, freq, q) {
+    const src = ctx.createBufferSource(); src.buffer = ruido; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = tipo; f.frequency.value = freq; f.Q.value = q || 0.7;
+    const g = ctx.createGain(); g.gain.value = 0;
+    src.connect(f); f.connect(g); g.connect(mestre); src.start();
+    return g;
+  }
+  function iniciar() {
+    if (pronto) { if (ctx && ctx.state === 'suspended') ctx.resume(); return; }
+    const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+    if (!AC) return;
+    try {
+      ctx = new AC();
+      mestre = ctx.createGain(); mestre.gain.value = ligado ? 0.7 : 0; mestre.connect(ctx.destination);
+      ruido = criaRuido();
+      chuva = camadaRuido('highpass', 1800, 0.5);
+      vento = camadaRuido('lowpass', 500, 0.8);
+      const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+      o.frequency.value = 4300; lfo.frequency.value = 11; lg.gain.value = 0.5; g.gain.value = 0;
+      lfo.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(mestre); o.start(); lfo.start();
+      grilo = g;
+      pronto = true;
+      if (ctx.state === 'suspended') ctx.resume();
+      agendaAve();
+    } catch (e) { pronto = false; }
+  }
+  let amb = { dia: 1, chuva: 0, vento: 0.2 };
+  function agendaAve() {
+    clearTimeout(timerAve);
+    timerAve = setTimeout(() => { if (pronto && ligado && amb.dia > 0.5 && amb.chuva < 0.1) trino(); agendaAve(); }, 2500 + Math.random() * 5000);
+  }
+  function trino() {
+    const t = ctx.currentTime, n = 2 + Math.floor(Math.random() * 3), base = 2800 + Math.random() * 1600;
+    for (let i = 0; i < n; i++) {
+      const o = ctx.createOscillator(), g = ctx.createGain(), ini = t + i * 0.13;
+      o.type = 'sine'; o.frequency.setValueAtTime(base, ini); o.frequency.exponentialRampToValueAtTime(base * 1.5, ini + 0.08);
+      g.gain.setValueAtTime(0, ini); g.gain.linearRampToValueAtTime(0.05, ini + 0.02); g.gain.exponentialRampToValueAtTime(0.0008, ini + 0.1);
+      o.connect(g); g.connect(mestre); o.start(ini); o.stop(ini + 0.12);
+    }
+  }
+  /** a: { dia 0–1, chuva 0–1, vento 0–1 } — o ambiente muda com a hora e o tempo. */
+  function atualiza(a) {
+    amb = a;
+    if (!pronto || !ligado) return;
+    const t = ctx.currentTime;
+    chuva.gain.setTargetAtTime(a.chuva * 0.16, t, 0.8);
+    vento.gain.setTargetAtTime((0.015 + a.vento * 0.07) * (1 + a.chuva), t, 1.2);
+    grilo.gain.setTargetAtTime((1 - a.dia) * (1 - a.chuva) * 0.012, t, 1.5);
+  }
+  function tom(freq, ini, dur, tipo, vol) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tipo || 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, ini); g.gain.linearRampToValueAtTime(vol || 0.12, ini + 0.01); g.gain.exponentialRampToValueAtTime(0.0008, ini + dur);
+    o.connect(g); g.connect(mestre); o.start(ini); o.stop(ini + dur + 0.02);
+  }
+  function efeito(nome) {
+    if (!pronto || !ligado) return;
+    const t = ctx.currentTime;
+    if (nome === 'sino') { tom(880, t, 0.9, 'sine', 0.1); tom(1320, t, 0.7, 'sine', 0.05); tom(660, t + 0.18, 0.9, 'sine', 0.07); }
+    else if (nome === 'alerta') { tom(520, t, 0.14, 'square', 0.06); tom(380, t + 0.18, 0.2, 'square', 0.06); }
+    else if (nome === 'sucesso') { tom(523, t, 0.15, 'triangle', 0.09); tom(659, t + 0.09, 0.15, 'triangle', 0.09); tom(784, t + 0.18, 0.3, 'triangle', 0.09); }
+    else if (nome === 'trovao') {
+      const src = ctx.createBufferSource(); src.buffer = ruido;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 220;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.05); g.gain.exponentialRampToValueAtTime(0.002, t + 2.6);
+      src.connect(f); f.connect(g); g.connect(mestre); src.start(t); src.stop(t + 2.7);
+    }
+  }
+  function vibra(padrao) { // Android vibra; o iPhone não permite vibração pela web
+    if (!ligado) return;
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(padrao); } catch (e) { /* ok */ }
+  }
+  function alterna() {
+    ligado = !ligado;
+    try { localStorage.setItem('saude-sim-som', ligado ? '1' : '0'); } catch (e) { /* ok */ }
+    if (pronto) mestre.gain.setTargetAtTime(ligado ? 0.7 : 0, ctx.currentTime, 0.1);
+    return ligado;
+  }
+  return { iniciar, atualiza, efeito, vibra, alterna, get ligado() { return ligado; }, get pronto() { return pronto; } };
 }
 
 // Renderização 3D (Three.js): cenário em maquete com luz e sombras, paredes finas com recorte conforme a câmera,
@@ -3325,6 +3473,56 @@ function criarRenderer(canvas, getEstado, hooks) {
   const mar = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshLambertMaterial({ color: 0x3d8fb8 }));
   mar.rotation.x = -Math.PI / 2; mar.position.y = -1.7; mar.receiveShadow = false;
   cena.add(mar);
+  /* ---------- clima (4D): chuva, névoa, relâmpagos e mosquitos ---------- */
+  const NCHUVA = leve ? 450 : 1100, NMOSQ = leve ? 40 : 90;
+  const chuvaGeo = new THREE.BufferGeometry(), chuvaPos = new Float32Array(NCHUVA * 6);
+  for (let i = 0; i < NCHUVA; i++) { const x = (Math.random() - 0.5) * 60, y = Math.random() * 28, z = (Math.random() - 0.5) * 60; chuvaPos.set([x, y, z, x + 0.15, y - 1.1, z + 0.05], i * 6); }
+  chuvaGeo.setAttribute('position', new THREE.BufferAttribute(chuvaPos, 3));
+  const chuvaMat = new THREE.LineBasicMaterial({ color: 0xbcd7ff, transparent: true, opacity: 0.5, fog: false, depthWrite: false });
+  const chuvaObj = new THREE.LineSegments(chuvaGeo, chuvaMat); chuvaObj.frustumCulled = false; chuvaObj.visible = false; cena.add(chuvaObj);
+  const mosqGeo = new THREE.BufferGeometry(), mosqPos = new Float32Array(NMOSQ * 3);
+  mosqGeo.setAttribute('position', new THREE.BufferAttribute(mosqPos, 3));
+  const mosqMat = new THREE.PointsMaterial({ color: 0x1f1f24, size: 0.12, transparent: true, opacity: 0.85, depthWrite: false });
+  const mosqObj = new THREE.Points(mosqGeo, mosqMat); mosqObj.frustumCulled = false; mosqObj.visible = false; cena.add(mosqObj);
+  let clarao = 0, proxRelampago = 0;
+  const corCinza = new THREE.Color(0x8a97a6);
+  function atualizaClimaFx(S, W, cfg, agora, dt, noite) {
+    const forcado = typeof window !== 'undefined' && window.__climaForcado;
+    const c = forcado || climaAgora(climaDoDia(S.mes, diaDoJogo(S), cfg.cenario.id), minutoDoDia(S) / 60);
+    chuvaObj.visible = !!c.chovendo;
+    if (c.chovendo) {
+      chuvaObj.position.set(orbita.alvo.x, 0, orbita.alvo.z);
+      const arr = chuvaGeo.attributes.position.array, v = 22 * (0.6 + c.intensidade * 0.6) * dt, vx = (c.vento || 0.3) * 4 * dt;
+      for (let i = 0; i < NCHUVA; i++) {
+        const k = i * 6;
+        arr[k + 1] -= v; arr[k + 4] -= v; arr[k] += vx; arr[k + 3] += vx;
+        if (arr[k + 4] < 0) { const x = (Math.random() - 0.5) * 60, y = 26 + Math.random() * 4, z = (Math.random() - 0.5) * 60; arr.set([x, y, z, x + 0.15, y - 1.1, z + 0.05], k); }
+      }
+      chuvaGeo.attributes.position.needsUpdate = true;
+      chuvaMat.opacity = 0.22 + 0.35 * c.intensidade;
+    }
+    const cinza = c.chovendo ? 0.55 + 0.3 * c.intensidade : c.nublado ? 0.3 : 0;
+    cena.fog.near = 70 - cinza * 40; cena.fog.far = 210 - cinza * 110;
+    if (cinza > 0) cena.fog.color.lerp(corCinza, cinza * 0.7);
+    sol.intensity *= 1 - cinza * 0.5;
+    if (c.temp >= 31 && noite < 0.5 && !c.chovendo) sol.color.lerp(new THREE.Color(0xffd9a0), 0.35); // dia de calor forte: luz mais quente
+    if (c.tempestade) {
+      if (agora > proxRelampago) { clarao = 1; proxRelampago = agora + 3500 + Math.random() * 9000; if (hooks && hooks.aoRelampago) hooks.aoRelampago(); }
+    }
+    clarao *= Math.pow(0.002, dt);
+    if (clarao > 0.02) hemi.intensity += clarao * 1.5;
+    const inf = S.infestacao || 0, mostrar = inf >= 35 && noite < 0.9 && !c.chovendo;
+    mosqObj.visible = mostrar;
+    if (mostrar) {
+      const casas = Object.values(W.casas);
+      for (let i = 0; i < NMOSQ; i++) {
+        const q = casas[i % casas.length], a = agora / 700 + i * 1.7;
+        mosqPos[i * 3] = q.x + q.w / 2 + Math.cos(a * 1.3 + i) * 2.2; mosqPos[i * 3 + 1] = 0.9 + Math.sin(a * 2 + i) * 0.45; mosqPos[i * 3 + 2] = q.y + q.h / 2 + Math.sin(a) * 2.2;
+      }
+      mosqGeo.attributes.position.needsUpdate = true;
+      mosqGeo.setDrawRange(0, Math.max(6, Math.round(NMOSQ * inf / 100)));
+    }
+  }
   const astro = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 8), new THREE.MeshBasicMaterial({ color: 0xfff4c2, fog: false }));
   cena.add(astro);
 
@@ -4371,6 +4569,7 @@ function criarRenderer(canvas, getEstado, hooks) {
     limitaAlvo(W);
     aplicaCamera();
     const noiteF = atualizaCeuELuz(S, W, cfg, agora);
+    atualizaClimaFx(S, W, cfg, agora, dt, noiteF);
     domo.position.copy(camera.position); astro.position.add(new THREE.Vector3(0, 0, 0));
     for (const a of W.agentes) atualizaPessoa(W, S, rv, a, dt, agora);
     efeitosVida(W, S, dt, agora, noiteF);
@@ -5401,6 +5600,7 @@ return { criarRenderer2D };
 // Interface (mobile-first). O jogador escolhe UM personagem (paciente ou profissional) e joga só com ele: toca em
 // móveis, pessoas e no chão para dar ordens. Nenhuma regra de jogo mora aqui.
 
+const som = criarSom(); // sons e vibração (4D sensorial)
 const SAVE_KEY = 'saude-sim-save-v3';
 const INTRO_KEY = 'saude-sim-intro-v3';
 const FEEDBACK_KEY = 'saude-sim-feedback-v1';
@@ -5537,7 +5737,7 @@ function dicasDe(p) {
 /* ---------- Topo, abas e painel ---------- */
 function montaTopo() {
   $('#topo').innerHTML = `
-    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-c1"></span><span class="chip" id="t-c2"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
+    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-c1"></span><span class="chip" id="t-c2"></span><span class="chip" id="t-clima"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
     <div class="linha2">
       <span class="data" id="t-data"></span>
       <div class="vel" role="group" aria-label="Velocidade do tempo">
@@ -5552,8 +5752,14 @@ function montaRodape() {
   $('#rodape').innerHTML = `<div class="abas" style="grid-template-columns:repeat(${abas.length},1fr)">${abas.map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
 }
 
+/** O tempo agora (chuva, calor): usado na barra, no som e nos efeitos 3D. */
+function climaVisual() {
+  if (window.__climaForcado) return window.__climaForcado;
+  return climaAgora(climaDoDia(S.mes, Math.floor(S.mundo.min / 1440), cfg.cenario.id), (S.mundo.min % 1440) / 60);
+}
 function atualizaTopo() {
   const ag = meuAgente();
+  const tc = $('#t-clima'); if (tc) tc.textContent = rotuloClima(climaVisual());
   $('#t-nome').textContent = modo() === 'paciente' ? `${emojiPessoa(minhaPessoa())} ${minhaPessoa().nome}` : `${EMOJI_PAPEL[papel()]} ${cfg.papeis[papel()].curto}`;
   $('#t-data').textContent = `${MESES_ABR[S.mes]} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
   if (modo() === 'paciente') {
@@ -6013,7 +6219,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.3 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.4 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
@@ -6170,6 +6376,7 @@ function menuUnidade() {
 }
 
 /* ---------- Eventos ---------- */
+document.addEventListener('pointerdown', () => som.iniciar(), { once: false, passive: true }); // o áudio só liga depois de um toque do jogador
 // Navegação livre pelo cenário (computador): setas/WASD movem, +/- zoom, Q/E giram, H oculta a barra de ações.
 document.addEventListener('keydown', (ev) => {
   if (!S || !W || aba !== 'mundo' || folha || ev.ctrlKey || ev.metaKey || ev.altKey) return;
@@ -6271,6 +6478,7 @@ document.addEventListener('click', (ev) => {
     case 'pedido-op': { const r = comandar(W, S, cfg, `${el.dataset.op}:${id}`, { tipo: 'auto' }); resultado(r); renderFolha(); break; }
     case 'equipe-op': { const r = comandar(W, S, cfg, el.dataset.op, { tipo: 'agente', id }); fecharFolha(); resultado(r); break; }
     case 'painel': { painelOculto = !painelOculto; const b = $('#b-painel'); if (b) { b.textContent = painelOculto ? '🔼' : '🔽'; b.setAttribute('aria-label', painelOculto ? 'Mostrar a barra de ações' : 'Ocultar a barra de ações'); } assinaturaCartao = ''; montaPainel(true); atualizaDica(); break; }
+    case 'som': { som.iniciar(); const l = som.alterna(); const b = $('#b-som'); if (b) b.textContent = l ? '🔊' : '🔇'; toast(l ? 'Som e vibração ligados.' : 'Som e vibração desligados.', true); break; }
     case 'zoom-mais': R.zoom(1.25); break;
     case 'zoom-menos': R.zoom(0.8); break;
     case 'afazer': { const r = comandar(W, S, cfg, `afazer:${id}`, { tipo: 'auto' }); fecharFolha(); resultado(r); break; }
@@ -6292,7 +6500,11 @@ function quadro(t) {
       if (t - ultimoUI > 250) {
         ultimoUI = t;
         atualizaTopo(); atualizaPainel(); atualizaDica();
-        if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, m.tipo !== 'alerta'); }
+        if (W.msgs.length) {
+          const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, m.tipo !== 'alerta');
+          if (m.tipo === 'alerta') { som.efeito('alerta'); som.vibra([70, 50, 70]); } else if (m.tipo === 'bom') { som.efeito('sucesso'); som.vibra(30); } else if (m.tipo === 'aprendizado') { som.efeito('sino'); som.vibra(20); }
+        }
+        { const cl = climaVisual(), h = (S.mundo.min % 1440) / 60; som.atualiza({ dia: Math.max(0, Math.min(1, (h - 5.5) / 1.5)) * Math.max(0, Math.min(1, (19.5 - h) / 1.5)), chuva: cl.intensidade || 0, vento: cl.vento || 0.2 }); }
         if (aba === 'mundo') montaPainel(false);
         // atendimento do profissional: abre sozinho quando precisa de decisão
         if (clinico()) {
@@ -6300,7 +6512,7 @@ function quadro(t) {
           const chave = at ? `${at.pid}${at.fase}` : '';
           if (chave !== ultimaChaveAtend) {
             ultimaChaveAtend = chave;
-            if (at && (at.fase === 'pronto' || at.fase === 'resultado')) abrirFolha({ tipo: 'atendimento' });
+            if (at && (at.fase === 'pronto' || at.fase === 'resultado')) { abrirFolha({ tipo: 'atendimento' }); if (at.fase === 'pronto') { som.efeito('sino'); som.vibra(40); } }
             else if (folha && folha.tipo === 'atendimento') { if (at) renderFolha(); else fecharFolha(); }
           }
         }
@@ -6323,7 +6535,7 @@ async function carregarBase() {
 
 // Tenta o 3D; se faltar WebGL/Three.js (ou o 3D travou a página na última vez), cai no 2D simples.
 // Se a página foi gerada em modo seguro (window.__sem3d), abre direto em 2D e o 3D só entra quando o jogador pedir.
-const hooksRenderer = () => ({ aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } });
+const hooksRenderer = () => ({ aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; }, aoRelampago: () => { setTimeout(() => som.efeito('trovao'), 400 + Math.random() * 1400); som.vibra([30, 40, 60]); } });
 const estadoRenderer = () => ({ S, W, cfg });
 function trocaCanvas() { const antigo = $('#cv'), novo = antigo.cloneNode(false); antigo.parentNode.replaceChild(novo, antigo); return novo; }
 
@@ -6378,6 +6590,7 @@ async function tentar3DAgora() {
 async function iniciar() {
   base = BASE_INLINE;
   carregaRascunhoFb();
+  { const bs = $('#b-som'); if (bs) bs.textContent = som.ligado ? '🔊' : '🔇'; }
   montaTopo();
   let salvo = carregarSalvo();
   R = criarRendererSeguro();

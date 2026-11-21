@@ -87,3 +87,10 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - Commits em português, descritivos. Não criar PR sem pedido. Não incluir identificador de modelo em arquivos do repositório.
 - Não inventar fontes clínicas; manter o aviso "Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento…".
 - Dados do jogador ficam no aparelho (LGPD); não coletar dados de saúde reais.
+
+## 4D sensorial (v1.4)
+- **Clima** (`src/clima.js`, puro e determinístico): `climaDoDia(mes, dia, cenario)` / `climaAgora(c, hora)`; chuva sazonal (verão chuvoso), calor, vento. `climaDe(S,cfg)` em `mundo.js`. Chip 🌧️ no topo.
+- **Efeitos no jogo:** chuva e calor forte reduzem caminhada/academia/praça/pesca (`fatorTempo`); dias de chuva (`S.mundo.diasChuva`) aumentam a infestação do mosquito no tick mensal (`engine.avancarMes`; lição `chuva-dengue`) — chuva → dengue.
+- **Sentidos** (`render.js › atualizaClimaFx`): chuva, névoa, relâmpago, calor, mosquitos visíveis com infestação alta. `window.__climaForcado` força o clima em testes.
+- **Som e vibração** (`src/som.js`, Web Audio procedural, sem arquivos): chuva, vento, grilos, pássaros, sino, alerta, trovão; botão 🔊/🔇 (`saude-sim-som`). Vibração só em Android (iOS não suporta).
+- Ideia aberta: "4D temporal" (linha do tempo da saúde, voltar e simular o futuro). 83 testes.

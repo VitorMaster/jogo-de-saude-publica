@@ -2,6 +2,7 @@
 // profissional da unidade — e todos os demais agem sozinhos. Sem DOM. Os desfechos de saúde continuam vindo do
 // motor (engine.js); aqui nascem o comportamento (hábitos), a rotina, a fila e as ações da equipe.
 import { clamp, rnd, rint } from './rng.js';
+import { climaDoDia, climaAgora } from './clima.js';
 import {
   avancarMes, achaPessoa, achaFamilia, todasPessoas, adesao, sintomasDengueVisiveis, CONDS,
   acaoVisita, acaoMedir, acaoConsulta, acaoOrientar, acaoMutirao, acaoTratamento,
@@ -49,6 +50,12 @@ export function minutosPorSegundo(s) {
   if (h >= 7 && h < 17) return 3;
   if (h >= 17 && h < 22) return 5;
   return 12;
+}
+
+/** Tempo agora (4D: chuva, calor e vento mudam o que as pessoas fazem e a proliferação do mosquito). */
+export function climaDe(S, cfg) {
+  const dia = climaDoDia(S.mes, diaDoJogo(S), cfg.cenario.id);
+  return { dia, agora: climaAgora(dia, minutoDoDia(S) / 60) };
 }
 
 /* ---------- Mapa ---------- */
@@ -446,13 +453,15 @@ function decidir(W, S, cfg, a, p, f, n, c, int) {
   const temPraca = objetosDe(W, 'P', null).length > 0, temAcad = objetosDe(W, 'A', null).length > 0;
   const ativ = p.habitos.atividade / 100 + int.atividade * 0.8;
   const fresco = (m >= 6.5 * 60 && m < 10 * 60) || (m >= 16 * 60 && m < 20 * 60);
-  const fatorEx = (fresco ? 1 : 0.15) * (c.exMin >= 60 ? 0.1 : 1) * (!util ? 1.3 : 1);
+  const tempo = climaDe(S, cfg).agora;
+  const fatorTempo = (tempo.chovendo ? 0.12 : 1) * (tempo.temp >= 32 && m >= 11 * 60 && m < 16 * 60 ? 0.5 : 1); // chuva e calor forte esvaziam a rua
+  const fatorEx = (fresco ? 1 : 0.15) * (c.exMin >= 60 ? 0.1 : 1) * (!util ? 1.3 : 1) * fatorTempo;
   const op = [['tv', 0.9 + (1 - ativ) * 1.6 + (n.humor < 40 ? 0.5 : 0)]];
   op.push(['caminhar', (0.15 + ativ * 0.9) * fatorEx]);
-  if (temPraca) op.push(['praca', 0.25 + (1 - ativ) * 0.3]);
+  if (temPraca) op.push(['praca', (0.25 + (1 - ativ) * 0.3) * fatorTempo]);
   if (temAcad && p.idade >= 14) op.push(['academia', (0.05 + ativ * 0.6 + int.atividade * 0.6) * fatorEx]);
   if (!temPraca) op.push(['conversar', (0.2 + ativ * 0.5) * fatorEx]);
-  if (p.idade >= 10 && objetosDe(W, 'f', null).length) op.push(['pescar', (0.1 + (p.habitos.estresse / 100) * 0.9 + (n.humor < 50 ? 0.3 : 0)) * ((m >= 15 * 60 && m < 19 * 60) || !util ? 1 : 0.3)]); // o lago alivia o estresse
+  if (p.idade >= 10 && objetosDe(W, 'f', null).length) op.push(['pescar', (0.1 + (p.habitos.estresse / 100) * 0.9 + (n.humor < 50 ? 0.3 : 0)) * ((m >= 15 * 60 && m < 19 * 60) || !util ? 1 : 0.3) * fatorTempo]); // o lago alivia o estresse
   if (p.idade >= 6 && objetosDe(W, 'N', p.familiaId).length) op.push(['ler', 0.3 + (1 - ativ) * 0.4 + (p.idade >= 60 ? 0.5 : 0) + (p.ocupacao === 'escola' ? 0.2 : 0)]);
   if (temLanche && mundo.almoco === 'lanchonete' && m >= 17 * 60 && p.idade >= 14) op.push(['lanche', 0.1 + ((100 - p.habitos.alimentacao) / 100) * 0.8 - int.alimentacao * 0.4]);
   if (p.idade < 12) return { k: escolhe(M, [['tv', 1], ['praca', temPraca ? 0.9 * fatorEx : 0], ['caminhar', 0.5 * fatorEx], ['conversar', temPraca ? 0 : 0.5 * fatorEx]]) };
@@ -2053,6 +2062,7 @@ function passoCurto(W, S, cfg, dt) {
   }
   if (Math.floor(M.min / MIN_DIA) > diaAntes) {
     fimDoDia(W, S, cfg);
+    { const cd = climaDoDia(S.mes, diaDoJogo(S) - 1, cfg.cenario.id); if (cd.tipo === 'chuva' || cd.tipo === 'tempestade') S.mundo.diasChuva = (S.mundo.diasChuva || 0) + 1; }
     if (diaSemana(S) < 5) { const e = estadoEquipe(S, cfg); for (const k of PARES_EQUIPE) e[k] = clamp(e[k] - 1, 5, 100); } // sem convivência, o vínculo esfria
     for (const a of W.agentes) if (a.k === 'res') a.procurou = false;
     if (diaDoJogo(S) % DIAS_MES === 0) {

@@ -2,7 +2,8 @@
 // móveis com volume, personagens 3D animados, efeitos (vapor, água, fumaça), dia e noite e câmera giratória por toque.
 // Nenhuma regra de jogo mora aqui.
 import { achaPessoa } from './engine.js';
-import { minutoDoDia, bolhaDe, ubsAberta, ACOES_INFO } from './mundo.js';
+import { minutoDoDia, diaDoJogo, bolhaDe, ubsAberta, ACOES_INFO } from './mundo.js';
+import { climaDoDia, climaAgora } from './clima.js';
 
 /* ---------- utilidades ---------- */
 const hashR = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; };
@@ -146,6 +147,56 @@ export function criarRenderer(canvas, getEstado, hooks) {
   const mar = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshLambertMaterial({ color: 0x3d8fb8 }));
   mar.rotation.x = -Math.PI / 2; mar.position.y = -1.7; mar.receiveShadow = false;
   cena.add(mar);
+  /* ---------- clima (4D): chuva, névoa, relâmpagos e mosquitos ---------- */
+  const NCHUVA = leve ? 450 : 1100, NMOSQ = leve ? 40 : 90;
+  const chuvaGeo = new THREE.BufferGeometry(), chuvaPos = new Float32Array(NCHUVA * 6);
+  for (let i = 0; i < NCHUVA; i++) { const x = (Math.random() - 0.5) * 60, y = Math.random() * 28, z = (Math.random() - 0.5) * 60; chuvaPos.set([x, y, z, x + 0.15, y - 1.1, z + 0.05], i * 6); }
+  chuvaGeo.setAttribute('position', new THREE.BufferAttribute(chuvaPos, 3));
+  const chuvaMat = new THREE.LineBasicMaterial({ color: 0xbcd7ff, transparent: true, opacity: 0.5, fog: false, depthWrite: false });
+  const chuvaObj = new THREE.LineSegments(chuvaGeo, chuvaMat); chuvaObj.frustumCulled = false; chuvaObj.visible = false; cena.add(chuvaObj);
+  const mosqGeo = new THREE.BufferGeometry(), mosqPos = new Float32Array(NMOSQ * 3);
+  mosqGeo.setAttribute('position', new THREE.BufferAttribute(mosqPos, 3));
+  const mosqMat = new THREE.PointsMaterial({ color: 0x1f1f24, size: 0.12, transparent: true, opacity: 0.85, depthWrite: false });
+  const mosqObj = new THREE.Points(mosqGeo, mosqMat); mosqObj.frustumCulled = false; mosqObj.visible = false; cena.add(mosqObj);
+  let clarao = 0, proxRelampago = 0;
+  const corCinza = new THREE.Color(0x8a97a6);
+  function atualizaClimaFx(S, W, cfg, agora, dt, noite) {
+    const forcado = typeof window !== 'undefined' && window.__climaForcado;
+    const c = forcado || climaAgora(climaDoDia(S.mes, diaDoJogo(S), cfg.cenario.id), minutoDoDia(S) / 60);
+    chuvaObj.visible = !!c.chovendo;
+    if (c.chovendo) {
+      chuvaObj.position.set(orbita.alvo.x, 0, orbita.alvo.z);
+      const arr = chuvaGeo.attributes.position.array, v = 22 * (0.6 + c.intensidade * 0.6) * dt, vx = (c.vento || 0.3) * 4 * dt;
+      for (let i = 0; i < NCHUVA; i++) {
+        const k = i * 6;
+        arr[k + 1] -= v; arr[k + 4] -= v; arr[k] += vx; arr[k + 3] += vx;
+        if (arr[k + 4] < 0) { const x = (Math.random() - 0.5) * 60, y = 26 + Math.random() * 4, z = (Math.random() - 0.5) * 60; arr.set([x, y, z, x + 0.15, y - 1.1, z + 0.05], k); }
+      }
+      chuvaGeo.attributes.position.needsUpdate = true;
+      chuvaMat.opacity = 0.22 + 0.35 * c.intensidade;
+    }
+    const cinza = c.chovendo ? 0.55 + 0.3 * c.intensidade : c.nublado ? 0.3 : 0;
+    cena.fog.near = 70 - cinza * 40; cena.fog.far = 210 - cinza * 110;
+    if (cinza > 0) cena.fog.color.lerp(corCinza, cinza * 0.7);
+    sol.intensity *= 1 - cinza * 0.5;
+    if (c.temp >= 31 && noite < 0.5 && !c.chovendo) sol.color.lerp(new THREE.Color(0xffd9a0), 0.35); // dia de calor forte: luz mais quente
+    if (c.tempestade) {
+      if (agora > proxRelampago) { clarao = 1; proxRelampago = agora + 3500 + Math.random() * 9000; if (hooks && hooks.aoRelampago) hooks.aoRelampago(); }
+    }
+    clarao *= Math.pow(0.002, dt);
+    if (clarao > 0.02) hemi.intensity += clarao * 1.5;
+    const inf = S.infestacao || 0, mostrar = inf >= 35 && noite < 0.9 && !c.chovendo;
+    mosqObj.visible = mostrar;
+    if (mostrar) {
+      const casas = Object.values(W.casas);
+      for (let i = 0; i < NMOSQ; i++) {
+        const q = casas[i % casas.length], a = agora / 700 + i * 1.7;
+        mosqPos[i * 3] = q.x + q.w / 2 + Math.cos(a * 1.3 + i) * 2.2; mosqPos[i * 3 + 1] = 0.9 + Math.sin(a * 2 + i) * 0.45; mosqPos[i * 3 + 2] = q.y + q.h / 2 + Math.sin(a) * 2.2;
+      }
+      mosqGeo.attributes.position.needsUpdate = true;
+      mosqGeo.setDrawRange(0, Math.max(6, Math.round(NMOSQ * inf / 100)));
+    }
+  }
   const astro = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 8), new THREE.MeshBasicMaterial({ color: 0xfff4c2, fog: false }));
   cena.add(astro);
 
@@ -1192,6 +1243,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
     limitaAlvo(W);
     aplicaCamera();
     const noiteF = atualizaCeuELuz(S, W, cfg, agora);
+    atualizaClimaFx(S, W, cfg, agora, dt, noiteF);
     domo.position.copy(camera.position); astro.position.add(new THREE.Vector3(0, 0, 0));
     for (const a of W.agentes) atualizaPessoa(W, S, rv, a, dt, agora);
     efeitosVida(W, S, dt, agora, noiteF);

@@ -20,7 +20,7 @@ const base = {
   cenarios: JSON.parse(ler('data/cenarios.json')),
 };
 const main = semModulo(ler('src/main.js')).replace('base = await carregarBase();', 'base = BASE_INLINE;');
-const js = `(function () {\n'use strict';\nconst BASE_INLINE = ${JSON.stringify(base)};\n${['rng', 'engine', 'mundo', 'feedback', 'render'].map((m) => semModulo(ler(`src/${m}.js`))).join('\n')}
+const js = `(function () {\n'use strict';\nconst BASE_INLINE = ${JSON.stringify(base)};\n${['rng', 'clima', 'engine', 'mundo', 'feedback', 'som', 'render'].map((m) => semModulo(ler(`src/${m}.js`))).join('\n')}
 const { criarRenderer2D } = (function () {\n${semModulo(ler('src/render2d.js'))}\nreturn { criarRenderer2D };\n})();\n${main}\n})();`;
 new Function(js); // falha aqui se houver nomes duplicados ou erro de sintaxe
 

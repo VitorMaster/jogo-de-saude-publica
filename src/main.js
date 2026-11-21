@@ -10,8 +10,11 @@ import {
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
+import { criarSom } from './som.js';
+import { climaDoDia, climaAgora, rotuloClima } from './clima.js';
 import { PERGUNTAS, contextoTecnico, temResposta, enviarFeedback } from './feedback.js';
 
+const som = criarSom(); // sons e vibração (4D sensorial)
 const SAVE_KEY = 'saude-sim-save-v3';
 const INTRO_KEY = 'saude-sim-intro-v3';
 const FEEDBACK_KEY = 'saude-sim-feedback-v1';
@@ -148,7 +151,7 @@ function dicasDe(p) {
 /* ---------- Topo, abas e painel ---------- */
 function montaTopo() {
   $('#topo').innerHTML = `
-    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-c1"></span><span class="chip" id="t-c2"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
+    <div class="linha"><h1 id="t-nome"></h1><div class="chips"><span class="chip" id="t-c1"></span><span class="chip" id="t-c2"></span><span class="chip" id="t-clima"></span></div><button class="ajuda" data-act="ajuda" aria-label="Como jogar">?</button></div>
     <div class="linha2">
       <span class="data" id="t-data"></span>
       <div class="vel" role="group" aria-label="Velocidade do tempo">
@@ -163,8 +166,14 @@ function montaRodape() {
   $('#rodape').innerHTML = `<div class="abas" style="grid-template-columns:repeat(${abas.length},1fr)">${abas.map(([id, ic, nome]) => `<button class="aba" data-act="aba" data-id="${id}"><span class="ic">${ic}</span>${nome}</button>`).join('')}</div>`;
 }
 
+/** O tempo agora (chuva, calor): usado na barra, no som e nos efeitos 3D. */
+function climaVisual() {
+  if (window.__climaForcado) return window.__climaForcado;
+  return climaAgora(climaDoDia(S.mes, Math.floor(S.mundo.min / 1440), cfg.cenario.id), (S.mundo.min % 1440) / 60);
+}
 function atualizaTopo() {
   const ag = meuAgente();
+  const tc = $('#t-clima'); if (tc) tc.textContent = rotuloClima(climaVisual());
   $('#t-nome').textContent = modo() === 'paciente' ? `${emojiPessoa(minhaPessoa())} ${minhaPessoa().nome}` : `${EMOJI_PAPEL[papel()]} ${cfg.papeis[papel()].curto}`;
   $('#t-data').textContent = `${MESES_ABR[S.mes]} · dia ${diaDoMes(S)} · ${rotuloRelogio(S)}`;
   if (modo() === 'paciente') {
@@ -624,7 +633,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.3 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.4 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
@@ -781,6 +790,7 @@ function menuUnidade() {
 }
 
 /* ---------- Eventos ---------- */
+document.addEventListener('pointerdown', () => som.iniciar(), { once: false, passive: true }); // o áudio só liga depois de um toque do jogador
 // Navegação livre pelo cenário (computador): setas/WASD movem, +/- zoom, Q/E giram, H oculta a barra de ações.
 document.addEventListener('keydown', (ev) => {
   if (!S || !W || aba !== 'mundo' || folha || ev.ctrlKey || ev.metaKey || ev.altKey) return;
@@ -882,6 +892,7 @@ document.addEventListener('click', (ev) => {
     case 'pedido-op': { const r = comandar(W, S, cfg, `${el.dataset.op}:${id}`, { tipo: 'auto' }); resultado(r); renderFolha(); break; }
     case 'equipe-op': { const r = comandar(W, S, cfg, el.dataset.op, { tipo: 'agente', id }); fecharFolha(); resultado(r); break; }
     case 'painel': { painelOculto = !painelOculto; const b = $('#b-painel'); if (b) { b.textContent = painelOculto ? '🔼' : '🔽'; b.setAttribute('aria-label', painelOculto ? 'Mostrar a barra de ações' : 'Ocultar a barra de ações'); } assinaturaCartao = ''; montaPainel(true); atualizaDica(); break; }
+    case 'som': { som.iniciar(); const l = som.alterna(); const b = $('#b-som'); if (b) b.textContent = l ? '🔊' : '🔇'; toast(l ? 'Som e vibração ligados.' : 'Som e vibração desligados.', true); break; }
     case 'zoom-mais': R.zoom(1.25); break;
     case 'zoom-menos': R.zoom(0.8); break;
     case 'afazer': { const r = comandar(W, S, cfg, `afazer:${id}`, { tipo: 'auto' }); fecharFolha(); resultado(r); break; }
@@ -903,7 +914,11 @@ function quadro(t) {
       if (t - ultimoUI > 250) {
         ultimoUI = t;
         atualizaTopo(); atualizaPainel(); atualizaDica();
-        if (W.msgs.length) { const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, m.tipo !== 'alerta'); }
+        if (W.msgs.length) {
+          const m = W.msgs[W.msgs.length - 1]; W.msgs.length = 0; toast(m.texto, m.tipo !== 'alerta');
+          if (m.tipo === 'alerta') { som.efeito('alerta'); som.vibra([70, 50, 70]); } else if (m.tipo === 'bom') { som.efeito('sucesso'); som.vibra(30); } else if (m.tipo === 'aprendizado') { som.efeito('sino'); som.vibra(20); }
+        }
+        { const cl = climaVisual(), h = (S.mundo.min % 1440) / 60; som.atualiza({ dia: Math.max(0, Math.min(1, (h - 5.5) / 1.5)) * Math.max(0, Math.min(1, (19.5 - h) / 1.5)), chuva: cl.intensidade || 0, vento: cl.vento || 0.2 }); }
         if (aba === 'mundo') montaPainel(false);
         // atendimento do profissional: abre sozinho quando precisa de decisão
         if (clinico()) {
@@ -911,7 +926,7 @@ function quadro(t) {
           const chave = at ? `${at.pid}${at.fase}` : '';
           if (chave !== ultimaChaveAtend) {
             ultimaChaveAtend = chave;
-            if (at && (at.fase === 'pronto' || at.fase === 'resultado')) abrirFolha({ tipo: 'atendimento' });
+            if (at && (at.fase === 'pronto' || at.fase === 'resultado')) { abrirFolha({ tipo: 'atendimento' }); if (at.fase === 'pronto') { som.efeito('sino'); som.vibra(40); } }
             else if (folha && folha.tipo === 'atendimento') { if (at) renderFolha(); else fecharFolha(); }
           }
         }
@@ -934,7 +949,7 @@ async function carregarBase() {
 
 // Tenta o 3D; se faltar WebGL/Three.js (ou o 3D travou a página na última vez), cai no 2D simples.
 // Se a página foi gerada em modo seguro (window.__sem3d), abre direto em 2D e o 3D só entra quando o jogador pedir.
-const hooksRenderer = () => ({ aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } });
+const hooksRenderer = () => ({ aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; }, aoRelampago: () => { setTimeout(() => som.efeito('trovao'), 400 + Math.random() * 1400); som.vibra([30, 40, 60]); } });
 const estadoRenderer = () => ({ S, W, cfg });
 function trocaCanvas() { const antigo = $('#cv'), novo = antigo.cloneNode(false); antigo.parentNode.replaceChild(novo, antigo); return novo; }
 
@@ -989,6 +1004,7 @@ async function tentar3DAgora() {
 async function iniciar() {
   base = await carregarBase();
   carregaRascunhoFb();
+  { const bs = $('#b-som'); if (bs) bs.textContent = som.ligado ? '🔊' : '🔇'; }
   montaTopo();
   let salvo = carregarSalvo();
   R = criarRendererSeguro();
