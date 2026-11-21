@@ -106,13 +106,27 @@ const CLASSE_ROT = { baixa: 'de baixa renda', media: 'de classe média', alta: '
 const EMOJI_PAPEL = { acs: '🧑‍🌾', tecnico: '🧑‍🔬', enfermeiro: '🧑‍⚕️', medico: '🧑‍⚕️' };
 
 let toastTimer;
+/** Resumo curto para o mundo aberto: primeira frase, no máximo ~70 caracteres. O texto completo fica no Diário. */
+function resumoCurto(msg) {
+  const t = String(msg).replace(/\s+/g, ' ').trim();
+  const corte = t.search(/(\. |: \(| — | \(|; )/);
+  let r = corte > 12 ? t.slice(0, corte) : t;
+  if (r.length > 70) r = r.slice(0, 68).replace(/[\s,;:]+\S*$/, '') + '…';
+  return r;
+}
 function toast(msg, ok = true) {
   const el = $('#toast');
-  el.textContent = msg;
+  const longo = String(msg).length > 72;
+  if (longo && S && S.diario) { // garante que o texto completo esteja no Diário
+    const recentes = S.diario.slice(-6);
+    if (!recentes.some((d) => d.texto === msg)) S.diario.push({ mes: S.mes, ano: S.ano, tipo: ok ? 'info' : 'alerta', texto: msg });
+  }
+  el.textContent = longo ? resumoCurto(msg) + '  · ver no Diário' : msg;
   el.className = `on ${ok ? '' : 'erro'}`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.className = ''), 4800);
+  toastTimer = setTimeout(() => (el.className = ''), 3800);
 }
+{ var tEl = document.getElementById('toast'); if (tEl) tEl.addEventListener('click', function () { if (tEl.textContent.indexOf('ver no Diário') >= 0) { tEl.className = ''; mostraAba('diario'); } }); }
 function limpaToast() { clearTimeout(toastTimer); $('#toast').className = ''; }
 
 const modo = () => (S && S.jogador ? S.jogador.modo : null);
@@ -633,7 +647,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.5 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.6 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>

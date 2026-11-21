@@ -98,3 +98,6 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 ## Lago vivo e placas dos lugares (v1.5)
 - **Lago** (`render.js › case 'lago'` + bloco de água em `construirDecoracao`): margem de areia e barranco elípticos, água com gradiente e ondas animadas, juncos/taboas, pedras, vitórias-régias, patos redondos e 7 peixes que nadam e às vezes saltam (`vida.peixes`). Grama do terreno com variação suave (`ruidoSuave`) em vez de xadrez.
 - **Placas** discretas de madeira (baixas, junto à vegetação) com ícone + nome para lago, UPA/hospital, caixa d'água, moinho, pasto, praça, academia e plantação (`placaLocal`); as placas das portas (UBS, escola, lanchonete, trabalho, farmácia) agora também têm texto. Só no 3D (o plano B 2D ainda não tem). `window.__placas` lista as posições (depuração).
+
+## Avisos resumidos (v1.6)
+- `toast()` em `main.js`: mensagens com mais de 72 caracteres aparecem **resumidas** no mundo aberto (`resumoCurto` + "· ver no Diário"; tocar abre o Diário) e o **texto completo** é garantido no `S.diario`. Mensagens curtas continuam inteiras.
