@@ -682,7 +682,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
   /* ---------- montagem completa do cenário (ao trocar de mapa ou girar a câmera) ---------- */
   function montarMundo(W, S, cfg, quad) {
     const rv = preparaMapa(W);
-    if (mundo3d) { cena.remove(mundo3d.grupo); mundo3d.grupo.traverse((o) => { if (o.geometry && !(o.geometry === gCaixa)) o.geometry.dispose?.(); }); hitMoveis.length = 0; }
+    if (mundo3d) { cena.remove(mundo3d.grupo); mundo3d.grupo.traverse((o) => { if (o.geometry && !(o.geometry === gCaixa)) if (o.geometry && o.geometry.dispose) o.geometry.dispose(); }); hitMoveis.length = 0; }
     const grupo = new THREE.Group();
     grupo.add(construirTerreno(W, cfg, rv));
     const paredes = construirParedes(W, rv, quad);

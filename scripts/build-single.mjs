@@ -43,19 +43,39 @@ const diag = `(function () {
     }
   }, 4000);
 })();`;
-// Por padrão o Three.js vem do cdnjs (página pequena); se não carregar, o jogo abre no modo 2D. --inline embute o arquivo local.
+// Three.js: por padrão vem do cdnjs de forma ASSÍNCRONA (com limite de tempo): se a rede/visualizador bloquear ou demorar, o jogo abre no modo 2D
+// em vez de ficar em branco. --inline embute o arquivo local; --sem-three não inclui nada (o carregador da versão protegida já traz).
 const inline = process.argv.includes('--inline');
-const tag3d = inline
-  ? `<script>\n${ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>')}\n</script>`
-  : '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>';
+const semThree = process.argv.includes('--sem-three');
+const URL3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+const principal = `document.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}`;
+let blocoJogo;
+if (inline) blocoJogo = `<script>\n${ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>')}\n</script>\n<script>\n${principal}\n</script>`;
+else if (semThree) blocoJogo = `<script>\n${principal}\n</script>`;
+else {
+  const carregador = `(function () {
+  var feito = false;
+  function ir(motivo) {
+    if (feito) return; feito = true;
+    if (motivo && window.__diag) window.__diag(motivo);
+    try { window.__jogoMain(); } catch (e) { if (window.__diag) window.__diag('Erro: ' + (e && e.message ? e.message : e)); }
+  }
+  var s = document.createElement('script');
+  s.src = '${URL3}'; s.async = true;
+  s.onload = function () { ir(); };
+  s.onerror = function () { ir('3D indisponível: abrindo em modo simples (2D)'); };
+  (document.head || document.documentElement).appendChild(s);
+  setTimeout(function () { ir('O 3D demorou para carregar: abrindo em modo simples (2D)'); }, 4000);
+})();`;
+  blocoJogo = `<script>\nwindow.__jogoMain = function () {\n${principal}\n};\n</script>\n<script>\n${carregador}\n</script>`;
+}
 const html = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Saúde Sim</title>
 <style>\n${css}\n</style>
 ${corpo}
 <script>\n${diag}\n</script>
-${tag3d}
-<script>\ndocument.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}\n</script>
+${blocoJogo}
 `;
 const saida = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'dist/saude-sim.html';
 writeFileSync(saida, html);

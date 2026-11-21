@@ -46,7 +46,7 @@ writeFileSync(arquivoLista, JSON.stringify(lista, null, 2) + '\n');
 
 // 2) Jogo em página única (sem a tag do Three.js: o carregador já traz a biblioteca)
 const tmp = join(tmpdir(), `saude-sim-${process.pid}.html`);
-execFileSync('node', [join(raiz, 'scripts/build-single.mjs'), tmp], { stdio: 'pipe' });
+execFileSync('node', [join(raiz, 'scripts/build-single.mjs'), tmp, '--sem-three'], { stdio: 'pipe' });
 let jogo = readFileSync(tmp, 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>\n?/, '');
 rmSync(tmp);
 
