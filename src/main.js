@@ -422,8 +422,8 @@ function blocoAfazeres() {
 function blocoPedidos() {
   if (papel() !== 'enfermeiro') return '';
   const l = pedidosPendentes(W);
-  return `<h2 class="secao">📥 Pedidos da equipe (${l.length})</h2>${l.length ? l.map((q) => `<div class="card eq"><div class="rotulo"><strong>${EMOJI_PAPEL[q.papel]} ${esc(cfg.papeis[q.papel].nome)}</strong><span>há ${Math.round(S.mundo.min - q.t0)} min</span></div><div class="dica-t">${esc(q.rot)}</div>
-    <div class="c-btns" style="grid-template-columns:repeat(2,1fr);margin-top:6px"><button class="btn peq primario" data-act="pedido-op" data-op="pedido_sim" data-id="${q.id}">✅ Aprovar</button><button class="btn peq" data-act="pedido-op" data-op="pedido_nao" data-id="${q.id}">✖ Negar</button></div></div>`).join('') : '<p class="dica-t">Nenhum pedido pendente. Visitas domiciliares, busca ativa, mutirões, reposição de insumos e referências à UPA/hospital passam por você.</p>'}`;
+  return `<h2 class="secao">📥 Pedidos da equipe (${l.length})</h2>${W.cobrancaEstoque ? '<p class="dica-t">📣 Você já cobrou o relatório de estoque do técnico.</p>' : `<button class="btn peq" data-act="pedido-op" data-op="cobrar_estoque" data-id="x">📣 Cobrar do técnico o relatório de estoque${S.mundo.estoqueRel ? ` (último: dia ${S.mundo.estoqueRel.dia + 1}, ${S.mundo.estoqueRel.valor} insumos)` : ' (nenhum ainda)'}</button>`}${l.length ? l.map((q) => `<div class="card eq"><div class="rotulo"><strong>${EMOJI_PAPEL[q.papel]} ${esc(cfg.papeis[q.papel].nome)}</strong><span>há ${Math.round(S.mundo.min - q.t0)} min</span></div><div class="dica-t">${esc(q.rot)}</div>
+    <div class="c-btns" style="grid-template-columns:repeat(2,1fr);margin-top:6px"><button class="btn peq primario" data-act="pedido-op" data-op="pedido_sim" data-id="${q.id}">✅ Aprovar</button><button class="btn peq" data-act="pedido-op" data-op="pedido_nao" data-id="${q.id}">✖ Negar</button></div></div>`).join('') : '<p class="dica-t">Nenhum pedido pendente. O agendamento de visitas domiciliares (médico e técnico) e os mutirões passam por você; a referência à UPA/hospital é feita direto pelo médico ou por você.</p>'}`;
 }
 
 /** Interações com os outros profissionais: ninguém faz nada sozinho. */
@@ -495,7 +495,7 @@ function folhaPersonagem() {
     const r = cfg.papeis[id], k = `f:${id}`, e = estadoVida(k);
     const extra = id === 'medico' && mundo.medicoDias.length < 5 ? `<li>Neste cenário você atende só ${mundo.medicoDias.map((d) => dias[d]).join(' e ')}</li>` : '';
     return `<div class="card pers"><div class="c-topo"><span class="emoji">${r.icone}</span><div class="c-id"><b>${esc(r.nome)}</b></div></div>
-      <p class="dica-t" style="margin:6px 0">${esc(r.resumo)}</p><ul class="lista">${r.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}${extra}</ul>
+      <p class="dica-t" style="margin:6px 0">${esc(r.resumo)}</p><p class="dica-t"><b>Competências (PNAB):</b></p><ul class="lista">${(r.competencias || []).map((d) => `<li>${esc(d)}</li>`).join('')}</ul><p class="dica-t"><b>Desafios:</b></p><ul class="lista">${r.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}${extra}</ul>
       ${selo(e)}<button class="btn primario" style="margin-top:8px" data-act="pers-prof" data-id="${id}"><span>${esc(rotuloBotao(e, r.nome.toLowerCase(), `Trabalhar como ${r.nome.toLowerCase()}`))}</span></button>${botaoReiniciar(k, e)}</div>`;
   }).join('');
   const troca = !!(folha && folha.troca);
@@ -540,13 +540,13 @@ function folhaAtendimento() {
     if (at.tipo === 'consulta') {
       corpo += CONDS.filter((id) => p.cond[id].diag).map((id) => `<button class="btn ${p.cond[id].trat ? '' : 'primario'}" data-act="tratar" data-id="${p.id}" data-cond="${id}" data-ligar="${p.cond[id].trat ? 0 : 1}"><span>${cfg.cond[id].icone} ${esc(cfg.cond[id].nome)}: ${p.cond[id].trat ? 'suspender tratamento' : 'iniciar tratamento'}</span><small>💊 UBS grátis (c/ estoque) · Farm. Popular R$ ${copagamento(cfg, id)}/mês · família ${esc(CLASSE_ROT[achaFamilia(S, p.familiaId).classe])}</small></button>`).join('');
       const ref = criterioReferencia(S, p);
-      if (ref) corpo += `<div class="alerta-sint">🚑 Extrapola a atenção primária: ${esc(ref)}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>${papel() === 'enfermeiro' ? 'regulação' : 'pede à enfermeira'}</small></button>`;
+      if (ref) corpo += `<div class="alerta-sint">🚑 Extrapola a atenção primária: ${esc(ref)}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
       corpo += '<button class="btn primario" style="margin-top:8px" data-act="concluir" data-destino="liberar"><span>✔ Concluir atendimento</span></button>';
     } else {
       corpo += '<p class="dica-t">Para onde encaminhar?</p>';
       if (at.tipo === 'triagem') corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem</span></button>';
       corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
-      if (criterioReferencia(S, p)) corpo += `<div class="alerta-sint">🚑 ${esc(criterioReferencia(S, p))}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>${papel() === 'enfermeiro' ? 'regulação' : 'pede à enfermeira'}</small></button>`;
+      if (criterioReferencia(S, p)) corpo += `<div class="alerta-sint">🚑 ${esc(criterioReferencia(S, p))}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
       corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
     }
   }
@@ -612,7 +612,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.0 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.1 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>

@@ -1663,7 +1663,15 @@
     "Famílias com pouco vínculo",
     "Dengue: mutirões contra focos"
    ],
-   "curto": "Agente comunitário"
+   "curto": "Agente comunitário",
+   "competencias": [
+    "Cadastrar e acompanhar as famílias da microárea",
+    "Visitas domiciliares e busca ativa (sem pedir autorização)",
+    "Orientar famílias e cuidadores sobre hábitos, prevenção e uso dos serviços",
+    "Aferir PA e glicemia capilar no domicílio, com capacitação (Lei 13.595/2018)",
+    "Mobilização comunitária; o mutirão contra focos é combinado com a coordenação",
+    "Não faz consulta nem procedimentos privativos de enfermagem/medicina"
+   ]
   },
   "tecnico": {
    "nome": "Técnico(a) de enfermagem",
@@ -1674,7 +1682,15 @@
     "Decidir o encaminhamento certo",
     "Tempo curto por pessoa"
    ],
-   "curto": "Técnico(a)"
+   "curto": "Técnico(a)",
+   "competencias": [
+    "Aferir sinais vitais, medidas e glicemia; escuta qualificada no acolhimento",
+    "Curativos, procedimentos e medicação sob supervisão da enfermeira",
+    "Conferir o estoque de medicamentos e entregar o relatório à enfermeira",
+    "Organizar e esterilizar a sala; registros",
+    "Visita domiciliar só com agendamento da enfermeira",
+    "Classificar risco e prescrever não são atribuições do técnico"
+   ]
   },
   "enfermeiro": {
    "nome": "Enfermeiro(a)",
@@ -1685,7 +1701,14 @@
     "Escolher o foco da orientação",
     "Equipe enxuta"
    ],
-   "curto": "Enfermeiro(a)"
+   "curto": "Enfermeiro(a)",
+   "competencias": [
+    "Coordenar a unidade e supervisionar ACS e técnicos",
+    "Consulta de enfermagem, solicitação de exames e prescrição conforme protocolos",
+    "Gerenciar insumos: analisar o relatório do técnico, cobrar atualização e solicitar reposição",
+    "Planejar o território: agendar visitas domiciliares (médico, técnico) e mutirões",
+    "Educação em saúde e grupos; encaminhar à UPA/hospital quando extrapola a APS"
+   ]
   },
   "medico": {
    "nome": "Médico(a)",
@@ -1696,7 +1719,14 @@
     "Insumos limitados",
     "Doenças silenciosas"
    ],
-   "curto": "Médico(a)"
+   "curto": "Médico(a)",
+   "competencias": [
+    "Consulta, diagnóstico e prescrição",
+    "Visitas domiciliares, agendadas pela enfermeira coordenadora",
+    "Encaminhar direto à UPA/hospital quando extrapola a APS e acompanhar a contrarreferência",
+    "Reunião de equipe e discussão de casos",
+    "Propor mutirões e ações coletivas à coordenação (única exceção, além das visitas, em que pede autorização)"
+   ]
   }
  }
 }

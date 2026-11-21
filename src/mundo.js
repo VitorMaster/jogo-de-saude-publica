@@ -812,7 +812,7 @@ function rotearAuto(W, S, cfg, a, t) {
   if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
   for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
   const ref = criterioReferencia(S, p);
-  if (ref && !W.pedidos.some((x) => x.tipo === 'referencia' && x.pid === p.id && x.estado === 'pendente')) criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: p.id, rot: `Referência de ${p.nome}: ${ref}` });
+  if (ref && (a.papel === 'medico' || a.papel === 'enfermeiro')) encaminharReferencia(S, cfg, p.id); // médico e enfermeiro encaminham direto à referência
   return 'liberar';
 }
 
@@ -919,36 +919,37 @@ const nomePapel = (cfg, papel) => cfg.papeis[papel].nome;
 
 /* ---------- Afazeres do dia (trabalho de bastidor e de campo) ---------- */
 // local: D consultório · Y farmácia · U triagem · H sala de espera · Z arquivo · W copa · seat (sala de reunião) · ubs (recepção) · campo (casa) · colega
+// Competências conforme a Política Nacional de Atenção Básica (PNAB 2017) e a Lei 13.595/2018 (ACS). `pedido`: só o que a coordenação (enfermeira) precisa agendar/autorizar.
 export const AFAZERES = {
   medico: [
     { id: 'prontuarios', rot: 'Revisar prontuários e exames', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'receitas', rot: 'Renovar receitas de quem está em tratamento', ic: '📝', local: 'D', dur: 25 },
     { id: 'caso', rot: 'Discutir casos com a enfermagem', ic: '🗣️', local: 'seat', dur: 25, equipe: ['medico', 'enfermeiro'] },
-    { id: 'visita_med', rot: 'Visita domiciliar (consulta em casa)', ic: '🏠', local: 'campo', dur: 45, campo: true, pedido: true },
-    { id: 'visita_acam', rot: 'Visita ao acamado e ao cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, pedido: true, acamado: true },
+    { id: 'visita_med', rot: 'Visita domiciliar (agendada pela enfermeira)', ic: '🏠', local: 'campo', dur: 45, campo: true, pedido: true },
+    { id: 'visita_acam', rot: 'Visita ao acamado e ao cuidador (agendada pela enfermeira)', ic: '🛏️', local: 'campo', dur: 40, campo: true, pedido: true, acamado: true },
+    { id: 'propor_mutirao', rot: 'Propor mutirão contra focos à coordenação', ic: '🧹', local: 'U', dur: 15, pedido: true, mutirao: true },
   ],
   enfermeiro: [
     { id: 'educacao', rot: 'Roda de conversa na sala de espera', ic: '🗣️', local: 'H', dur: 30 },
-    { id: 'estoque', rot: 'Conferir estoque e farmácia', ic: '📦', local: 'Y', dur: 25 },
+    { id: 'gestao_estoque', rot: 'Analisar o relatório de estoque do técnico e solicitar reposição', ic: '📦', local: 'Y', dur: 25 },
     { id: 'supervisao', rot: 'Supervisionar o técnico e os registros', ic: '📋', local: 'U', dur: 25 },
-    { id: 'cadastro', rot: 'Atualizar cadastros do território', ic: '🗂️', local: 'Z', dur: 30 },
+    { id: 'cadastro', rot: 'Supervisionar cadastros e microáreas dos ACS', ic: '🗂️', local: 'Z', dur: 30 },
     { id: 'visita_enf', rot: 'Visita domiciliar (acompanhar tratamento)', ic: '🏠', local: 'campo', dur: 40, campo: true },
     { id: 'visita_acam', rot: 'Visita ao acamado e ao cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, acamado: true },
     { id: 'grupo_atividade', rot: 'Grupo de atividade física na praça', ic: '🧘', local: 'P', dur: 40 },
   ],
   tecnico: [
     { id: 'sala_espera', rot: 'Aferir a pressão de quem aguarda', ic: '📏', local: 'H', dur: 20 },
-    { id: 'estoque', rot: 'Organizar farmácia e insumos', ic: '📦', local: 'Y', dur: 25 },
-    { id: 'insumos', rot: 'Solicitar reposição de insumos à coordenação', ic: '📨', local: 'U', dur: 15, pedido: true },
+    { id: 'estoque', rot: 'Conferir o estoque de medicamentos e entregar o relatório à enfermeira', ic: '📦', local: 'Y', dur: 25 },
     { id: 'esterilizar', rot: 'Esterilizar e organizar a sala', ic: '🧼', local: 'D', dur: 25 },
     { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'Z', dur: 25 },
     { id: 'curativos', rot: 'Curativos e procedimentos simples', ic: '🩹', local: 'D', dur: 25 },
-    { id: 'visita_acam', rot: 'Curativo domiciliar no acamado', ic: '🛏️', local: 'campo', dur: 35, campo: true, pedido: true, acamado: true },
+    { id: 'visita_acam', rot: 'Curativo domiciliar no acamado (agendado pela enfermeira)', ic: '🛏️', local: 'campo', dur: 35, campo: true, pedido: true, acamado: true },
   ],
   acs: [
     { id: 'cadastro_acs', rot: 'Atualizar o cadastro de uma família', ic: '📇', local: 'campo', dur: 40, campo: true },
-    { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true, pedido: true },
-    { id: 'visita_acam', rot: 'Visita ao acamado e orientação do cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, pedido: true, acamado: true },
+    { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true },
+    { id: 'visita_acam', rot: 'Visita ao acamado e orientação do cuidador', ic: '🛏️', local: 'campo', dur: 40, campo: true, acamado: true },
     { id: 'repasse', rot: 'Repassar os casos do território para a equipe', ic: '📞', local: 'U', dur: 20 },
     { id: 'grupo_atividade', rot: 'Grupo de caminhada na praça', ic: '🚶', local: 'P', dur: 40 },
   ],
@@ -975,6 +976,7 @@ function gerarAgenda(W, S, cfg, a) {
   if (DIAS_REUNIAO.includes(dow)) poe(REUNIAO);
   const precisaCuidado = acamados.some((q) => !q.cuidador || q.cuidador.qualidade < 60 || q.acamado.lesao >= 0.5);
   const dAc = AFAZERES[a.papel].find((d) => d.acamado);
+  if (a.papel === 'tecnico' && (!S.mundo.estoqueRel || diaDoJogo(S) - S.mundo.estoqueRel.dia >= 2) && dow < 5) { const e = AFAZERES.tecnico.find((d) => d.id === 'estoque'); poe(e); } // relatório de estoque velho entra na agenda
   if (dAc && precisaCuidado && lista.length < n && dow < 5 && (a.papel !== 'tecnico' || acamados.some((q) => q.acamado.lesao >= 0.5))) poe(dAc); // acamado com cuidado frágil entra na agenda
   for (let guard = 0; lista.length < n && guard < 80; guard++) {
     const def = escolhe(M, pool.map((d) => [d, d.campo ? campoW : 1]));
@@ -1184,11 +1186,14 @@ function expiraPedidos(W, S, cfg) {
 function iniciarAfazer(W, S, cfg, a, item) {
   const def = item.def, ag = garanteAgenda(W, S, cfg, a);
   if (def.equipe) return convocarReuniao(W, S, cfg, a, item);
-  if (def.pedido && a.papel !== 'enfermeiro' && !item.aprovado) { // fluxo: nada sai da unidade sem passar pela enfermeira coordenadora
+  if (def.pedido && a.papel !== 'enfermeiro' && !item.aprovado) { // agendamento de visita domiciliar e mutirão passam pela enfermeira coordenadora
     if (item.negado || (item.pedidoRef && item.pedidoRef.estado === 'pendente')) return false;
-    item.pedidoRef = criarPedido(W, S, cfg, a, { tipo: 'afazer', item, rot: def.rot });
+    if (def.mutirao && (S.mutiraoTurno === S.turno || W.tarefasACS.some((t) => t.tipo === 'mutirao'))) { item.feito = true; return false; }
+    item.pedidoRef = criarPedido(W, S, cfg, a, { tipo: def.mutirao ? 'mutirao' : 'afazer', item, rot: def.rot });
     return false;
   }
+  if (def.mutirao) { item.feito = true; a.afz = null; return false; } // aprovado: o ACS executa
+
   let pontos, fam = null, alvo = null;
   if (def.local === 'campo' && def.acamado) {
     const q = todasPessoas(S).filter((x) => x.acamado && !x.internado).sort((x, y) => ((x.cuidador ? x.cuidador.qualidade : -1) - (y.cuidador ? y.cuidador.qualidade : -1)))[0];
@@ -1227,7 +1232,8 @@ function iniciarProximoAfazer(W, S, cfg, a) {
   if (m >= fim * 60 - 40 || m < ini * 60 + 15) return false; // dá tempo de todos chegarem antes de começar
   if (a.papel === 'acs' && W.tarefasACS.length) return false;
   const ag = garanteAgenda(W, S, cfg, a);
-  const item = ag.lista.find((i) => !i.feito && !i.negado && !(i.pedidoRef && i.pedidoRef.estado === 'pendente'));
+  const livre = (i) => !i.feito && !i.negado && !(i.pedidoRef && i.pedidoRef.estado === 'pendente');
+  const item = (W.cobrancaEstoque && a.papel === 'tecnico' && ag.lista.find((i) => i.def.id === 'estoque' && livre(i))) || ag.lista.find(livre);
   return item ? iniciarAfazer(W, S, cfg, a, item) : false;
 }
 
@@ -1283,9 +1289,10 @@ function efeitoAfazer(W, S, cfg, a, z) {
     if (!q) return 'Ninguém acamado nesta casa agora.';
     const r = acaoCuidador(S, cfg, q.id, a.papel);
     S.metricas.visitasAcamado = (S.metricas.visitasAcamado || 0) + 1;
-    const ref = a.papel === 'medico' ? criterioReferencia(S, q) : null;
-    if (ref) criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: q.id, rot: `Referência de ${q.nome}: ${ref}` });
-    return `${q.nome}: ${r.msg}${ref ? ` Pedido de referência à UPA/hospital enviado à enfermeira (${ref}).` : ''}`;
+    const ref = (a.papel === 'medico' || a.papel === 'enfermeiro') ? criterioReferencia(S, q) : null;
+    let enc = '';
+    if (ref) { const e = encaminharReferencia(S, cfg, q.id); enc = e.ok ? ` Encaminhado(a) à UPA/hospital (${ref}).` : ''; }
+    return `${q.nome}: ${r.msg}${enc}`;
   }
   if (id === 'grupo_atividade') {
     let n = 0;
@@ -1324,10 +1331,24 @@ function efeitoAfazer(W, S, cfg, a, z) {
     if (S.metricas) S.metricas.repasses = (S.metricas.repasses || 0) + 1;
     return e || t ? `Casos do território repassados para ${[e && 'o enfermeiro', t && 'o técnico'].filter(Boolean).join(' e ')}: vínculo da equipe aumentou.` : 'Repasse anotado, mas ninguém da equipe estava livre para ouvir (pouco vínculo).';
   }
-  if (id === 'estoque') {
+  if (id === 'estoque') { // o técnico confere o estoque e entrega o relatório (não repõe)
+    S.mundo.estoqueRel = { min: S.mundo.min, dia: diaDoJogo(S), valor: S.insumos };
+    W.cobrancaEstoque = false;
+    return `Estoque conferido: ${S.insumos} dose(s)/insumo(s) de medicamento. Relatório entregue à enfermeira.`;
+  }
+  if (id === 'gestao_estoque') { // a enfermeira analisa o relatório do técnico, cobra atualização se estiver velho e solicita reposição
+    const rel = S.mundo.estoqueRel;
+    const idade = rel ? diaDoJogo(S) - rel.dia : 99;
+    if (idade > 2) {
+      W.cobrancaEstoque = true; mudaEquipe(S, cfg, 'enfermeiro', 'tecnico', -0.5);
+      return 'Sem relatório de estoque atualizado: a enfermeira cobrou do técnico a conferência e a entrega do relatório (reposição adiada).';
+    }
+    const falta = rel.valor < 20;
+    if (!falta) return `Relatório do técnico lido (${rel.valor} insumos): estoque adequado, sem necessidade de reposição agora.`;
     const antes = S.insumos;
-    S.insumos = Math.min(cfg.game.economia.insumosCap, S.insumos + 2);
-    return `Estoque conferido e reposto: +${S.insumos - antes} insumos para os tratamentos.`;
+    S.insumos = Math.min(cfg.game.economia.insumosCap, S.insumos + 4);
+    mudaEquipe(S, cfg, 'enfermeiro', 'tecnico', 0.5);
+    return `Pelo relatório do técnico (${rel.valor} insumos), a enfermeira solicitou reposição à gestão: +${S.insumos - antes} insumos.`;
   }
   if (id === 'receitas') {
     let n = 0;
@@ -1756,6 +1777,15 @@ export function comandar(W, S, cfg, opId, alvo) {
     decidirPedido(W, S, cfg, ped, id === 'pedido_sim', id === 'pedido_nao' ? 'decisão da coordenação' : '');
     return { ok: true, msg: id === 'pedido_sim' ? `✅ Aprovado: ${ped.rot}.` : `❌ Negado: ${ped.rot}.` };
   }
+  if (id === 'cobrar_estoque') {
+    if (ag.papel !== 'enfermeiro') return { ok: false, msg: 'Quem cobra o relatório de estoque é a enfermeira.' };
+    const rel = S.mundo.estoqueRel;
+    if (rel && diaDoJogo(S) - rel.dia <= 1) return { ok: false, msg: `O relatório do técnico é recente (${rel.valor} insumos): sem necessidade de cobrar.` };
+    W.cobrancaEstoque = true;
+    const t = W.agentes.find((x) => x.k === 'staff' && x.papel === 'tecnico');
+    if (t && t.jogador) avisar(W, S, '📣 A enfermeira cobrou a atualização do relatório de estoque de medicamentos.', 'alerta');
+    return { ok: true, msg: '📣 Você cobrou o técnico: conferência do estoque e relatório atualizado.' };
+  }
   if (id === 'equipe_reuniao') {
     if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
     if (!ag.vis) return { ok: false, msg: 'Fora do expediente.' };
@@ -1830,10 +1860,10 @@ export function finalizarAtendimento(W, S, cfg, destino) {
   if (destino === 'referencia') {
     const p = achaPessoa(S, a.tarefa.ord.pid), motivo = criterioReferencia(S, p);
     if (!motivo) return { ok: false, msg: 'Este caso pode ser resolvido na atenção primária: a UPA/hospital é só para o que extrapola a sua competência.' };
-    const ped = criarPedido(W, S, cfg, a, { tipo: 'referencia', pid: p.id, rot: `Referência de ${p.nome}: ${motivo}` });
-    if (a.papel === 'enfermeiro') decidirPedido(W, S, cfg, ped, true, ''); // a enfermeira é a própria regulação
+    if (a.papel !== 'medico' && a.papel !== 'enfermeiro') return { ok: false, msg: 'O encaminhamento à referência é feito pelo médico ou pela enfermeira.' };
+    const r = encaminharReferencia(S, cfg, p.id);
     concluirAtendimento(W, S, cfg, a, 'liberar');
-    return { ok: true, msg: a.papel === 'enfermeiro' ? 'Encaminhado(a) à UPA/hospital.' : 'Pedido de referência enviado à enfermeira (regulação). Ela decide o encaminhamento.' };
+    return { ok: r.ok, msg: r.ok ? `🚑 ${p.nome} foi encaminhado(a) à UPA/hospital (${motivo}). Na alta, volta para o acompanhamento pós-procedimento.` : r.msg };
   }
   concluirAtendimento(W, S, cfg, a, destino);
   return { ok: true, msg: destino === 'liberar' ? 'Atendimento concluído.' : 'Encaminhado.' };

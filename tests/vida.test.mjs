@@ -4,7 +4,7 @@ import { cfgDe } from './helpers.mjs';
 import { newGame, todasPessoas, achaFamilia, avancarMes, cuidadoDiario, pedirCuidador, dependencia, criterioReferencia, encaminharReferencia, copagamento } from '../src/engine.js';
 import {
   iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, diaSemana, minutoDoDia, comandar, agenteJogador,
-  acoesPaciente, opcoesPara, pedidosPendentes, afazeresDoDia, sincronizarCuidadores,
+  acoesPaciente, opcoesPara, pedidosPendentes, afazeresDoDia, sincronizarCuidadores, AFAZERES,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
@@ -232,4 +232,59 @@ test('sem acompanhamento pós-alta há risco de reinternação', () => {
     if (p.internado) reinternados++;
   }
   assert.ok(reinternados >= 3 && reinternados <= 25, `reinternações: ${reinternados}/40`);
+});
+
+/* ---------- Competências segundo a PNAB 2017 ---------- */
+test('PNAB: o médico só pede autorização para agendar visita domiciliar e propor mutirão; referência é direta', () => {
+  const pedidos = (papel) => AFAZERES[papel].filter((d) => d.pedido).map((d) => d.id).sort();
+  assert.deepEqual(pedidos('medico'), ['propor_mutirao', 'visita_acam', 'visita_med']);
+  assert.deepEqual(pedidos('acs'), [], 'o ACS visita o acamado e faz busca ativa sem pedir autorização');
+  assert.deepEqual(pedidos('enfermeiro'), [], 'a enfermeira coordena: não pede a ninguém');
+  assert.deepEqual(pedidos('tecnico'), ['visita_acam'], 'o técnico só sai de casa em visita agendada pela enfermeira');
+  // nenhum pedido de referência é gerado: o médico e a enfermeira encaminham direto
+  const cfg = cfgDe('metropole');
+  const S = newGame(cfg, 6); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S).find((p) => !p.acamado).id });
+  const W = criarMundo(S, cfg);
+  let visitasAcsSemPedido = 0;
+  for (let i = 0; i < 14 * 24 * 12; i++) {
+    passoMundo(W, S, cfg, 5);
+    for (const a of W.agentes) if (a.k === 'staff' && a.papel === 'acs' && a.afz && a.afz.def.id === 'visita_acam') visitasAcsSemPedido++;
+  }
+  assert.ok(!W.pedidos.some((p) => p.tipo === 'referencia'), 'referência não passa pela coordenação');
+  assert.ok(!W.pedidos.some((p) => p.papel === 'acs' && p.tipo === 'afazer'), 'ACS não pede autorização para visitas');
+  assert.ok(visitasAcsSemPedido > 0, 'o ACS visita o acamado por conta própria');
+});
+
+test('PNAB: o técnico confere o estoque e entrega o relatório; a enfermeira analisa, cobra a atualização e solicita a reposição', () => {
+  const cfg = cfgDe('interior');
+  const S = newGame(cfg, 6); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'profissional', papel: 'enfermeiro' });
+  const W = criarMundo(S, cfg);
+  // relatório velho: a enfermeira pode cobrar a atualização
+  ate(W, S, cfg, 2, 9);
+  S.mundo.estoqueRel = { min: 0, dia: -9, valor: 5 };
+  const r = comandar(W, S, cfg, 'cobrar_estoque', { tipo: 'auto' });
+  assert.ok(r.ok, r.msg);
+  assert.ok(W.cobrancaEstoque);
+  for (let i = 0; i < 400 && S.mundo.estoqueRel.dia < 0; i++) passoMundo(W, S, cfg, 2);
+  assert.ok(S.mundo.estoqueRel.dia >= 0 && Number.isFinite(S.mundo.estoqueRel.valor), 'o técnico entregou o relatório atualizado');
+  assert.equal(W.cobrancaEstoque, false);
+  assert.equal(comandar(W, S, cfg, 'cobrar_estoque', { tipo: 'auto' }).ok, false, 'relatório recente: não cobra');
+  assert.ok(!AFAZERES.enfermeiro.some((d) => d.id === 'estoque'), 'a conferência é do técnico');
+  assert.ok(AFAZERES.tecnico.some((d) => d.id === 'estoque') && AFAZERES.enfermeiro.some((d) => d.id === 'gestao_estoque'));
+});
+
+test('PNAB: o médico propõe mutirão e só vira tarefa do ACS depois da aprovação da enfermeira', () => {
+  const cfg = cfgDe('interior');
+  const S = newGame(cfg, 8); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'profissional', papel: 'enfermeiro' });
+  const W = criarMundo(S, cfg);
+  let ped = null;
+  for (let i = 0; i < 20 * 24 * 12 && !ped; i++) { passoMundo(W, S, cfg, 5); ped = W.pedidos.find((p) => p.tipo === 'mutirao' && p.estado === 'pendente'); }
+  assert.ok(ped, 'o médico propôs um mutirão');
+  assert.equal(ped.papel, 'medico');
+  assert.ok(!W.tarefasACS.some((t) => t.tipo === 'mutirao') && !W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao'));
+  assert.ok(comandar(W, S, cfg, `pedido_sim:${ped.id}`, { tipo: 'auto' }).ok);
+  assert.ok(W.tarefasACS.some((t) => t.tipo === 'mutirao') || W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao'), 'aprovado: o ACS faz o mutirão');
 });
