@@ -47,10 +47,12 @@ const diag = `(function () {
 // em vez de ficar em branco. --inline embute o arquivo local; --sem-three não inclui nada (o carregador da versão protegida já traz).
 const inline = process.argv.includes('--inline');
 const semThree = process.argv.includes('--sem-three');
+const padrao2d = process.argv.includes('--padrao-2d'); // abre em 2D e só carrega o 3D quando o jogador pedir
 const URL3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
 const principal = `document.body.classList.add('sem-jogo');\n${js.replace(/<\/script>/g, '<\\/script>')}`;
 let blocoJogo;
 if (inline) blocoJogo = `<script>\n${ler('vendor/three.min.js').replace(/<\/script>/g, '<\\/script>')}\n</script>\n<script>\n${principal}\n</script>`;
+else if (padrao2d) blocoJogo = `<script>window.__sem3d = true; window.__URL3 = '${URL3}';</script>\n<script>\n${principal}\n</script>`;
 else if (semThree) blocoJogo = `<script>\n${principal}\n</script>`;
 else {
   const carregador = `(function () {

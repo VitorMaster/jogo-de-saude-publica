@@ -729,7 +729,11 @@ document.addEventListener('click', (ev) => {
     case 'tratar': { const r = acaoTratamento(S, cfg, id, el.dataset.cond, el.dataset.ligar === '1'); renderFolha(); toast(r.msg, r.ok); break; }
     case 'concluir': { const r = finalizarAtendimento(W, S, cfg, el.dataset.destino); fecharFolha(); resultado(r); break; }
     case 'sobre': abrirFolha({ tipo: 'sobre' }); break;
-    case 'trocar-grafico': { try { if (R && R.modo === '3d') localStorage.setItem('saude-sim-3d', 'travou'); else localStorage.removeItem('saude-sim-3d'); } catch (e) { /* ok */ } salvar(); location.reload(); break; }
+    case 'trocar-grafico': {
+      if (R && R.modo !== '3d' && window.__sem3d) { tentar3DAgora(); break; }
+      try { if (R && R.modo === '3d') localStorage.setItem('saude-sim-3d', 'travou'); else localStorage.removeItem('saude-sim-3d'); } catch (e) { /* ok */ }
+      salvar(); location.reload(); break;
+    }
     case 'ajuda': velAntes = vel || 1; abrirFolha({ tipo: 'intro' }); break;
     case 'comecar': marcaIntro(); fecharFolha(); break;
     case 'trocar-cenario': abrirFolha({ tipo: 'cenarios' }); break;
@@ -788,30 +792,57 @@ async function carregarBase() {
 }
 
 // Tenta o 3D; se faltar WebGL/Three.js (ou o 3D travou a página na última vez), cai no 2D simples.
+// Se a página foi gerada em modo seguro (window.__sem3d), abre direto em 2D e o 3D só entra quando o jogador pedir.
+const hooksRenderer = () => ({ aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } });
+const estadoRenderer = () => ({ S, W, cfg });
+function trocaCanvas() { const antigo = $('#cv'), novo = antigo.cloneNode(false); antigo.parentNode.replaceChild(novo, antigo); return novo; }
+
 function criarRendererSeguro() {
-  const hooks = { aoTocar, aoArrastar: () => { if (S && S.jogador) S.jogador.seguir = false; } };
-  const get = () => ({ S, W, cfg });
   const chave = 'saude-sim-3d';
   let anterior = null;
   try { anterior = localStorage.getItem(chave); } catch (e) { /* sem armazenamento */ }
   let motivo = '';
-  if (typeof THREE === 'undefined') motivo = 'Three.js não carregou';
+  if (window.__sem3d) motivo = 'modo simples (toque em Sobre para tentar o 3D)';
+  else if (typeof THREE === 'undefined') motivo = 'Three.js não carregou';
   else if (anterior === 'tentando' || anterior === 'travou') { motivo = 'o 3D travou neste aparelho'; try { localStorage.setItem(chave, 'travou'); } catch (e) { /* ok */ } }
-  else if (window.__sem3d) motivo = 'modo simples pedido';
   if (!motivo) {
     try {
       try { localStorage.setItem(chave, 'tentando'); } catch (e) { /* ok */ }
-      const r = criarRenderer($('#cv'), get, hooks);
+      const r = criarRenderer($('#cv'), estadoRenderer, hooksRenderer());
       window.__quadros3d = 0;
       return r;
     } catch (e) { motivo = '3D indisponível (' + (e && e.message ? e.message : e) + ')'; }
   }
-  if (window.__diag) window.__diag('Modo 2D: ' + motivo);
-  const antigo = $('#cv'), novo = antigo.cloneNode(false);
-  antigo.parentNode.replaceChild(novo, antigo);
-  const r2 = criarRenderer2D(novo, get, hooks);
+  if (window.__diag && !window.__sem3d) window.__diag('Modo 2D: ' + motivo);
+  const r2 = criarRenderer2D(trocaCanvas(), estadoRenderer, hooksRenderer());
   r2.motivo = motivo;
   return r2;
+}
+
+/** Troca para o 3D sem recarregar a página (usado no modo seguro, em que nada é gravado no aparelho). */
+async function tentar3DAgora() {
+  toast('Carregando o 3D…', true);
+  if (typeof THREE === 'undefined' && window.__URL3) {
+    await new Promise((fim) => {
+      const sc = document.createElement('script');
+      sc.src = window.__URL3; sc.onload = () => fim(); sc.onerror = () => fim();
+      document.head.appendChild(sc);
+      setTimeout(fim, 7000);
+    });
+  }
+  if (typeof THREE === 'undefined') { toast('Não foi possível carregar o 3D neste aparelho.', false); return; }
+  const antigo = R;
+  try {
+    const r = criarRenderer(trocaCanvas(), estadoRenderer, hooksRenderer());
+    R = r; window.__sem3d = false; window.__quadros3d = 0;
+    if (S && S.jogador) { R.selecionar(meuAgente().id); const a = meuAgente(); R.seguirAlvo(a.x, a.y, 1); }
+    R.redimensiona();
+    folha = null; renderFolha();
+    toast('3D ativado. Se a tela ficar branca, feche e abra o jogo de novo: ele volta no modo simples.', true);
+  } catch (e) {
+    R = antigo;
+    toast('Este aparelho não conseguiu iniciar o 3D.', false);
+  }
 }
 
 async function iniciar() {

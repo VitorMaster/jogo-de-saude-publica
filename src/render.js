@@ -110,8 +110,11 @@ export function criarRenderer(canvas, getEstado, hooks) {
   const contenedor = canvas.parentElement;
 
   /* ---------- renderer, cena, câmera ---------- */
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true;
+  // Celulares da Apple: qualidade leve (sem sombras em tempo real, sem antialias, resolução limitada) para não estourar a memória da GPU.
+  const ua = navigator.userAgent || '';
+  const leve = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1) || window.__qualidade3d === 'leve';
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !leve, powerPreference: 'default' });
+  renderer.shadowMap.enabled = !leve;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const cena = new THREE.Scene();
   cena.fog = new THREE.Fog(0xcfe8f7, 70, 210);
@@ -172,7 +175,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
   function redimensiona() {
     largura = Math.max(1, canvas.clientWidth || 300);
     altura = Math.max(1, canvas.clientHeight || 300);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, leve ? 1.5 : 2));
     renderer.setSize(largura, altura, false);
     camera.aspect = largura / altura;
     camera.updateProjectionMatrix();
