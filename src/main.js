@@ -6,7 +6,7 @@ import {
 import {
   montarCfg, iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, pularMes, pularDia, minutosPorSegundo,
   rotuloRelogio, diaDoMes, ubsAberta, agenteJogador, acaoAtual, opcoesPara, comandar, cancelarFila, alternaVontade,
-  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
+  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, afazeresDoDia, trocarPersonagem, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
@@ -159,7 +159,7 @@ function montaPainel(forcar = false) {
   const ag = meuAgente();
   let assin = `${modo()}|${papel()}|${ag.id}`;
   if (modo() === 'paciente') { const p = minhaPessoa(); assin += `|${p.tabagismo}|${CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)}|${S.jogador.vontade}|${ag.fila.length}|${sintomasDe(S, cfg, p.id).length}`; }
-  else assin += `|${ag.fila.length}|${atendimentoAtual(W, S) ? 1 : 0}`;
+  else assin += `|${ag.fila.length}|${atendimentoAtual(W, S) ? 1 : 0}|${afazeresDoDia(W, S, cfg).feitos}`;
   if (!forcar && assin === assinaturaCartao) return;
   assinaturaCartao = assin;
   el.hidden = false;
@@ -184,6 +184,7 @@ function montaPainel(forcar = false) {
     el.innerHTML = `<div class="c-topo"><span class="emoji">${EMOJI_PAPEL[papel()]}</span>
         <div class="c-id"><b>${esc(cfg.papeis[papel()].nome)}</b><div class="c-acao" id="c-acao"></div></div>
         ${ag.fila.length ? `<button class="chip-fila" data-act="cartao-cancelar">✕ ${ag.fila.length} na fila</button>` : ''}</div>
+      ${(() => { const af = afazeresDoDia(W, S, cfg); return af.aberto ? `<div class="alerta-sint af">📋 Afazeres do dia: <b>${af.feitos}/${af.total}</b></div>` : ''; })()}
       <div class="c-btns um"><button class="btn primario" data-act="abrir-acoes">🎬 Ações…</button></div>
       <div class="c-btns" style="grid-template-columns:repeat(2,1fr)">
         ${papel() === 'acs' ? '<button class="btn peq" data-act="abrir-territorio">🏘️ Minhas famílias</button><button class="btn peq" data-act="cartao-mutirao">🧹 Mutirão</button>'
@@ -221,6 +222,10 @@ function dicaDoMomento() {
     return 'Toque numa <b>pessoa sentada na fila</b> (⏳) para chamar para atendimento. Seu painel mostra a fila.';
   }
   if (clinico() && resumoEquipe(W)[papel() === 'tecnico' ? 'triagem' : papel() === 'enfermeiro' ? 'enfermagem' : 'consulta'] > 0 && !atendimentoAtual(W, S) && meuAgente().fila.length === 0) return 'Há gente na sua fila. Toque numa pessoa com ⏳ e escolha <b>Chamar para atendimento</b>.';
+  if (clinico() || papel() === 'acs') {
+    const ag = meuAgente(), af = afazeresDoDia(W, S, cfg);
+    if (af.aberto && af.feitos < af.total && !ag.tarefa && !ag.afz && !ag.fila.length && !ag.path.length) return `Sem ninguém para atender agora. Escolha um <b>afazer do dia</b> em 🎬 Ações (${af.feitos}/${af.total} feitos).`;
+  }
   return null;
 }
 function atualizaDica() {
@@ -365,16 +370,23 @@ async function enviaFeedbackAgora() {
 }
 
 /* ---------- Folhas (modais) ---------- */
+function blocoAfazeres() {
+  const af = afazeresDoDia(W, S, cfg);
+  if (!af.aberto) return '<p class="dica-t">Fora do expediente: os afazeres do dia aparecem quando a unidade abre.</p>';
+  const ocupado = !!meuAgente().tarefa;
+  return `<h2 class="secao">📋 Afazeres do dia (${af.feitos}/${af.total})</h2>${af.lista.map((i) => `<button class="btn" data-act="afazer" data-id="${i.uid}" ${i.feito || ocupado ? 'disabled' : ''}><span>${i.feito ? '✅' : i.ic} ${esc(i.rot)}</span>${i.feito ? '<small>feito</small>' : i.andamento ? '<small>em andamento</small>' : i.campo ? '<small>em campo</small>' : ''}</button>`).join('')}`;
+}
+
 function folhaAcoes() {
   let corpo = '';
   if (modo() === 'paciente') {
     corpo = acoesPaciente(W, S, cfg).map((g) => `<h2 class="secao">${esc(g.nome)}</h2>${g.itens.map((i) => `<button class="btn" data-act="acao-op" data-op="${i.id}" ${i.desab ? 'disabled' : ''}><span>${i.ic} ${esc(i.rot)}</span>${i.desab ? `<small>${esc(i.desab)}</small>` : ''}</button>`).join('')}`).join('');
   } else if (papel() === 'acs') {
-    corpo = `<button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
+    corpo = `${blocoAfazeres()}<h2 class="secao">Visitas e orientações</h2><button class="btn" data-act="abrir-territorio"><span>🏘️ Visitar uma família</span></button>
       <button class="btn" data-act="abrir-pessoas"><span>🧑 Atender uma pessoa (aferir, orientar, convidar)</span></button>
       <button class="btn" data-act="cartao-mutirao"><span>🧹 Mutirão contra focos do mosquito</span></button>`;
   } else {
-    corpo = `<button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
+    corpo = `${blocoAfazeres()}<h2 class="secao">Atendimento</h2><button class="btn primario" data-act="prof-chamar-prox"><span>📣 Chamar o próximo da fila</span></button>
       <button class="btn" data-act="abrir-fila"><span>📋 Ver a fila e escolher quem chamar</span></button>
       <button class="btn" data-act="abrir-atend" ${atendimentoAtual(W, S) ? '' : 'disabled'}><span>🩺 Voltar ao atendimento atual</span></button>`;
   }
@@ -412,12 +424,13 @@ function folhaPersonagem() {
       <p class="dica-t" style="margin:6px 0">${esc(r.resumo)}</p><ul class="lista">${r.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}${extra}</ul>
       <button class="btn primario" style="margin-top:8px" data-act="pers-prof" data-id="${id}"><span>Trabalhar como ${esc(r.nome.toLowerCase())}</span></button></div>`;
   }).join('');
-  return `<div class="folha-topo"><h2>Quem você será?</h2></div>
-    <p class="dica-t" style="margin:0 0 8px">Você joga com <b>um único personagem</b> e vive o que ele viver. As doenças de cada pessoa são <b>surpresa</b>.</p>
+  const troca = !!(folha && folha.troca);
+  return `<div class="folha-topo"><h2>${troca ? 'Trocar de personagem' : 'Quem você será?'}</h2>${troca ? '<button class="fechar" data-act="fechar" aria-label="Fechar">✕</button>' : ''}</div>
+    <p class="dica-t" style="margin:0 0 8px">${troca ? 'A história continua do ponto em que está: só muda <b>quem você controla</b>. ' : ''}Você joga com <b>um único personagem</b> e vive o que ele viver. As doenças de cada pessoa são <b>surpresa</b>.</p>
     <div class="abas-pers"><button class="${abaPers === 'paciente' ? 'on' : ''}" data-act="pers-aba" data-id="paciente">🧑 Paciente</button><button class="${abaPers === 'profissional' ? 'on' : ''}" data-act="pers-aba" data-id="profissional">🩺 Profissional</button></div>
     ${abaPers === 'paciente' ? pac : prof}
-    <button class="btn" style="margin-top:12px" data-act="sortear"><span>🎲 Sortear outro bairro</span></button>
-    <button class="btn" data-act="trocar-cenario"><span>‹ Trocar de cenário</span></button>`;
+    ${troca ? '' : '<button class="btn" style="margin-top:12px" data-act="sortear"><span>🎲 Sortear outro bairro</span></button>'}
+    <button class="btn" ${troca ? 'style="margin-top:12px"' : ''} data-act="trocar-cenario"><span>‹ Trocar de cenário ${troca ? '(começa uma nova história)' : ''}</span></button>`;
 }
 
 function folhaMenu() {
@@ -521,11 +534,12 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Protótipo v0.5 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Protótipo v0.7 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
     <button class="btn" style="margin-top:8px" data-act="trocar-grafico"><span>${R && R.modo === '3d' ? 'Usar modo 2D simples' : 'Tentar o 3D de novo'}</span></button></div>
+    <button class="btn" style="margin-top:10px" data-act="trocar-personagem"><span>👥 Trocar de personagem (mesma história)</span></button>
     <button class="btn perigo" style="margin-top:14px" data-act="trocar-cenario"><span>🔁 Nova história / trocar de cenário</span></button>`;
 }
 
@@ -541,10 +555,10 @@ function renderFolha() {
 }
 function abrirFolha(f) { folha = f; renderFolha(); atualizaDica(); }
 function fecharFolha() {
-  const tipo = folha && folha.tipo;
+  const tipo = folha && folha.tipo, troca = !!(folha && folha.troca);
   folha = null; menu = null;
   renderFolha();
-  if (tipo === 'relatorio' || tipo === 'intro') vel = velAntes || 1;
+  if (tipo === 'relatorio' || tipo === 'intro' || troca) vel = velAntes || 1;
 }
 
 function mostraAba(id) {
@@ -568,6 +582,19 @@ function novoCenario(id) {
   abrirFolha({ tipo: 'personagem' });
 }
 function sortearBairro() { novoCenario(cfg.cenario.id); }
+
+function trocaPersonagemJogo(escolha) {
+  const novo = trocarPersonagem(W, S, escolha);
+  if (!novo) { toast('Não foi possível trocar de personagem.', false); return; }
+  folha = null; menu = null; renderFolha();
+  vel = velAntes || 1; jaDeuOrdem = false; assinaturaCartao = ''; ultimaChaveAtend = '';
+  montaTopo(); montaRodape();
+  R.selecionar(novo.id); S.jogador.seguir = true;
+  mostraAba('mundo');
+  salvar();
+  R.seguirAlvo(novo.x, novo.y, 1);
+  toast(`Agora você joga com ${escolha.modo === 'paciente' ? achaPessoa(S, escolha.pid).nome : cfg.papeis[escolha.papel].nome}.`, true);
+}
 
 function comecarComPersonagem(escolha) {
   escolherPersonagem(S, escolha);
@@ -709,8 +736,10 @@ document.addEventListener('click', (ev) => {
     case 'cenario': novoCenario(id); break;
     case 'sortear': sortearBairro(); break;
     case 'pers-aba': abaPers = id; renderFolha(); break;
-    case 'pers-paciente': comecarComPersonagem({ modo: 'paciente', pid: id }); break;
-    case 'pers-prof': comecarComPersonagem({ modo: 'profissional', papel: id }); break;
+    case 'pers-paciente': (folha && folha.troca ? trocaPersonagemJogo : comecarComPersonagem)({ modo: 'paciente', pid: id }); break;
+    case 'pers-prof': (folha && folha.troca ? trocaPersonagemJogo : comecarComPersonagem)({ modo: 'profissional', papel: id }); break;
+    case 'trocar-personagem': velAntes = vel || velAntes || 1; vel = 0; abaPers = modo() === 'paciente' ? 'paciente' : 'profissional'; abrirFolha({ tipo: 'personagem', troca: true }); break;
+    case 'afazer': { const r = comandar(W, S, cfg, `afazer:${id}`, { tipo: 'auto' }); fecharFolha(); resultado(r); break; }
     default: break;
   }
 });
@@ -815,7 +844,7 @@ async function iniciar() {
   window.__jogoPronto = true;
   const diag = document.getElementById('diag');
   if (diag) diag.remove();
-  window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, comandar: (id, a) => comandar(W, S, cfg, id, a), opcoesPara: (a) => opcoesPara(W, S, cfg, a) };
+  window.__jogo = { get S() { return S; }, get W() { return W; }, get cfg() { return cfg; }, get vel() { return vel; }, set vel(v) { vel = v; }, get R() { return R; }, comandar: (id, a) => comandar(W, S, cfg, id, a), opcoesPara: (a) => opcoesPara(W, S, cfg, a), avanca: (min) => passoMundo(W, S, cfg, min) };
 }
 
 iniciar().catch((e) => telaErro(`${e && e.stack ? e.stack : e}`));

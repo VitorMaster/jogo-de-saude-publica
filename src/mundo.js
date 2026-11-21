@@ -188,6 +188,7 @@ export function criarMundo(S, cfg) {
   W.agentes = [];
   W.ordens = [];
   W.tarefasACS = [];
+  W.agenda = {}; // afazeres do dia de cada profissional (não é salvo)
   W.vel = cfg.cenario.mundo.velocidade || 1;
   W.msgs = [];
   W.relatorio = null;
@@ -223,6 +224,16 @@ function posicionarEmCasa(W, S, a) {
   const casa = W.casas[achaPessoa(S, a.pid).familiaId];
   const q = casa.porta.dentro;
   a.x = q.x; a.y = q.y; a.path = []; a.acao = null; a.pend = null; a.vis = true; a.proximos = [];
+}
+
+/** Troca o personagem controlado sem reiniciar a história (mesmo mundo, mesmo tempo). */
+export function trocarPersonagem(W, S, escolha) {
+  for (const a of W.agentes) if (a.jogador) { a.jogador = false; a.fila = []; a.proximos = []; a.path = []; a.pend = null; a.afz = null; if (a.k === 'res' && a.acao && a.acao.k !== 'dormir') a.acao = null; }
+  escolherPersonagem(S, escolha);
+  const novo = W.agentes.find((a) => (a.k === 'res' && escolha.modo === 'paciente' && a.pid === escolha.pid) || (a.k === 'staff' && escolha.modo === 'profissional' && a.papel === escolha.papel && a.ind === 0));
+  if (novo) { novo.jogador = true; novo.fila = []; novo.ocioso = 0; if (novo.k === 'res') novo.procurou = false; }
+  W.sinal++;
+  return novo;
 }
 
 export const agenteJogador = (W) => W.agentes.find((a) => a.jogador) || null;
@@ -588,7 +599,7 @@ function chegada(W, S, cfg, a, p) {
   if (pend.k === 'ubs') {
     const ord = pend.ord;
     ord.estado = 'espera';
-    ord.t0 = ord.t0 || S.mundo.min;
+    ord.t0 = S.mundo.min; // a espera conta a partir da chegada à unidade
     a.espera = ord;
     a.cadeira = (W.porTipo.H || []).find((o) => Math.abs(o.x - a.x) + Math.abs(o.y - a.y) === 1 && ocupantes(W, o, a) === 0) || null;
     return;
@@ -669,17 +680,22 @@ function aplicarServico(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
   const partes = [];
   if (t.tipo === 'triagem') {
+    if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     const r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: true, msg: 'Sinais vitais normais para a idade.' };
     partes.push(r.msg); S.metricas.triagens++;
   } else if (t.tipo === 'enfermagem') {
+    if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
     const foco = (t.opts && t.opts.foco) || piorHabito(p);
     const r = acaoOrientar(S, cfg, p.id, foco);
     if (r.ok && foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (foco in it) it[foco] = clamp(it[foco] + 0.5, 0, 1); }
     partes.push(r.msg); S.metricas.orientacoes++;
   } else {
-    partes.push(acaoConsulta(S, cfg, p.id).msg);
-    p.retornoTurno = S.turno; S.metricas.atendidos++;
+    const leve = t.ord.meta && t.ord.meta.leve && !p.dengue.ativa && !CONDS.some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
+    if (leve) partes.push(`Queixa leve (${t.ord.meta.motivo}): examinado(a), orientado(a) e liberado(a).`);
+    else partes.push(acaoConsulta(S, cfg, p.id).msg);
+    if (!leve) p.retornoTurno = S.turno;
+    S.metricas.atendidos++;
   }
   const texto = `${t.tipo === 'triagem' ? '📏 Triagem' : t.tipo === 'enfermagem' ? '🩺 Enfermagem' : '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
   t.resultado = partes.join(' ');
@@ -720,7 +736,7 @@ function rotearAuto(W, S, cfg, a, t) {
 
 function passoEquipe(W, S, cfg, a, dt) {
   const abertoGeral = ubsAberta(W, S, cfg);
-  const deveEstar = a.papel === 'medico' ? ubsAberta(W, S, cfg, true) : abertoGeral;
+  const deveEstar = abertoGeral; // o médico também está na unidade nos dias sem consultório (visitas, receitas, reuniões)
   if (!a.vis) {
     if (!deveEstar) return;
     a.vis = true;
@@ -728,11 +744,13 @@ function passoEquipe(W, S, cfg, a, dt) {
     a.x = q.x; a.y = q.y; a.path = []; a.tarefa = null;
   }
   if (!deveEstar && !a.tarefa && !a.path.length) {
-    a.vis = false; a.fila = [];
+    a.vis = false; a.fila = []; a.afz = null;
     if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && o.tipo === servicoDe(a.papel)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
     return;
   }
   if (a.path.length) { mover(a, dt, W.vel); return; }
+  garanteAgenda(W, S, cfg, a);
+  if (a.afz && !a.tarefa) { passoAfazer(W, S, cfg, a, dt); return; }
   if (a.papel === 'acs') return passoACS(W, S, cfg, a, dt);
 
   const posto = postoDe(W, a.papel, a.ind);
@@ -744,11 +762,17 @@ function passoEquipe(W, S, cfg, a, dt) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
       if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && o.tipo === servico); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
+      if (cmd.k === 'afazer') { const it = itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
     }
-    if (a.jogador) return; // o jogador decide quem chamar
-    if (!naPos && posto.length) { irPara(W, a, [posto[0]]); return; }
+    if (a.jogador) return; // o jogador decide quem chamar e o que fazer
     const prox = filaEspera(W, servico).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
-    if (prox) chamarPaciente(W, S, cfg, a, prox);
+    if (prox) {
+      if (!naPos && posto.length) { irPara(W, a, [posto[0]]); return; }
+      chamarPaciente(W, S, cfg, a, prox);
+      return;
+    }
+    if (iniciarProximoAfazer(W, S, cfg, a)) return;
+    if (!naPos && posto.length) irPara(W, a, [posto[0]]);
     return;
   }
 
@@ -772,12 +796,189 @@ function passoEquipe(W, S, cfg, a, dt) {
   // fases 'pronto' e 'resultado' do jogador esperam a decisão pela interface
 }
 
+/* ---------- Afazeres do dia (trabalho de bastidor e de campo) ---------- */
+// local: D consultório · Y farmácia · U triagem · H sala de espera · ubs (recepção) · campo (casa de uma família)
+export const AFAZERES = {
+  medico: [
+    { id: 'prontuarios', rot: 'Revisar prontuários e exames', ic: '🗂️', local: 'D', dur: 30 },
+    { id: 'receitas', rot: 'Renovar receitas de quem está em tratamento', ic: '📝', local: 'D', dur: 25 },
+    { id: 'caso', rot: 'Discutir casos com a equipe', ic: '🗣️', local: 'H', dur: 25 },
+    { id: 'visita_med', rot: 'Visita domiciliar (consulta em casa)', ic: '🏠', local: 'campo', dur: 45, campo: true },
+  ],
+  enfermeiro: [
+    { id: 'educacao', rot: 'Roda de conversa na sala de espera', ic: '🗣️', local: 'H', dur: 30 },
+    { id: 'estoque', rot: 'Conferir estoque e farmácia', ic: '📦', local: 'Y', dur: 25 },
+    { id: 'supervisao', rot: 'Supervisionar a equipe e os registros', ic: '📋', local: 'U', dur: 25 },
+    { id: 'cadastro', rot: 'Atualizar cadastros do território', ic: '🗂️', local: 'D', dur: 30 },
+    { id: 'visita_enf', rot: 'Visita domiciliar (acompanhar tratamento)', ic: '🏠', local: 'campo', dur: 40, campo: true },
+  ],
+  tecnico: [
+    { id: 'sala_espera', rot: 'Aferir a pressão de quem aguarda', ic: '📏', local: 'H', dur: 20 },
+    { id: 'estoque', rot: 'Organizar farmácia e insumos', ic: '📦', local: 'Y', dur: 25 },
+    { id: 'esterilizar', rot: 'Esterilizar e organizar a sala', ic: '🧼', local: 'D', dur: 25 },
+    { id: 'registros', rot: 'Digitar registros e fichas', ic: '⌨️', local: 'U', dur: 25 },
+    { id: 'curativos', rot: 'Curativos e procedimentos simples', ic: '🩹', local: 'D', dur: 25 },
+  ],
+  acs: [
+    { id: 'cadastro_acs', rot: 'Atualizar o cadastro de uma família', ic: '📇', local: 'campo', dur: 40, campo: true },
+    { id: 'busca_ativa', rot: 'Busca ativa de quem precisa de acompanhamento', ic: '🔎', local: 'campo', dur: 45, campo: true },
+  ],
+};
+const REUNIAO = { id: 'reuniao', rot: 'Reunião de equipe', ic: '👥', local: 'ubs', dur: 25 };
+
+const riscoFamilia = (f) => f.pessoas.reduce((n, p) => n + (p.conhecido.suspeitas.length ? 2 : 0) + (CONDS.some((id) => p.cond[id].diag && !p.cond[id].trat) ? 2 : 0) + (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat) ? 1 : 0) + (p.dengue.ativa ? 3 : 0), 0);
+
+function gerarAgenda(W, S, cfg, a) {
+  const M = S.mundo, mundo = cfg.cenario.mundo;
+  const semConsultorio = a.papel === 'medico' && !mundo.medicoDias.includes(diaSemana(S));
+  let n = (mundo.afazeres && mundo.afazeres[a.papel]) || 4;
+  if (semConsultorio) n = Math.max(n, 6);
+  const campoBase = (mundo.campo || {})[a.papel];
+  const campoW = (campoBase === undefined ? 0.3 : campoBase) * (semConsultorio ? 2.5 : 1);
+  const pool = [...AFAZERES[a.papel], REUNIAO];
+  const lista = [];
+  for (let guard = 0; lista.length < n && guard < 80; guard++) {
+    const def = escolhe(M, pool.map((d) => [d, d.campo ? campoW : 1]));
+    if (!def.campo && lista.some((x) => x.def.id === def.id)) continue;
+    lista.push({ uid: String(lista.length), def, feito: false, falhas: 0 });
+  }
+  W.agenda[a.id] = { dia: diaDoJogo(S), lista, visitadas: [] };
+}
+function garanteAgenda(W, S, cfg, a) {
+  const ag = W.agenda[a.id];
+  if (!ag || ag.dia !== diaDoJogo(S)) gerarAgenda(W, S, cfg, a);
+  return W.agenda[a.id];
+}
+const itemDaAgenda = (W, a, uid) => (W.agenda[a.id] ? W.agenda[a.id].lista.find((i) => i.uid === uid) : null);
+
+/** Lista para a interface: o que o profissional controlado tem para fazer hoje. */
+export function afazeresDoDia(W, S, cfg) {
+  const a = agenteJogador(W);
+  if (!a || a.k !== 'staff' || !a.vis) return { lista: [], feitos: 0, total: 0, aberto: false };
+  const ag = garanteAgenda(W, S, cfg, a);
+  const emCurso = a.afz ? a.afz.item : null;
+  const lista = ag.lista.map((i) => ({ uid: i.uid, rot: i.def.rot, ic: i.def.ic, campo: !!i.def.campo, feito: i.feito, andamento: i === emCurso }));
+  return { lista, feitos: lista.filter((i) => i.feito).length, total: lista.length, aberto: true };
+}
+
+function escolheFamiliaCampo(W, S, a, ag) {
+  const M = S.mundo;
+  const cand = S.familias.filter((f) => !ag.visitadas.includes(f.id) && (a.papel !== 'acs' || f.visTurno !== S.turno))
+    .sort((x, y) => riscoFamilia(y) - riscoFamilia(x));
+  const pool = cand.length ? cand : S.familias;
+  const topo = pool.slice(0, Math.min(3, pool.length));
+  return topo[Math.floor(rnd(M) * topo.length)];
+}
+
+function iniciarAfazer(W, S, cfg, a, item) {
+  const def = item.def, ag = W.agenda[a.id];
+  let pontos, fam = null;
+  if (def.local === 'campo') {
+    const f = escolheFamiliaCampo(W, S, a, ag);
+    if (!f || !W.casas[f.id]) { item.feito = true; return false; }
+    fam = f.id; pontos = [W.casas[f.id].porta.dentro];
+  } else if (def.local === 'ubs' || !(W.porTipo[def.local] || []).length) {
+    pontos = [W.ubs.porta.dentro];
+  } else {
+    pontos = pontosDeUso(W, W.porTipo[def.local][0]);
+    if (!pontos.length) pontos = [W.ubs.porta.dentro];
+  }
+  const rota = caminhoAte(W, a.x, a.y, pontos);
+  if (!rota) { item.falhas++; if (item.falhas >= 2) item.feito = true; return false; }
+  a.path = rota;
+  a.afz = { item, def, fase: 'indo', restante: def.dur, fam };
+  return true;
+}
+
+function iniciarProximoAfazer(W, S, cfg, a) {
+  if (a.afz || a.tarefa) return false;
+  const [, fim] = cfg.cenario.mundo.expediente;
+  if (minutoDoDia(S) >= fim * 60 - 40) return false;
+  if (a.papel === 'acs' && W.tarefasACS.length) return false;
+  const ag = garanteAgenda(W, S, cfg, a);
+  const item = ag.lista.find((i) => !i.feito);
+  return item ? iniciarAfazer(W, S, cfg, a, item) : false;
+}
+
+function passoAfazer(W, S, cfg, a, dt) {
+  const z = a.afz;
+  if (z.fase === 'indo') { z.fase = 'fazendo'; z.restante = z.def.dur; return; }
+  z.restante -= dt;
+  if (z.restante > 0) return;
+  const msg = efeitoAfazer(W, S, cfg, a, z);
+  z.item.feito = true;
+  S.metricas.afazeres = (S.metricas.afazeres || 0) + 1;
+  if (z.fam) W.agenda[a.id].visitadas.push(z.fam);
+  if (a.jogador) avisar(W, S, `${z.def.ic} ${msg}`, 'bom');
+  a.afz = null;
+  W.sinal++;
+}
+
+function adultosDaFamilia(f) { return f.pessoas.filter((p) => p.idade >= 18 && !p.internado); }
+
+function efeitoAfazer(W, S, cfg, a, z) {
+  const id = z.def.id;
+  const espera = W.agentes.filter((x) => x.k === 'res' && x.espera && !x.atend).map((x) => achaPessoa(S, x.pid));
+  if (id === 'estoque') {
+    const antes = S.insumos;
+    S.insumos = Math.min(cfg.game.economia.insumosCap, S.insumos + 2);
+    return `Estoque conferido e reposto: +${S.insumos - antes} insumos para os tratamentos.`;
+  }
+  if (id === 'receitas') {
+    let n = 0;
+    for (const f of S.familias) for (const p of f.pessoas) if (CONDS.some((c) => p.cond[c].diag && p.cond[c].trat)) { n++; f.vinculo = clamp(f.vinculo + 1, 0, 100); }
+    return n ? `${n} receita(s) renovada(s): quem está em tratamento sente a equipe por perto (vínculo +1).` : 'Nenhuma receita a renovar hoje: ninguém está em tratamento ainda.';
+  }
+  if (id === 'educacao') {
+    let n = 0;
+    for (const p of espera) { const foco = piorHabito(p); const r = acaoOrientar(S, cfg, p.id, foco); if (r.ok) { n++; if (foco !== 'fumo' && foco in S.mundo.intencao[p.id]) S.mundo.intencao[p.id][foco] = clamp(S.mundo.intencao[p.id][foco] + 0.4, 0, 1); } }
+    S.metricas.orientacoes += n;
+    return n ? `Roda de conversa: ${n} pessoa(s) orientada(s) sobre hábitos.` : 'Sala de espera vazia: material educativo preparado para os próximos.';
+  }
+  if (id === 'sala_espera') {
+    let n = 0;
+    for (const p of espera) if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno && acaoMedir(S, cfg, p.id).ok) n++;
+    S.metricas.triagens += n;
+    return n ? `Pressão e glicemia aferidas em ${n} pessoa(s) que aguardavam.` : 'Ninguém para aferir na sala de espera agora.';
+  }
+  if (id === 'visita_med' || id === 'visita_enf') {
+    const f = achaFamilia(S, z.fam);
+    const medidos = [];
+    for (const p of adultosDaFamilia(f)) if (p.conhecido.medidasTurno !== S.turno) { const m = acaoMedir(S, cfg, p.id); if (m.ok) medidos.push(p.nome.split(' ')[0]); }
+    const prio = f.pessoas.filter((p) => !p.internado).sort((x, y) => (y.conhecido.suspeitas.length + (y.dengue.ativa ? 3 : 0)) - (x.conhecido.suspeitas.length + (x.dengue.ativa ? 3 : 0)))[0];
+    let r = { msg: '' };
+    if (prio) {
+      if (id === 'visita_med') { r = acaoConsulta(S, cfg, prio.id); S.metricas.atendidos++; prio.retornoTurno = S.turno; for (const c of CONDS) if (prio.cond[c].diag && !prio.cond[c].trat) acaoTratamento(S, cfg, prio.id, c, true); }
+      else { const foco = piorHabito(prio); r = acaoOrientar(S, cfg, prio.id, foco); S.metricas.orientacoes++; }
+    }
+    return `${f.nome}: ${id === 'visita_med' ? 'consulta em casa' : 'visita de enfermagem'}${medidos.length ? `, medidas em ${medidos.join(', ')}` : ''}. ${r.msg || ''}`.trim();
+  }
+  if (id === 'cadastro_acs') {
+    const f = achaFamilia(S, z.fam);
+    f.vinculo = clamp(f.vinculo + 2, 0, 100);
+    return `${f.nome}: cadastro atualizado e conversa com a família (vínculo +2).`;
+  }
+  if (id === 'busca_ativa') {
+    const f = achaFamilia(S, z.fam);
+    const chamados = [];
+    for (const p of f.pessoas) {
+      if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
+      const precisaMed = p.conhecido.suspeitas.length || CONDS.some((c) => p.cond[c].diag && p.cond[c].trat) || p.dengue.ativa;
+      const r = precisaMed ? ordenarUnidade(W, S, cfg, p.id, 'consulta', { origem: 'acs', permiteCrianca: true }) : (p.idade >= 18 && p.conhecido.medidasTurno === null ? ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }) : { ok: false });
+      if (r.ok) chamados.push(p.nome.split(' ')[0]);
+    }
+    return chamados.length ? `${f.nome}: ${chamados.join(', ')} convidado(s) para a unidade.` : `${f.nome}: ninguém precisa ser chamado agora.`;
+  }
+  return `${z.def.rot}: concluído.`;
+}
+
 /* ---------- Agentes comunitários ---------- */
 function passoACS(W, S, cfg, a, dt) {
   if (!a.tarefa) {
     if (a.jogador && a.fila.length) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
+      if (cmd.k === 'afazer') { const it = itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
       const t = { ...cmd, fase: 'indo', rep: 0 };
       a.tarefa = t;
       if (t.tipo === 'mutirao') { t.pontos = []; for (let i = 0; i < 3; i++) t.pontos.push(pontoAleatorio(W, S.mundo, { x: a.x, y: a.y }) || W.ubs.porta.fora); t.i = 0; irPara(W, a, [t.pontos[0]]); }
@@ -792,6 +993,7 @@ function passoACS(W, S, cfg, a, dt) {
       return;
     }
     if (a.jogador) return;
+    if (iniciarProximoAfazer(W, S, cfg, a)) return;
     const posto = postoDe(W, 'acs', a.ind)[0];
     if (posto && (a.x !== posto.x || a.y !== posto.y)) irPara(W, a, [posto]);
     return;
@@ -887,8 +1089,34 @@ export function ordenarUnidade(W, S, cfg, pid, tipo, opts = {}) {
 }
 
 /* ---------- Demanda e rotinas diárias dos profissionais autônomos ---------- */
+const MOTIVOS_LEVES = {
+  consulta: ['dor de garganta', 'dor nas costas', 'gripe', 'dor de cabeça', 'tosse', 'renovar um remédio', 'dor no estômago'],
+  enfermagem: ['curativo', 'dúvida sobre alimentação', 'orientação sobre sono', 'conversa sobre atividade física', 'retirar pontos'],
+  triagem: ['medir a pressão', 'medir a glicemia'],
+};
+/** Procura espontânea do dia: quanto maior a localidade, mais gente na unidade (parâmetro `procura` do cenário). */
+function demandaDeRotina(W, S, cfg) {
+  const M = S.mundo, mundo = cfg.cenario.mundo;
+  const dow = diaSemana(S);
+  if (dow > 4) return;
+  const diaMedico = mundo.medicoDias.includes(dow);
+  for (const f of S.familias) for (const p of f.pessoas) {
+    if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
+    if (S.jogador && S.jogador.modo === 'paciente' && S.jogador.pid === p.id) continue; // o paciente controlado decide sozinho
+    const fator = (p.idade >= 60 || p.idade < 6 ? 1.4 : 1) * (0.55 + 0.9 * (f.vinculo / 100));
+    if (rnd(M) >= (mundo.procura || 0.3) * fator) continue;
+    const adulto = p.idade >= 18;
+    let tipo = escolhe(M, adulto ? [['consulta', 40], ['triagem', 30], ['enfermagem', 30]] : [['consulta', 65], ['enfermagem', 35]]);
+    if (tipo === 'consulta' && !diaMedico) tipo = adulto ? 'triagem' : 'enfermagem';
+    const lista = MOTIVOS_LEVES[tipo];
+    const motivo = lista[Math.floor(rnd(M) * lista.length)];
+    ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'rotina', permiteCrianca: true, meta: { leve: true, motivo } });
+  }
+}
+
 function gerarDemanda(W, S, cfg) {
   const M = S.mundo;
+  demandaDeRotina(W, S, cfg);
   for (const f of S.familias) for (const p of f.pessoas) {
     if (p.internado || W.ordens.some((o) => o.pid === p.id)) continue;
     const eu = S.jogador && S.jogador.modo === 'paciente' && S.jogador.pid === p.id;
@@ -933,7 +1161,8 @@ export function opcoesPara(W, S, cfg, alvo) {
     const p = achaPessoa(S, ag.pid);
     if (alvo.tipo === 'agente') {
       const o = W.agentes.find((x) => x.id === alvo.id);
-      if (o && o.id !== ag.id) op('conversar', 'Conversar', '💬');
+      if (o && o.k === 'staff') op('colega', 'Ver o que está fazendo', '👀');
+      else if (o && o.id !== ag.id) op('conversar', 'Conversar', '💬');
       return ops;
     }
     const o = alvo.obj;
@@ -965,6 +1194,7 @@ export function opcoesPara(W, S, cfg, alvo) {
   // profissional
   if (alvo.tipo === 'agente') {
     const o = W.agentes.find((x) => x.id === alvo.id);
+    if (o && o.k === 'staff' && o.id !== ag.id) { op('colega', 'Ver o que está fazendo', '👀'); return ops; }
     if (!o || o.k !== 'res') return ops;
     const p = achaPessoa(S, o.pid);
     if (j.papel === 'acs') {
@@ -1030,6 +1260,11 @@ export function comandar(W, S, cfg, opId, alvo) {
   if (!j || !ag) return { ok: false, msg: 'Nenhum personagem.' };
   if (ag.fila.length >= 6) return { ok: false, msg: 'Fila de ordens cheia.' };
   const [id, arg] = opId.split(':');
+  if (id === 'colega') {
+    const o = W.agentes.find((x) => x.id === alvo.id);
+    if (!o || o.k !== 'staff') return { ok: false, msg: 'A pessoa saiu.' };
+    return { ok: true, msg: `${cfg.papeis[o.papel].icone} ${cfg.papeis[o.papel].nome}: ${acaoAtual(W, S, o)}` };
+  }
   if (id === 'ir') { ag.fila.push({ k: 'ir', x: alvo.x, y: alvo.y }); return { ok: true, msg: 'Indo até lá.' }; }
   if (id === 'ir_casa') { const q = W.casas[achaPessoa(S, ag.pid).familiaId].porta.dentro; ag.fila.push({ k: 'ir', x: q.x, y: q.y }); return { ok: true, msg: 'Indo para casa.' }; }
   if (j.modo === 'paciente') {
@@ -1066,10 +1301,19 @@ export function comandar(W, S, cfg, opId, alvo) {
   }
   // profissional
   if (id === 'mutirao') { if (S.mutiraoTurno === S.turno) return { ok: false, msg: 'Já feito neste mês.' }; ag.fila.push({ k: 'x', tipo: 'mutirao' }); return { ok: true, msg: 'Mutirão na fila.' }; }
-  if (id === 'chamar') { ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
+  if (id === 'afazer') {
+    const it = itemDaAgenda(W, ag, arg);
+    if (!it) return { ok: false, msg: 'Afazer não encontrado.' };
+    if (it.feito) return { ok: false, msg: 'Este afazer já foi concluído hoje.' };
+    if (ag.tarefa) return { ok: false, msg: 'Termine o atendimento antes.' };
+    ag.fila.push({ k: 'afazer', uid: arg });
+    return { ok: true, msg: `${it.def.ic} ${it.def.rot}: na sua fila.` };
+  }
+  if (id === 'chamar') { if (ag.afz) { ag.afz = null; ag.path = []; } ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
   if (id === 'chamar_proximo') {
     const prox = filaEspera(W, servicoDe(j.papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
-    if (!prox) return { ok: false, msg: 'Ninguém na sua fila agora.' };
+    if (!prox) return { ok: false, msg: j.papel === 'medico' && !cfg.cenario.mundo.medicoDias.includes(diaSemana(S)) ? 'Hoje não é dia de consultório neste cenário: faça os afazeres do dia (visitas, receitas, reuniões).' : 'Ninguém na sua fila agora. Que tal um afazer do dia?' };
+    if (ag.afz) { ag.afz = null; ag.path = []; }
     ag.fila.push({ k: 'chamar', pid: prox.pid });
     return { ok: true, msg: 'Chamando o próximo da fila…' };
   }
@@ -1088,6 +1332,7 @@ export function cancelarFila(W, S) {
   const ag = agenteJogador(W);
   if (!ag) return;
   ag.fila = []; ag.proximos = [];
+  if (ag.k === 'staff' && ag.afz) { ag.afz = null; ag.path = []; }
   if (ag.k === 'res' && ag.acao && ag.acao.k !== 'dormir') ag.acao = null;
   if (ag.k === 'res') { ag.path = []; ag.pend = null; }
 }
@@ -1199,6 +1444,7 @@ export function pularMes(W, S, cfg) {
 export function acaoAtual(W, S, a) {
   if (a.k === 'staff') {
     if (!a.vis) return 'Fora do expediente';
+    if (a.afz && !a.tarefa) return a.afz.fase === 'indo' ? `🚶 Indo: ${a.afz.def.rot}` : `${a.afz.def.ic} ${a.afz.def.rot}`;
     if (a.tarefa) {
       const t = a.tarefa;
       if (t.ord) return { chamando: '📣 Chamando o paciente', pronto: '🧑 Paciente pronto', atendendo: '🩺 Atendendo', resultado: '📝 Atendimento concluído' }[t.fase];
@@ -1218,6 +1464,7 @@ export function acaoAtual(W, S, a) {
 }
 
 export function bolhaDe(W, S, a) {
+  if (a.k === 'staff' && a.afz && !a.tarefa && a.afz.fase === 'fazendo') return a.afz.def.ic;
   if (a.k === 'staff') return a.tarefa ? (a.tarefa.tipo === 'mutirao' ? '🧹' : a.tarefa.tipo === 'visita' ? '🏠' : a.tarefa.fase === 'atendendo' ? '🩺' : null) : null;
   const p = achaPessoa(S, a.pid);
   if (a.jogador) { if (p.dengue.ativa) return '🤒'; }

@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 37 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 48 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -38,6 +38,11 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 ## Estado atual (v0.5+)
 Entregue: 3D com luz e sombras, câmera giratória, móveis (estante, poltrona, plantas, fonte), ler/caminhada de verdade, menu por ações, atrações por cenário, profissionais com ações próprias, plano B 2D, 37 testes.
 Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mais cômodos; mais roupas e cabelos; transições de sentar/levantar mais suaves; sons; mais doenças e histórias (gestação, puericultura, vacinação, saúde mental); papel de gestor; eventos do mundo; validação clínica com colegas; painel do professor e piloto com escola/UBS (ver monetização).
+
+## Vida da equipe e demanda por localidade (v0.7)
+- Cada cenário tem em `data/cenarios.json › mundo`: `procura` (fração de moradores que busca a unidade por dia útil: metrópole 0.8 > interior 0.4 > rural 0.18), `medicoDias` (5 / 4 / 2 dias), `afazeres` (nº de afazeres por papel/dia) e `campo` (peso das tarefas de visita domiciliar por papel). Queixas leves (`meta.leve`) geram atendimento sem diagnóstico novo; só quem tem doença não diagnosticada passa pelo motor clínico.
+- **Afazeres do dia** (`AFAZERES` em `mundo.js`): agenda diária por profissional (`W.agenda`, não salva). NPCs executam sozinhos quando não há fila; o jogador escolhe em 🎬 Ações → "Afazeres do dia". Todos os dias úteis todo papel tem trabalho; o médico fica na unidade mesmo nos dias sem consultório (visitas domiciliares, receitas, estoque, reuniões). Efeitos reais: estoque (+insumos), receitas (vínculo), roda de conversa, aferição na sala de espera, visitas médicas/de enfermagem, busca ativa.
+- **Trocar de personagem** sem reiniciar a história: botão 👥 no mapa e em Sobre (`trocarPersonagem` em `mundo.js`). Tocar num profissional mostra o que ele faz ("Ver o que está fazendo").
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

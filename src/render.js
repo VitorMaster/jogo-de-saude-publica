@@ -862,6 +862,7 @@ export function criarRenderer(canvas, getEstado, hooks) {
       }
     }
     if (a.k === 'staff' && !a.path.length && a.tarefa && a.tarefa.fase === 'atendendo') r.pose = 'digitar';
+    if (a.k === 'staff' && !a.path.length && !a.tarefa && a.afz && a.afz.fase === 'fazendo' && !a.afz.def.campo) r.pose = 'digitar';
     return r;
   }
 

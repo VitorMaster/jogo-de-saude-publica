@@ -6,6 +6,7 @@ import {
   iniciarEstadoMundo, criarMundo, passoMundo, pularMes, pularDia, ordenarVisita, ordenarUnidade, ordenarOrientar,
   ordenarMutirao, diaDoJogo, diaSemana, minutoDoDia, minutosPorSegundo, escolherPersonagem, agenteJogador,
   opcoesPara, comandar, acoesPaciente, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, sintomasDe,
+  afazeresDoDia, trocarPersonagem, acaoAtual,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
@@ -169,8 +170,8 @@ test('PACIENTE: pedir consulta leva o personagem à unidade (triagem → consult
   const W2 = criarMundo(S, cfg);
   S.jogador.vontade = false;
   S.familias.forEach((f) => (f.vinculo = 100));
-  // vai até a quarta-feira, 8h30 (dia útil com médico)
-  while (diaSemana(S) !== 2 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
+  // vai até a quinta-feira, 8h30 (dia útil com médico)
+  while (diaSemana(S) !== 3 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
   assert.ok(comandar(W2, S, cfg, 'ubs_consulta', { tipo: 'obj', obj: W2.objs.find((o) => o.t === 'U') }).ok);
   let diag = false;
   for (let i = 0; i < 400 && !diag; i++) { passoMundo(W2, S, cfg, 2); diag = p.cond.has.diag; }
@@ -195,7 +196,7 @@ test('MÉDICO: o jogador chama o paciente, atende, decide o tratamento e conclui
   const W2 = criarMundo(S, cfg);
   const doente = todasPessoas(S).find((p) => p.idade >= 18 && p.cond.has.estagio >= 2);
   S.familias.forEach((f) => (f.vinculo = 100));
-  while (diaSemana(S) !== 2 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
+  while (diaSemana(S) !== 3 || minutoDoDia(S) < 8 * 60) passoMundo(W2, S, cfg, 30);
   ordenarUnidade(W2, S, cfg, doente.id, 'consulta', { espontaneo: true, permiteCrianca: true });
   let espera = false;
   for (let i = 0; i < 400 && !espera; i++) { passoMundo(W2, S, cfg, 2); espera = W2.ordens.some((o) => o.pid === doente.id && o.estado === 'espera' && o.tipo === 'consulta'); }
@@ -345,4 +346,101 @@ test('a decoração de fundo não bloqueia nada importante e fica em terreno liv
       assert.ok(!W.objs.some((o) => !o.decor && o.x === x && o.y === y), `${id}: decoração ${d.t} sobre móvel`);
     }
   }
+});
+
+/* ---------- Afazeres, demanda por localidade e troca de personagem ---------- */
+test('TODOS os profissionais têm afazeres todos os dias úteis, em qualquer cenário', () => {
+  for (const id of CENARIOS) {
+    const cfg = cfgDe(id);
+    const S = newGame(cfg, 42); S.tempoReal = true; iniciarEstadoMundo(S);
+    escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+    const W = criarMundo(S, cfg);
+    const feitosPorDia = {};
+    for (let i = 0; i < 14 * 24 * 12; i++) {
+      passoMundo(W, S, cfg, 5);
+      if (minutoDoDia(S) === 16 * 60 + 25 && diaSemana(S) < 5) {
+        for (const a of W.agentes.filter((x) => x.k === 'staff' && (x.papel !== 'acs' || x.ind === 0))) {
+          const ag = W.agenda[a.id];
+          assert.ok(ag && ag.lista.length >= 3, `${id}: ${a.papel} sem agenda`);
+          feitosPorDia[a.papel] = (feitosPorDia[a.papel] || []).concat(ag.lista.filter((x) => x.feito).length);
+        }
+      }
+    }
+    for (const papel of ['medico', 'enfermeiro', 'tecnico', 'acs']) {
+      const v = feitosPorDia[papel];
+      assert.ok(v && v.length >= 8, `${id}: ${papel} não trabalhou nos dias úteis`);
+      assert.ok(v.every((n) => n >= 2), `${id}: ${papel} ficou parado em algum dia útil (${v})`);
+    }
+  }
+});
+
+test('a procura pela unidade cresce com o tamanho da localidade (metrópole > interior > zona rural)', () => {
+  const atend = {};
+  for (const id of CENARIOS) {
+    const cfg = cfgDe(id);
+    const S = newGame(cfg, 7); S.tempoReal = true; iniciarEstadoMundo(S);
+    escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+    const W = criarMundo(S, cfg);
+    for (let i = 0; i < 20 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
+    atend[id] = S.metricas.atendidos + S.metricas.triagens + S.metricas.orientacoes;
+  }
+  assert.ok(atend.metropole > atend.interior && atend.interior > atend.rural, JSON.stringify(atend));
+});
+
+test('médico fica na unidade nos dias sem consultório e faz afazeres (zona rural)', () => {
+  const { cfg, S, W } = novo('rural', 3, { modo: 'profissional', papel: 'medico' });
+  while (diaSemana(S) !== 0 || minutoDoDia(S) < 10 * 60) passoMundo(W, S, cfg, 30); // segunda: sem médico no rural
+  const med = agenteJogador(W);
+  assert.ok(med.vis, 'o médico deve estar na unidade mesmo sem consultório');
+  const af = afazeresDoDia(W, S, cfg);
+  assert.ok(af.aberto && af.total >= 6, `agenda curta: ${af.total}`);
+  const r = comandar(W, S, cfg, `afazer:${af.lista[0].uid}`, { tipo: 'auto' });
+  assert.ok(r.ok, r.msg);
+  for (let i = 0; i < 60 && afazeresDoDia(W, S, cfg).feitos === 0; i++) passoMundo(W, S, cfg, 5);
+  assert.ok(afazeresDoDia(W, S, cfg).feitos >= 1, 'o afazer não foi concluído');
+  assert.match(comandar(W, S, cfg, 'chamar_proximo', { tipo: 'auto' }).msg, /dia de consultório|fila/);
+});
+
+test('cada profissional controlado recebe afazeres próprios do seu papel', () => {
+  for (const papel of ['acs', 'tecnico', 'enfermeiro', 'medico']) {
+    const { cfg, S, W } = novo('interior', 9, { modo: 'profissional', papel });
+    while (diaSemana(S) !== 3 || minutoDoDia(S) < 9 * 60) passoMundo(W, S, cfg, 30);
+    const af = afazeresDoDia(W, S, cfg);
+    assert.ok(af.aberto && af.total >= 4, `${papel}: ${af.total} afazeres`);
+    assert.ok(af.lista.some((i) => i.rot), papel);
+  }
+});
+
+test('tocar num profissional mostra o que ele está fazendo', () => {
+  const cfg = cfgDe('metropole');
+  const S = newGame(cfg, 5); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+  const W = criarMundo(S, cfg);
+  while (diaSemana(S) !== 3 || minutoDoDia(S) < 10 * 60) passoMundo(W, S, cfg, 30);
+  const med = W.agentes.find((a) => a.k === 'staff' && a.papel === 'medico');
+  assert.ok(opcoesPara(W, S, cfg, { tipo: 'agente', id: med.id }).some((o) => o.id === 'colega'));
+  const r = comandar(W, S, cfg, 'colega', { tipo: 'agente', id: med.id });
+  assert.ok(r.ok && r.msg.length > 5);
+  assert.ok(acaoAtual(W, S, med).length > 3);
+});
+
+test('TROCAR PERSONAGEM: a história continua e só uma pessoa é controlada', () => {
+  const cfg = cfgDe('interior');
+  const S = newGame(cfg, 4); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S)[0].id });
+  const W = criarMundo(S, cfg);
+  while (diaSemana(S) !== 3 || minutoDoDia(S) < 10 * 60) passoMundo(W, S, cfg, 30);
+  const minAntes = S.mundo.min;
+  const outro = todasPessoas(S)[3].id;
+  assert.ok(trocarPersonagem(W, S, { modo: 'paciente', pid: outro }));
+  assert.equal(S.mundo.min, minAntes, 'o tempo não pode voltar');
+  assert.equal(W.agentes.filter((a) => a.jogador).length, 1);
+  assert.equal(agenteJogador(W).pid, outro);
+  assert.ok(trocarPersonagem(W, S, { modo: 'profissional', papel: 'enfermeiro' }));
+  assert.equal(W.agentes.filter((a) => a.jogador).length, 1);
+  assert.equal(agenteJogador(W).papel, 'enfermeiro');
+  assert.equal(S.jogador.modo, 'profissional');
+  for (let i = 0; i < 200; i++) passoMundo(W, S, cfg, 5);
+  assert.ok(trocarPersonagem(W, S, { modo: 'profissional', papel: 'acs' }));
+  assert.equal(agenteJogador(W).papel, 'acs');
 });

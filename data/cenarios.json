@@ -246,7 +246,20 @@
     "trabalho": "O",
     "almoco": "lanchonete",
     "velocidade": 0.9,
-    "estresse": 18
+    "estresse": 18,
+    "procura": 0.8,
+    "afazeres": {
+     "medico": 4,
+     "enfermeiro": 5,
+     "tecnico": 6,
+     "acs": 5
+    },
+    "campo": {
+     "medico": 0.2,
+     "enfermeiro": 0.3,
+     "tecnico": 0,
+     "acs": 1.0
+    }
    },
    "mapa": {
     "w": 58,
@@ -713,7 +726,6 @@
     "medicoDias": [
      0,
      1,
-     2,
      3,
      4
     ],
@@ -724,7 +736,20 @@
     "trabalho": "O",
     "almoco": "casa",
     "velocidade": 0.75,
-    "estresse": 0
+    "estresse": 0,
+    "procura": 0.4,
+    "afazeres": {
+     "medico": 5,
+     "enfermeiro": 5,
+     "tecnico": 5,
+     "acs": 6
+    },
+    "campo": {
+     "medico": 0.6,
+     "enfermeiro": 0.5,
+     "tecnico": 0,
+     "acs": 1.0
+    }
    },
    "mapa": {
     "w": 54,
@@ -1115,7 +1140,20 @@
     "trabalho": "R",
     "almoco": "casa",
     "velocidade": 0.55,
-    "estresse": -8
+    "estresse": -8,
+    "procura": 0.18,
+    "afazeres": {
+     "medico": 6,
+     "enfermeiro": 6,
+     "tecnico": 4,
+     "acs": 7
+    },
+    "campo": {
+     "medico": 1.2,
+     "enfermeiro": 0.9,
+     "tecnico": 0,
+     "acs": 1.2
+    }
    },
    "mapa": {
     "w": 68,

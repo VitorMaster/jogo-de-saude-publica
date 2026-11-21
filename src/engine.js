@@ -84,7 +84,7 @@ function gerarTerritorio(s, cfg) {
 export function newGame(cfg, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
   const G = cfg.game;
   const s = {
-    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0 },
+    v: 2, seed, rng: seed >>> 0 || 1, tempoReal: false, cenario: cfg.cenario ? cfg.cenario.id : null, jogador: null, metricas: { atendidos: 0, visitas: 0, esperaTotal: 0, triagens: 0, orientacoes: 0, afazeres: 0 },
     mes: G.inicio.mes, ano: G.inicio.ano, turno: 0,
     tempo: 0, tempoMax: 0, insumos: G.inicio.insumos, verba: G.inicio.verba,
     infestacao: G.inicio.infestacao, mutiraoTurno: -99,
