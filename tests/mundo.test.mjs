@@ -545,3 +545,11 @@ test('sem convivência o vínculo esfria; reuniões fixas (seg/qui) e a copa man
   const fim = vinculosEquipe(S, cfg).reduce((t, x) => t + x.v, 0);
   assert.ok(fim >= ini - 6 * 10, `o vínculo desabou: ${ini} → ${fim}`);
 });
+
+test('regressão: reabrir com jogo salvo mostra a interface (remove sem-jogo) e a troca de personagem arquiva vidas', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const ini = src.slice(src.indexOf('async function iniciar()'));
+  assert.match(ini.slice(0, ini.indexOf('requestAnimationFrame')), /classList\.remove\('sem-jogo'\)/, 'sem remover sem-jogo a tela fica em branco ao reabrir');
+  assert.match(src, /arquivo\.itens\[atual\] = S/, 'a vida atual deve ser arquivada ao trocar');
+});

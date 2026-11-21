@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 54 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 55 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -50,6 +50,11 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - **Vínculo entre profissionais** (`S.mundo.equipe`, pares entre os 4 papéis, inicial `mundo.equipeVinculo` por cenário; esfria 1/dia útil): vínculo alto = atendimento até 15% mais rápido, baixo = até 30% mais lento + falhas de comunicação nos encaminhamentos (paciente volta ao fim da fila). Sobe com reuniões, discussão de casos, conversas, café na copa, repasse do ACS e supervisão.
 - **Reuniões de equipe** (`convocarReuniao`): fixas seg/qui e sob convocação do jogador; convidados vão e sentam nas cadeiras; quem não pode (em atendimento, em campo, fora do expediente, agenda cheia) é informado com o motivo ao jogador. Qualquer profissional (inclusive o enfermeiro) toca num colega e escolhe Conversar / Discutir caso / Convocar reunião, ou usa 🎬 Ações → Equipe.
 - **Navegação:** botão 🔽/🔼 oculta a barra de ações; ➕/➖ zoom; no computador setas/WASD movem, +/- zoom, Q/E giram, H oculta a barra, C centraliza (`R.mover` em `render.js`/`render2d.js`).
+
+## Vidas independentes (v0.9)
+- **Cada personagem é uma vida independente** (mundo, saúde, diário, vínculo da equipe): `trocaPersonagemJogo` em `main.js` arquiva o estado atual (`arquivo.itens[chave]`, `localStorage` `saude-sim-arq-v1`) e carrega a vida arquivada daquele personagem ou cria uma nova com a mesma semente (mesmo bairro e mesmas pessoas). Nada do diário/progresso passa de um personagem para outro. A folha "Trocar de personagem" mostra "Em jogo agora / Vida arquivada (dia N) / Vida nova" e permite recomeçar do zero. Novo cenário ou "sortear bairro" limpa o arquivo. `trocarPersonagem` de `mundo.js` (troca no mesmo mundo) não é mais usado pela interface.
+- **Bug de tela em branco corrigido:** ao reabrir com jogo salvo, `iniciar()` não removia a classe `sem-jogo` (que esconde topo/mapa/rodapé) — causa provável dos "tudo branco" reportados; há teste de regressão.
+- No modo 2D (plano B) as paredes começam baixas e ⟳/⟲ tentam ligar o 3D.
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

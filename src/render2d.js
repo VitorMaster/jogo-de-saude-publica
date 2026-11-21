@@ -69,7 +69,7 @@ export function criarRenderer2D(canvas, getEstado, hooks) {
   const cam = { x: 0, y: 0, z: 1 };
   let largura = 300, altura = 300, dpr = 1;
   let selecionado = null;
-  let paredesBaixas = false;
+  let paredesBaixas = true; // paredes baixas por padrão: no 2D as paredes altas escondem os móveis
   let marcador = null;
   const ponteiros = new Map();
   let arraste = null;

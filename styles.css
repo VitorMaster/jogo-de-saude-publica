@@ -211,3 +211,6 @@ main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 24px; }
 .fb-op button[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); }
 .card.fb textarea, .card.fb input { width: 100%; font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; }
 .alerta-sint.af { background: var(--info-soft); color: var(--info); }
+.vida { margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.vida.atual { color: var(--ok); }
+.vida.arq { color: var(--info); }

@@ -273,6 +273,7 @@ export function ubsAberta(W, S, cfg, medico = false) {
 function avisar(W, S, texto, tipo = 'info', extra = {}) {
   W.msgs.push({ texto, tipo, ...extra });
   S.diario.push({ mes: S.mes, ano: S.ano, tipo, texto, ...extra });
+  if (S.diario.length > 600) S.diario.splice(0, S.diario.length - 500); // limita o tamanho do salvamento
 }
 
 /* ---------- Ações dos moradores ---------- */
