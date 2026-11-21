@@ -1676,10 +1676,10 @@
   "tecnico": {
    "nome": "Técnico(a) de enfermagem",
    "icone": "🧑‍🔬",
-   "resumo": "Faz a triagem: aferição de pressão e glicemia, e encaminha cada pessoa para enfermagem, consulta ou orientações.",
+   "resumo": "Afere pressão e glicemia, faz curativos e procedimentos, confere o estoque e comunica sinais de alerta à enfermeira, que classifica o risco.",
    "desafios": [
     "Fila crescendo",
-    "Decidir o encaminhamento certo",
+    "Reconhecer e comunicar sinal de alerta com prioridade",
     "Tempo curto por pessoa"
    ],
    "curto": "Técnico(a)",
@@ -1695,11 +1695,11 @@
   "enfermeiro": {
    "nome": "Enfermeiro(a)",
    "icone": "🧑‍⚕️",
-   "resumo": "Faz a consulta de enfermagem: rastreia riscos, orienta hábitos e encaminha ao médico quando preciso.",
+   "resumo": "Coordena a unidade: faz o acolhimento e a classificação de risco, a consulta de enfermagem (com renovação de receitas por protocolo), gerencia insumos e organiza o trabalho de ACS e técnicos.",
    "desafios": [
-    "Prevenção e vínculo",
-    "Escolher o foco da orientação",
-    "Equipe enxuta"
+    "Classificar o risco sem subestimar nem sobrecarregar a rede",
+    "Decidir os pedidos da equipe e cobrar o estoque",
+    "Prevenção e vínculo"
    ],
    "curto": "Enfermeiro(a)",
    "competencias": [

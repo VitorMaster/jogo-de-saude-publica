@@ -5,6 +5,7 @@ import { newGame, todasPessoas, achaFamilia, avancarMes, cuidadoDiario, pedirCui
 import {
   iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, diaSemana, minutoDoDia, comandar, agenteJogador,
   acoesPaciente, opcoesPara, pedidosPendentes, afazeresDoDia, sincronizarCuidadores, AFAZERES,
+  ordenarUnidade, iniciarAtendimento, finalizarAtendimento, atendimentoAtual, servicosDe, competenciasDe, COMPETENCIAS,
 } from '../src/mundo.js';
 
 const CENARIOS = ['metropole', 'interior', 'rural'];
@@ -287,4 +288,82 @@ test('PNAB: o médico propõe mutirão e só vira tarefa do ACS depois da aprova
   assert.ok(!W.tarefasACS.some((t) => t.tipo === 'mutirao') && !W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao'));
   assert.ok(comandar(W, S, cfg, `pedido_sim:${ped.id}`, { tipo: 'auto' }).ok);
   assert.ok(W.tarefasACS.some((t) => t.tipo === 'mutirao') || W.agentes.some((a) => a.tarefa && a.tarefa.tipo === 'mutirao'), 'aprovado: o ACS faz o mutirão');
+});
+
+/* ---------- Fluxo de acolhimento e competências (PNAB) ---------- */
+function atendeComoJogador(papel, tipo, ajusta) {
+  const cfg = cfgDe('interior');
+  const S = newGame(cfg, 21); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'profissional', papel });
+  const W = criarMundo(S, cfg);
+  S.familias.forEach((f) => (f.vinculo = 100));
+  ate(W, S, cfg, 3, 8.5);
+  const p = todasPessoas(S).find((x) => x.idade >= 30 && !x.acamado && ['casa', 'aposentado'].includes(x.ocupacao) && !S.familias.some((f) => f.pessoas.some((q) => q.acamado && q.cuidador && q.cuidador.pid === x.id)));
+  if (ajusta) ajusta(p, S);
+  W.ordens = W.ordens.filter((o) => o.pid !== p.id);
+  assert.ok(ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'paciente', meta: tipo === 'acolhimento' ? { queixa: 'consulta' } : null }).ok);
+  let esp = false;
+  for (let i = 0; i < 600 && !esp; i++) { passoMundo(W, S, cfg, 1); esp = W.ordens.some((o) => o.pid === p.id && o.estado === 'espera' && o.tipo === tipo); }
+  assert.ok(esp, 'a pessoa chegou à fila');
+  assert.ok(comandar(W, S, cfg, 'chamar', { tipo: 'agente', id: W.agentes.find((a) => a.pid === p.id).id }).ok);
+  for (let i = 0; i < 300 && !(atendimentoAtual(W, S) && atendimentoAtual(W, S).fase === 'pronto'); i++) passoMundo(W, S, cfg, 1);
+  assert.ok(iniciarAtendimento(W, S, cfg, {}).ok);
+  for (let i = 0; i < 300 && !(atendimentoAtual(W, S) && atendimentoAtual(W, S).fase === 'resultado'); i++) passoMundo(W, S, cfg, 1);
+  assert.equal(atendimentoAtual(W, S).fase, 'resultado');
+  return { cfg, S, W, p };
+}
+
+test('PNAB: o técnico só afere e entrega à enfermeira; não classifica risco nem encaminha à consulta', () => {
+  assert.deepEqual(servicosDe('tecnico'), ['triagem']);
+  assert.deepEqual(servicosDe('enfermeiro'), ['acolhimento', 'enfermagem']);
+  const { cfg, S, W, p } = atendeComoJogador('tecnico', 'triagem');
+  assert.equal(finalizarAtendimento(W, S, cfg, 'consulta').ok, false);
+  assert.match(finalizarAtendimento(W, S, cfg, 'liberar').msg, /enfermeira/);
+  assert.ok(finalizarAtendimento(W, S, cfg, 'acolhimento').ok);
+  assert.ok(W.ordens.some((o) => o.pid === p.id && o.tipo === 'acolhimento'), 'foi para o acolhimento da enfermeira');
+  assert.ok(competenciasDe(S, 'tecnico').find((c) => c.id === 'sinais').vezes >= 1);
+  assert.match(S.diario.map((d) => d.texto).join('\n'), /Competência \(PNAB\)/);
+});
+
+test('PNAB: sinal de alerta tem de ser comunicado com prioridade; quem não sinaliza perde a pontuação', () => {
+  const a = atendeComoJogador('tecnico', 'triagem');
+  agenteJogador(a.W).tarefa.alerta = 'PA 190/120';
+  assert.ok(finalizarAtendimento(a.W, a.S, a.cfg, 'acolhimento').ok);
+  assert.equal(a.S.metricas.alertasPerdidos, 1);
+  const b = atendeComoJogador('tecnico', 'triagem');
+  agenteJogador(b.W).tarefa.alerta = 'glicemia 320';
+  assert.ok(finalizarAtendimento(b.W, b.S, b.cfg, 'acolhimento_urgente').ok);
+  assert.equal(b.S.metricas.alertasSinalizados, 1);
+  const ord = b.W.ordens.find((o) => o.tipo === 'acolhimento' && o.prioridade);
+  assert.ok(ord, 'a ordem passa na frente da fila');
+  assert.ok(competenciasDe(b.S, 'tecnico').find((c) => c.id === 'alerta').vezes === 1);
+});
+
+test('PNAB: a enfermeira classifica o risco no acolhimento e recebe retorno sobre o acerto', () => {
+  const mal = atendeComoJogador('enfermeiro', 'acolhimento', (p) => { p.dengue = { ativa: true, atendido: false }; });
+  assert.ok(finalizarAtendimento(mal.W, mal.S, mal.cfg, 'liberar').ok);
+  assert.equal(mal.S.metricas.acolhErrados, 1);
+  assert.match(mal.S.diario.map((d) => d.texto).join('\n'), /Risco subestimado/);
+  const bem = atendeComoJogador('enfermeiro', 'acolhimento', (p) => { p.dengue = { ativa: true, atendido: false }; });
+  assert.ok(finalizarAtendimento(bem.W, bem.S, bem.cfg, 'consulta').ok);
+  assert.equal(bem.S.metricas.acolhCertos, 1);
+  assert.match(bem.S.diario.map((d) => d.texto).join('\n'), /Classificação de risco adequada/);
+  assert.ok(competenciasDe(bem.S, 'enfermeiro').find((c) => c.id === 'acolhimento').vezes >= 1);
+});
+
+test('PNAB: a consulta de enfermagem renova receita de quem já tem diagnóstico (protocolo)', () => {
+  const r = atendeComoJogador('enfermeiro', 'enfermagem', (p) => { p.cond.has = { estagio: 2, diag: true, trat: true, ctrl: true }; p.retornoTurno = -5; });
+  assert.match(atendimentoAtual(r.W, r.S).resultado, /Renovação de receita/);
+  assert.equal(r.p.retornoTurno, r.S.turno);
+});
+
+test('toda competência listada existe nos quatro papéis e a equipe do computador acolhe a demanda espontânea', () => {
+  for (const papel of ['acs', 'tecnico', 'enfermeiro', 'medico']) assert.ok(COMPETENCIAS[papel].length >= 5 && COMPETENCIAS[papel].every((c) => c.tip && c.rot), papel);
+  const cfg = cfgDe('metropole');
+  const S = newGame(cfg, 3); S.tempoReal = true; iniciarEstadoMundo(S);
+  escolherPersonagem(S, { modo: 'paciente', pid: todasPessoas(S).find((p) => !p.acamado).id });
+  const W = criarMundo(S, cfg);
+  for (let i = 0; i < 10 * 24 * 12; i++) passoMundo(W, S, cfg, 5);
+  assert.ok(S.metricas.acolhimentos >= 10, `acolhimentos: ${S.metricas.acolhimentos}`);
+  assert.ok(S.metricas.triagens >= 5);
 });

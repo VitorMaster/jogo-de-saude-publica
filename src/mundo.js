@@ -716,10 +716,15 @@ function postoDe(W, papel, ind) {
   return [{ x: p.x + ind - 1, y: p.y }];
 }
 const servicoDe = (papel) => (papel === 'tecnico' ? 'triagem' : papel === 'enfermeiro' ? 'enfermagem' : 'consulta');
+/** Filas que cada papel atende: o técnico afere; a enfermeira faz o acolhimento (classificação de risco) e a consulta de enfermagem; o médico consulta. */
+export const servicosDe = (papel) => (papel === 'tecnico' ? ['triagem'] : papel === 'enfermeiro' ? ['acolhimento', 'enfermagem'] : ['consulta']);
+const proximaDaFila = (W, papel) => filaEspera(W, servicosDe(papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
 const objetoDoServico = (W, papel) => (papel === 'tecnico' ? (W.porTipo.U || [])[0] : (W.porTipo.D || [])[papel === 'enfermeiro' ? 1 : 0] || (W.porTipo.D || [])[0]);
 
 export function filaEspera(W, tipo) {
-  return W.ordens.filter((o) => o.estado === 'espera' && (!tipo || o.tipo === tipo)).sort((x, y) => x.t0 - y.t0);
+  const tipos = Array.isArray(tipo) ? tipo : tipo ? [tipo] : null;
+  const peso = (o) => (o.prioridade ? -1e9 : 0) + (tipos ? tipos.indexOf(o.tipo) * 1e6 : 0); // sinal de alerta e acolhimento passam na frente
+  return W.ordens.filter((o) => o.estado === 'espera' && (!tipos || tipos.includes(o.tipo))).sort((x, y) => (peso(x) + x.t0) - (peso(y) + y.t0));
 }
 
 function piorHabito(p) {
@@ -747,7 +752,7 @@ function chamarPaciente(W, S, cfg, a, ord) {
   return true;
 }
 
-const duracaoServico = (W, S, cfg, a, tipo) => Math.max(5, Math.round((tipo === 'triagem' ? 10 : tipo === 'enfermagem' ? 25 : duracaoConsulta(S)) * fatorEquipe(W, S, cfg, a)));
+const duracaoServico = (W, S, cfg, a, tipo) => Math.max(5, Math.round((tipo === 'triagem' ? 10 : tipo === 'acolhimento' ? 6 : tipo === 'enfermagem' ? 18 : duracaoConsulta(S)) * fatorEquipe(W, S, cfg, a)));
 
 function aplicarServico(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
@@ -756,6 +761,17 @@ function aplicarServico(W, S, cfg, a, t) {
     if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     const r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: true, msg: 'Sinais vitais normais para a idade.' };
     partes.push(r.msg); S.metricas.triagens++;
+    t.alerta = sinalDeAlerta(p);
+    if (t.alerta) { t.ord.alerta = true; partes.push(`⚠️ SINAL DE ALERTA (${t.alerta}): avise a enfermeira com prioridade.`); }
+  } else if (t.tipo === 'acolhimento') {
+    partes.push('Acolhimento com escuta qualificada e classificação de risco.');
+    if (t.ord.meta && t.ord.meta.motivo) partes.push(`Queixa: ${t.ord.meta.motivo}.`);
+    const sint = sintomasDe(S, cfg, p.id);
+    if (sint.length) partes.push(`Relata: ${sint.join(', ')}.`);
+    if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
+    else if (p.conhecido.medidas && p.conhecido.medidasTurno === S.turno) partes.push(`Medidas de hoje: PA ${p.conhecido.medidas.pas}/${p.conhecido.medidas.pad}, glicemia ${p.conhecido.medidas.glic}.`);
+    if (t.ord.alerta) partes.push('⚠️ Veio sinalizado pelo técnico (sinal de alerta).');
+    S.metricas.acolhimentos = (S.metricas.acolhimentos || 0) + 1;
   } else if (t.tipo === 'enfermagem') {
     if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
@@ -763,6 +779,8 @@ function aplicarServico(W, S, cfg, a, t) {
     const r = acaoOrientar(S, cfg, p.id, foco);
     if (r.ok && foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (foco in it) it[foco] = clamp(it[foco] + 0.5, 0, 1); }
     partes.push(r.msg); S.metricas.orientacoes++;
+    if (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)) { p.retornoTurno = S.turno; partes.push('Renovação de receita e solicitação de exames de rotina conforme protocolo (condição já diagnosticada e em tratamento).'); }
+    else if (t.ord.meta && t.ord.meta.leve) partes.push('Queixa leve resolvida na consulta de enfermagem por protocolo.');
   } else {
     const leve = t.ord.meta && t.ord.meta.leve && !p.dengue.ativa && !CONDS.some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
     if (leve) partes.push(`Queixa leve (${t.ord.meta.motivo}): examinado(a), orientado(a) e liberado(a).`);
@@ -770,10 +788,19 @@ function aplicarServico(W, S, cfg, a, t) {
     if (!leve) p.retornoTurno = S.turno;
     S.metricas.atendidos++;
   }
-  const texto = `${t.tipo === 'triagem' ? '📏 Triagem' : t.tipo === 'enfermagem' ? '🩺 Enfermagem' : '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
+  const texto = `${{ triagem: '📏 Aferição', acolhimento: '🤝 Acolhimento', enfermagem: '🩺 Enfermagem' }[t.tipo] || '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
+  if (a.jogador) praticaCompetencia(W, S, cfg, a, { triagem: 'sinais', acolhimento: 'acolhimento', enfermagem: 'consulta_enf', consulta: 'consulta' }[t.tipo]);
   t.resultado = partes.join(' ');
   avisar(W, S, texto, 'info', { pessoaId: p.id });
 }
+
+const sinalDeAlerta = (p) => {
+  const m = p.conhecido.medidas;
+  if (!m) return null;
+  if (m.pas >= 180 || m.pad >= 110) return `PA ${m.pas}/${m.pad}`;
+  if (m.glic >= 300 || m.glic < 60) return `glicemia ${m.glic}`;
+  return null;
+};
 
 /** Termina o atendimento: libera a pessoa ou a encaminha ao próximo serviço. */
 function concluirAtendimento(W, S, cfg, a, destino) {
@@ -785,7 +812,8 @@ function concluirAtendimento(W, S, cfg, a, destino) {
   if (destino === 'liberar' || !pac) {
     W.ordens = W.ordens.filter((o) => o !== ord);
   } else {
-    ord.tipo = destino;
+    if (destino === 'acolhimento_urgente') { ord.alerta = true; ord.prioridade = true; }
+    ord.tipo = destino === 'acolhimento_urgente' ? 'acolhimento' : destino;
     const receptor = destino === 'consulta' ? 'medico' : 'enfermeiro';
     const vinc = vinculoEquipe(S, cfg, a.papel, receptor);
     if (a.papel !== receptor && rnd(S.mundo) < 0.28 * (1 - vinc / 100)) {
@@ -800,14 +828,25 @@ function concluirAtendimento(W, S, cfg, a, destino) {
   W.sinal++;
 }
 
+/** Classificação de risco "esperada" no acolhimento (usada pela enfermeira do computador e para dar retorno ao jogador). */
+function esperadoNoAcolhimento(S, cfg, p, ord) {
+  if (criterioReferencia(S, p)) return { destino: 'referencia', aceitos: ['referencia'], porque: 'o caso extrapola a atenção primária (média/alta complexidade): encaminhe à UPA/hospital' };
+  const sint = sintomasDe(S, cfg, p.id).length > 0;
+  if (p.dengue.ativa || p.conhecido.suspeitas.length || sint || (ord.meta && ord.meta.consulta) || ['retorno', 'contrarreferencia', 'sintoma'].includes(ord.origem)) return { destino: 'consulta', aceitos: ['consulta', 'referencia'], porque: 'há sintomas, valores alterados ou retorno que precisam de avaliação médica' };
+  if (ord.meta && ord.meta.queixa === 'consulta') return { destino: 'enfermagem', aceitos: ['enfermagem', 'consulta'], porque: 'queixa leve: pode ser resolvida na consulta de enfermagem por protocolo (ou com o médico)' };
+  const risco = p.idade >= 18 && (p.conhecido.risco.length || p.habitos.atividade < 40 || p.habitos.alimentacao < 40 || p.tabagismo);
+  return risco ? { destino: 'enfermagem', aceitos: ['enfermagem', 'consulta'], porque: 'fatores de risco: vale a consulta de enfermagem com orientação' } : { destino: 'liberar', aceitos: ['liberar', 'enfermagem'], porque: 'sem sinais de risco: orientar e liberar' };
+}
+const SEVERIDADE = { liberar: 0, enfermagem: 1, consulta: 2, referencia: 3 };
+
 /** Decisão automática dos profissionais não controlados. */
 function rotearAuto(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
-  if (t.tipo === 'triagem') {
-    const sint = sintomasDe(S, cfg, p.id).length > 0;
-    if (p.dengue.ativa || p.conhecido.suspeitas.length || sint || (t.ord.meta && t.ord.meta.consulta) || t.ord.origem === 'retorno') return 'consulta';
-    const risco = p.idade >= 18 && (p.conhecido.risco.length || p.habitos.atividade < 40 || p.habitos.alimentacao < 40 || p.tabagismo);
-    return risco ? 'enfermagem' : 'liberar';
+  if (t.tipo === 'triagem') return t.alerta ? 'acolhimento_urgente' : 'acolhimento'; // o técnico não classifica risco: entrega à enfermeira
+  if (t.tipo === 'acolhimento') {
+    const ref = criterioReferencia(S, p);
+    if (ref) { encaminharReferencia(S, cfg, p.id); return 'liberar'; } // a enfermeira encaminha direto à UPA/hospital
+    return esperadoNoAcolhimento(S, cfg, p, t.ord).destino === 'liberar' ? 'liberar' : esperadoNoAcolhimento(S, cfg, p, t.ord).destino;
   }
   if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
   for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
@@ -827,7 +866,7 @@ function passoEquipe(W, S, cfg, a, dt) {
   }
   if (!deveEstar && !a.tarefa && !a.path.length) {
     a.vis = false; a.fila = []; soltaAfazer(W, a);
-    if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && o.tipo === servicoDe(a.papel)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
+    if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && servicosDe(a.papel).includes(o.tipo)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
     return;
   }
   if (a.pausaEquipe > 0) a.pausaEquipe -= dt;
@@ -840,17 +879,16 @@ function passoEquipe(W, S, cfg, a, dt) {
 
   const posto = postoDe(W, a.papel, a.ind);
   const naPos = posto.find((q) => q.x === a.x && q.y === a.y);
-  const servico = servicoDe(a.papel);
 
   if (!a.tarefa) {
     if (a.jogador && a.fila.length) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
-      if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && o.tipo === servico); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
+      if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && servicosDe(a.papel).includes(o.tipo)); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
       if (cmd.k === 'afazer') { const it = cmd.item || itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
     }
     if (a.jogador) return; // o jogador decide quem chamar e o que fazer
-    const prox = filaEspera(W, servico).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    const prox = proximaDaFila(W, a.papel);
     if (prox) {
       if (!naPos && posto.length) { irPara(W, a, [posto[0]]); return; }
       chamarPaciente(W, S, cfg, a, prox);
@@ -919,6 +957,65 @@ const nomePapel = (cfg, papel) => cfg.papeis[papel].nome;
 
 /* ---------- Afazeres do dia (trabalho de bastidor e de campo) ---------- */
 // local: D consultório · Y farmácia · U triagem · H sala de espera · Z arquivo · W copa · seat (sala de reunião) · ubs (recepção) · campo (casa) · colega
+/* ---------- Competências (PNAB): o jogo mostra e registra o que cada profissional pratica ---------- */
+export const COMPETENCIAS = {
+  acs: [
+    { id: 'cadastro', rot: 'Cadastrar e atualizar as famílias da microárea', tip: 'O ACS trabalha com adscrição de famílias em base geográfica definida e cadastra todas as pessoas da microárea.' },
+    { id: 'visita', rot: 'Acompanhar as famílias por visita domiciliar', tip: 'A visita domiciliar é a principal ferramenta do ACS para acompanhar as famílias.' },
+    { id: 'busca', rot: 'Fazer busca ativa de quem precisa de acompanhamento', tip: 'Busca ativa: o ACS encontra quem não vem à unidade (faltosos, casos de risco) e integra equipe e população.' },
+    { id: 'orientar', rot: 'Orientar famílias sobre hábitos, prevenção e uso dos serviços', tip: 'Orientar as famílias sobre a utilização dos serviços e ações de promoção é atribuição do ACS.' },
+    { id: 'aferir', rot: 'Aferir PA e glicemia capilar no domicílio (com capacitação)', tip: 'A Lei 13.595/2018 permite ao ACS aferir PA e glicemia capilar, com capacitação. Ele não faz consulta nem procedimentos privativos.' },
+    { id: 'visita_acam', rot: 'Acompanhar acamados e orientar cuidadores', tip: 'O ACS acompanha pessoas acamadas e orienta cuidadores, sem fazer curativos (privativo de enfermagem).' },
+    { id: 'mobilizar', rot: 'Mobilizar a comunidade (mutirões, grupos)', tip: 'Ações coletivas e de mobilização comunitária fazem parte do trabalho do ACS, combinadas com a coordenação da equipe.' },
+    { id: 'repasse', rot: 'Repassar os casos do território para a equipe', tip: 'O ACS é o elo entre a comunidade e a equipe: leva os casos do território para a unidade.' },
+  ],
+  tecnico: [
+    { id: 'sinais', rot: 'Aferir sinais vitais e glicemia', tip: 'O técnico de enfermagem realiza procedimentos regulamentados, como a aferição de sinais vitais e da glicemia, sob supervisão do enfermeiro.' },
+    { id: 'alerta', rot: 'Identificar sinal de alerta e comunicar a enfermeira com prioridade', tip: 'Ao notar valores de alerta, o técnico comunica a enfermeira na hora: ele não classifica o risco nem decide o destino.' },
+    { id: 'procedimentos', rot: 'Curativos e procedimentos de enfermagem', tip: 'Curativos e procedimentos são do técnico, sob supervisão do enfermeiro; no domicílio, só quando indicado e agendado pela enfermeira.' },
+    { id: 'insumos', rot: 'Conferir o estoque de medicamentos e entregar o relatório', tip: 'O técnico participa do gerenciamento de insumos: confere o estoque e entrega o relatório; a enfermeira analisa e solicita a reposição.' },
+    { id: 'sala', rot: 'Organizar e esterilizar a sala, fazer os registros', tip: 'Preparo da sala, esterilização de material e registros fazem parte da rotina do técnico.' },
+  ],
+  enfermeiro: [
+    { id: 'acolhimento', rot: 'Acolhimento com classificação de risco', tip: 'A enfermeira faz o acolhimento e a classificação de risco da demanda espontânea e decide o destino (orientar, consulta de enfermagem, consulta médica ou referência).' },
+    { id: 'consulta_enf', rot: 'Consulta de enfermagem (inclui prescrição e exames por protocolo)', tip: 'O enfermeiro realiza consulta de enfermagem, solicita exames e prescreve medicamentos conforme protocolos e normas legais, por exemplo na renovação de receitas de hipertensão e diabetes já diagnosticadas.' },
+    { id: 'gestao', rot: 'Gerenciar insumos (analisar relatório e solicitar reposição)', tip: 'O enfermeiro participa do gerenciamento de insumos: analisa o relatório do técnico, cobra atualização e solicita a reposição.' },
+    { id: 'coordenacao', rot: 'Planejar e avaliar o trabalho de ACS e técnicos', tip: 'O enfermeiro planeja, gerencia e avalia as ações dos ACS e dos técnicos em conjunto com a equipe, incluindo a agenda de visitas e mutirões.' },
+    { id: 'educacao', rot: 'Educação em saúde e grupos', tip: 'Educação em saúde e atividades de grupo (como atividade física) são atribuições do enfermeiro e de toda a equipe.' },
+    { id: 'visita', rot: 'Visita domiciliar', tip: 'A visita domiciliar também é atribuição do enfermeiro, em especial para acamados e para quem não consegue ir à unidade.' },
+    { id: 'referencia', rot: 'Encaminhar a outros pontos da rede', tip: 'O enfermeiro encaminha usuários a outros serviços quando o caso extrapola a atenção primária, mantendo o acompanhamento.' },
+    { id: 'equipe', rot: 'Reunião de equipe e educação permanente', tip: 'A reunião de equipe e a educação permanente fortalecem o trabalho em equipe, base da atenção primária.' },
+  ],
+  medico: [
+    { id: 'consulta', rot: 'Consulta clínica, diagnóstico e prescrição', tip: 'O médico realiza consultas clínicas, diagnostica e prescreve, com responsabilização pelo plano terapêutico do usuário.' },
+    { id: 'visita', rot: 'Atenção domiciliar (visita agendada pela enfermeira)', tip: 'O médico faz visita domiciliar quando indicado ou necessário, com o agendamento organizado pela coordenação da equipe.' },
+    { id: 'referencia', rot: 'Encaminhar e coordenar o cuidado (UPA/hospital)', tip: 'O médico encaminha a outros pontos de atenção, respeitando os fluxos locais, e mantém a responsabilização pelo cuidado, inclusive depois da alta.' },
+    { id: 'equipe', rot: 'Reunião de equipe e discussão de casos', tip: 'Discutir casos com a equipe e participar de educação permanente fazem parte do trabalho do médico na atenção primária.' },
+    { id: 'coletivo', rot: 'Propor ações coletivas (mutirão) à coordenação', tip: 'O médico também contribui com ações coletivas e de saúde da comunidade, propondo-as à coordenação.' },
+  ],
+};
+const COMP_AFAZER = {
+  acs: { cadastro_acs: 'cadastro', busca_ativa: 'busca', visita_acam: 'visita_acam', repasse: 'repasse', grupo_atividade: 'mobilizar' },
+  tecnico: { sala_espera: 'sinais', estoque: 'insumos', esterilizar: 'sala', registros: 'sala', curativos: 'procedimentos', visita_acam: 'procedimentos' },
+  enfermeiro: { educacao: 'educacao', gestao_estoque: 'gestao', supervisao: 'coordenacao', cadastro: 'coordenacao', visita_enf: 'visita', visita_acam: 'visita', grupo_atividade: 'educacao', caso: 'equipe', reuniao: 'equipe' },
+  medico: { prontuarios: 'consulta', receitas: 'consulta', visita_med: 'visita', visita_acam: 'visita', propor_mutirao: 'coletivo', caso: 'equipe', reuniao: 'equipe' },
+};
+/** Registra (só para o personagem do jogador) que uma competência foi praticada; na primeira vez, explica a regra. */
+function praticaCompetencia(W, S, cfg, a, id) {
+  if (!a || !a.jogador || !id || !COMPETENCIAS[a.papel]) return;
+  const c = COMPETENCIAS[a.papel].find((x) => x.id === id);
+  if (!c) return;
+  const m = (S.metricas.comp = S.metricas.comp || {});
+  const k = (m[a.papel] = m[a.papel] || {});
+  k[id] = (k[id] || 0) + 1;
+  if (k[id] === 1) avisar(W, S, `📘 Competência (PNAB): ${c.rot}. ${c.tip}`, 'aprendizado');
+}
+/** Para a interface: quanto cada competência foi praticada pelo personagem controlado. */
+export function competenciasDe(S, papel) {
+  const k = (S.metricas.comp && S.metricas.comp[papel]) || {};
+  return COMPETENCIAS[papel].map((c) => ({ ...c, vezes: k[c.id] || 0 }));
+}
+
 // Competências conforme a Política Nacional de Atenção Básica (PNAB 2017) e a Lei 13.595/2018 (ACS). `pedido`: só o que a coordenação (enfermeira) precisa agendar/autorizar.
 export const AFAZERES = {
   medico: [
@@ -1115,6 +1212,7 @@ function encerrarReuniao(W, S, cfg) {
   for (let i = 0; i < papeis.length; i++) for (let j = i + 1; j < papeis.length; j++) mudaEquipe(S, cfg, papeis[i], papeis[j], ganho);
   W.ultReuniao = { dia };
   const jogou = presentes.some((b) => b.jogador);
+  for (const b of presentes) if (b.jogador) praticaCompetencia(W, S, cfg, b, (COMP_AFAZER[b.papel] || {})[r.def.id]);
   for (const b of W.agentes) if (r.part[b.id] && b.afz && b.afz.reuniao) { if (r.part[b.id] === 'presente') { b.afz.item.feito = true; S.metricas.afazeres = (S.metricas.afazeres || 0) + 1; } b.afz = null; }
   S.metricas.reunioes = (S.metricas.reunioes || 0) + 1;
   if (jogou) {
@@ -1265,7 +1363,7 @@ function passoAfazer(W, S, cfg, a, dt) {
   z.item.feito = true;
   S.metricas.afazeres = (S.metricas.afazeres || 0) + 1;
   if (z.fam && W.agenda[a.id]) W.agenda[a.id].visitadas.push(z.fam);
-  if (a.jogador) avisar(W, S, `${z.def.ic} ${msg}`, 'bom');
+  if (a.jogador) { avisar(W, S, `${z.def.ic} ${msg}`, 'bom'); praticaCompetencia(W, S, cfg, a, (COMP_AFAZER[a.papel] || {})[z.def.id]); }
   a.afz = null;
   W.sinal++;
 }
@@ -1442,6 +1540,7 @@ function passoACS(W, S, cfg, a, dt) {
     else if (t.acao === 'convidar') { r = ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }); }
     else { const f = achaFamilia(S, p.familiaId); f.vinculo = clamp(f.vinculo + 3, 0, 100); r = { ok: true, msg: 'Conversa amigável (vínculo +3).' }; }
     avisar(W, S, `${t.acao === 'medir' ? '📏' : t.acao === 'orientar' ? '💬' : t.acao === 'convidar' ? '📣' : '🙂'} ${p.nome}: ${r.msg}`, 'info', { pessoaId: p.id });
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, { medir: 'aferir', orientar: 'orientar', convidar: 'repasse', conversar: 'orientar' }[t.acao]);
     alvo.pausa = 0;
     a.tarefa = null; W.sinal++;
     return;
@@ -1468,6 +1567,7 @@ function passoACS(W, S, cfg, a, dt) {
       }
     }
     avisar(W, S, `🏠 ${fam.nome}: ${r.msg}${extras.length ? ' ' + extras.join('. ') + '.' : ''}`, 'info', { familiaId: t.fam });
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, 'visita');
   } else if (t.tipo === 'orientar') {
     const r = acaoOrientar(S, cfg, t.pid, t.foco);
     if (r.ok && t.foco !== 'fumo') { const it = S.mundo.intencao[t.pid]; if (t.foco in it) it[t.foco] = clamp(it[t.foco] + 0.5, 0, 1); }
@@ -1475,6 +1575,7 @@ function passoACS(W, S, cfg, a, dt) {
   } else {
     const r = acaoMutirao(S, cfg);
     avisar(W, S, `🧹 ${r.msg}`, r.ok ? 'bom' : 'info');
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, 'mobilizar');
   }
   a.tarefa = null;
   W.sinal++;
@@ -1511,7 +1612,7 @@ export function ordenarUnidade(W, S, cfg, pid, tipo, opts = {}) {
   if (W.ordens.some((o) => o.pid === pid)) return { ok: false, msg: `${p.nome} já foi chamado(a) à unidade.` };
   W.ordens.push({ pid, tipo, estado: 'pendente', rolou: !!opts.espontaneo, espontaneo: !!opts.espontaneo, origem: opts.origem || 'ordem', meta: opts.meta || (tipo === 'triagem' && opts.origem === 'acs' ? { consulta: true } : null), t0: S.mundo.min });
   const med = tipo === 'consulta' && cfg.cenario.mundo.medicoDias.length < 5 ? ' O médico atende só em alguns dias da semana.' : '';
-  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a triagem' : 'a consulta'}.${med}` };
+  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a aferição de PA e glicemia' : tipo === 'acolhimento' ? 'o acolhimento' : 'a consulta'}.${med}` };
 }
 
 /* ---------- Demanda e rotinas diárias dos profissionais autônomos ---------- */
@@ -1533,11 +1634,13 @@ function demandaDeRotina(W, S, cfg) {
     const fator = (p.idade >= 60 || p.idade < 6 ? 1.4 : 1) * (0.55 + 0.9 * (f.vinculo / 100)) * ({ baixa: 1.25, media: 1, alta: 0.55 }[f.classe] || 1); // renda alta usa mais o serviço privado
     if (rnd(M) >= (mundo.procura || 0.3) * fator) continue;
     const adulto = p.idade >= 18;
-    let tipo = escolhe(M, adulto ? [['consulta', 40], ['triagem', 30], ['enfermagem', 30]] : [['consulta', 65], ['enfermagem', 35]]);
-    if (tipo === 'consulta' && !diaMedico) tipo = adulto ? 'triagem' : 'enfermagem';
-    const lista = MOTIVOS_LEVES[tipo];
+    let queixa = escolhe(M, adulto ? [['consulta', 45], ['triagem', 40], ['enfermagem', 15]] : [['consulta', 72], ['enfermagem', 28]]);
+    if (queixa === 'consulta' && !diaMedico && false) queixa = 'enfermagem';
+    const lista = MOTIVOS_LEVES[queixa];
     const motivo = lista[Math.floor(rnd(M) * lista.length)];
-    ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'rotina', permiteCrianca: true, meta: { leve: true, motivo } });
+    // demanda espontânea: o adulto é aferido pelo técnico e todos passam pelo acolhimento da enfermeira (que classifica o risco e decide o destino)
+    const tipo = queixa === 'enfermagem' ? 'enfermagem' : adulto ? 'triagem' : 'acolhimento';
+    ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'rotina', permiteCrianca: true, meta: { leve: true, motivo, queixa } });
   }
 }
 
@@ -1645,7 +1748,7 @@ export function opcoesPara(W, S, cfg, alvo) {
       op('acs_convidar', 'Convidar para a unidade', '📣', W.ordens.some((x) => x.pid === p.id) ? 'Já foi chamado(a)' : null);
       op('acs_conversar', 'Conversar (criar vínculo)', '🙂');
     } else {
-      const ord = W.ordens.find((x) => x.pid === o.pid && x.estado === 'espera' && x.tipo === servicoDe(j.papel));
+      const ord = W.ordens.find((x) => x.pid === o.pid && x.estado === 'espera' && servicosDe(j.papel).includes(x.tipo));
       op('chamar', 'Chamar para atendimento', '📣', ord ? (ag.tarefa ? 'Você está atendendo' : null) : 'Não está na sua fila');
     }
     return ops;
@@ -1775,6 +1878,7 @@ export function comandar(W, S, cfg, opId, alvo) {
     const ped = W.pedidos.find((x) => String(x.id) === arg);
     if (!ped || ped.estado !== 'pendente') return { ok: false, msg: 'Pedido não está mais pendente.' };
     decidirPedido(W, S, cfg, ped, id === 'pedido_sim', id === 'pedido_nao' ? 'decisão da coordenação' : '');
+    praticaCompetencia(W, S, cfg, ag, 'coordenacao');
     return { ok: true, msg: id === 'pedido_sim' ? `✅ Aprovado: ${ped.rot}.` : `❌ Negado: ${ped.rot}.` };
   }
   if (id === 'cobrar_estoque') {
@@ -1818,7 +1922,7 @@ export function comandar(W, S, cfg, opId, alvo) {
   }
   if (id === 'chamar') { if (ag.afz) { soltaAfazer(W, ag); ag.path = []; } ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
   if (id === 'chamar_proximo') {
-    const prox = filaEspera(W, servicoDe(j.papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    const prox = proximaDaFila(W, j.papel);
     if (!prox) return { ok: false, msg: j.papel === 'medico' && !cfg.cenario.mundo.medicoDias.includes(diaSemana(S)) ? 'Hoje não é dia de consultório neste cenário: faça os afazeres do dia (visitas, receitas, reuniões).' : 'Ninguém na sua fila agora. Que tal um afazer do dia?' };
     if (ag.afz) { soltaAfazer(W, ag); ag.path = []; }
     ag.fila.push({ k: 'chamar', pid: prox.pid });
@@ -1857,11 +1961,32 @@ export function iniciarAtendimento(W, S, cfg, opts = {}) {
 export function finalizarAtendimento(W, S, cfg, destino) {
   const a = agenteJogador(W);
   if (!a || !a.tarefa || a.tarefa.fase !== 'resultado') return { ok: false, msg: 'Nada a concluir.' };
+  const t = a.tarefa, p = achaPessoa(S, t.ord.pid);
+  // PNAB: o técnico afere e registra; quem classifica o risco e decide o destino é a enfermeira (acolhimento)
+  if (t.tipo === 'triagem' && !destino.startsWith('acolhimento')) return { ok: false, msg: 'A classificação de risco e o encaminhamento são atribuições da enfermeira (PNAB): entregue a pessoa ao acolhimento.' };
+  if (t.tipo === 'triagem') {
+    if (t.alerta && destino !== 'acolhimento_urgente') { // deixou de sinalizar
+      S.metricas.alertasPerdidos = (S.metricas.alertasPerdidos || 0) + 1;
+      avisar(W, S, `⚠️ ${p.nome} estava com ${t.alerta}, mas você não sinalizou à enfermeira: o atraso pode ser perigoso. Sempre comunique sinal de alerta com prioridade.`, 'alerta', { pessoaId: p.id });
+    } else if (t.alerta) { S.metricas.alertasSinalizados = (S.metricas.alertasSinalizados || 0) + 1; praticaCompetencia(W, S, cfg, a, 'alerta'); avisar(W, S, `✅ Sinal de alerta (${t.alerta}) comunicado com prioridade à enfermeira.`, 'bom', { pessoaId: p.id }); }
+    else if (destino === 'acolhimento_urgente') avisar(W, S, 'Você sinalizou prioridade sem sinal de alerta nas medidas: reserve a prioridade para quem realmente precisa.', 'info');
+  }
+  if (t.tipo === 'acolhimento') {
+    const esp = esperadoNoAcolhimento(S, cfg, p, t.ord);
+    const bom = esp.aceitos.includes(destino);
+    const nomes = { liberar: 'liberar com orientações', enfermagem: 'consulta de enfermagem', consulta: 'consulta médica', referencia: 'referência à UPA/hospital' };
+    S.metricas.acolhCertos = (S.metricas.acolhCertos || 0) + (bom ? 1 : 0);
+    S.metricas.acolhErrados = (S.metricas.acolhErrados || 0) + (bom ? 0 : 1);
+    if (bom) avisar(W, S, `✅ Classificação de risco adequada para ${p.nome}: ${nomes[destino]}. (${esp.porque})`, 'bom', { pessoaId: p.id });
+    else if ((SEVERIDADE[destino] || 0) < SEVERIDADE[esp.destino]) avisar(W, S, `⚠️ Risco subestimado em ${p.nome}: o ideal era ${nomes[esp.destino]} — ${esp.porque}.`, 'alerta', { pessoaId: p.id });
+    else avisar(W, S, `ℹ️ Encaminhamento além do necessário para ${p.nome} (o ideal era ${nomes[esp.destino]}): sobrecarrega a fila do médico/UPA.`, 'info', { pessoaId: p.id });
+  }
   if (destino === 'referencia') {
-    const p = achaPessoa(S, a.tarefa.ord.pid), motivo = criterioReferencia(S, p);
+    const motivo = criterioReferencia(S, p);
     if (!motivo) return { ok: false, msg: 'Este caso pode ser resolvido na atenção primária: a UPA/hospital é só para o que extrapola a sua competência.' };
     if (a.papel !== 'medico' && a.papel !== 'enfermeiro') return { ok: false, msg: 'O encaminhamento à referência é feito pelo médico ou pela enfermeira.' };
     const r = encaminharReferencia(S, cfg, p.id);
+    praticaCompetencia(W, S, cfg, a, 'referencia');
     concluirAtendimento(W, S, cfg, a, 'liberar');
     return { ok: r.ok, msg: r.ok ? `🚑 ${p.nome} foi encaminhado(a) à UPA/hospital (${motivo}). Na alta, volta para o acompanhamento pós-procedimento.` : r.msg };
   }
@@ -2004,5 +2129,5 @@ export function bolhaDe(W, S, a) {
 }
 
 export function resumoEquipe(W) {
-  return { acs: W.tarefasACS.length, triagem: filaEspera(W, 'triagem').length, enfermagem: filaEspera(W, 'enfermagem').length, consulta: filaEspera(W, 'consulta').length, chamados: W.ordens.length };
+  return { acs: W.tarefasACS.length, acolhimento: filaEspera(W, 'acolhimento').length, triagem: filaEspera(W, 'triagem').length, enfermagem: filaEspera(W, 'enfermagem').length, consulta: filaEspera(W, 'consulta').length, chamados: W.ordens.length };
 }

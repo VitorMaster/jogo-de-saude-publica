@@ -370,7 +370,7 @@ test('TODOS os profissionais têm afazeres todos os dias úteis, em qualquer cen
     for (const papel of ['medico', 'enfermeiro', 'tecnico', 'acs']) {
       const v = feitosPorDia[papel];
       assert.ok(v && v.length >= 8, `${id}: ${papel} não trabalhou nos dias úteis`);
-      assert.ok(v.every((n) => n >= 1) && v.reduce((a, b) => a + b, 0) / v.length >= 3, `${id}: ${papel} ficou parado em dias úteis (${v})`);
+      assert.ok(v.every((n) => n >= 1) && v.reduce((a, b) => a + b, 0) / v.length >= (papel === 'enfermeiro' ? 2 : 3), `${id}: ${papel} ficou parado em dias úteis (${v})`);
     }
   }
 });

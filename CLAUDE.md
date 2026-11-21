@@ -28,7 +28,7 @@ Jogo mobile-first para o **público geral** (não só idosos), estilo The Sims (
 - Seleção do renderizador em `main.js` (`criarRendererSeguro`): 3D se `THREE` existe e não travou antes; senão 2D.
 
 ## Build e publicação
-- `npm test` — testes (node:test, 71 passam). Rode antes de commitar.
+- `npm test` — testes (node:test, 76 passam). Rode antes de commitar.
 - `npm start` — servidor local.
 - `node scripts/build-single.mjs [saida.html] [--inline]` — gera a página única. Por padrão o Three.js vem do cdnjs (`three.js/r128`), mantendo a página em ~300 KB; `--inline` embute o arquivo local (~850 KB).
   - Nomes de topo precisam ser únicos entre módulos concatenados (o build valida com `new Function`); `render2d.js` é embrulhado em IIFE para isolar nomes.
@@ -67,6 +67,11 @@ Aberto / ideias: confirmar abertura no iPhone do usuário; casas maiores com mai
 - O jogo segue a **PNAB 2017** (e a Lei 13.595/2018 para o ACS); as competências ficam em `data/cenarios.json › papeis › competencias` e aparecem na escolha do personagem.
 - **Só pedem autorização à enfermeira coordenadora**: o **agendamento de visita domiciliar** (médico e técnico) e a **proposta de mutirão** (médico; ACS também combina o mutirão). O **ACS** faz visitas (inclusive ao acamado), busca ativa e cadastro sem autorização. **Médico e enfermeira encaminham direto à UPA/hospital** (sem pedido).
 - **Estoque de medicamentos**: o **técnico** confere e entrega o relatório (`S.mundo.estoqueRel`); a **enfermeira** analisa, **cobra a atualização** (`cobrar_estoque`, `W.cobrancaEstoque`) quando o relatório está velho (>2 dias) e solicita a reposição (+4 insumos) se o estoque está baixo. O técnico não repõe estoque.
+
+## Fluxo de acolhimento e competências (v1.2)
+- Detalhes e tabela em `docs/COMPETENCIAS-PNAB.md` (texto resumido, **a validar**). Demanda espontânea: **técnico** afere (`triagem`) e entrega ao **acolhimento da enfermeira** (`acolhimento`, classificação de risco; `esperadoNoAcolhimento` define o destino ideal e dá retorno ao jogador). Sinal de alerta (`sinalDeAlerta`) → `acolhimento_urgente` com prioridade na fila. O técnico não encaminha à consulta (rejeitado em `finalizarAtendimento`). Consulta de enfermagem renova receita por protocolo de quem já tem diagnóstico.
+- `COMPETENCIAS` / `praticaCompetencia` / `competenciasDe` (`mundo.js`): registra só o que o personagem do jogador pratica e explica a regra na primeira vez (aparece no Diário); aba Desempenho mostra a cobertura.
+- Enfermeira atende duas filas (`servicosDe`): acolhimento antes de enfermagem.
 
 ## Teste com amigos (v0.6)
 - **Confidencialidade (pedido do dono):** testadores só acessam a versão protegida (`scripts/build-protegido.mjs` → `dist-teste/`, jogo criptografado AES-GCM, código pessoal com validade, marca d'água com o ID). **Nunca** ativar GitHub Pages neste repositório, nunca commitar `testers.local.json`/`dist-teste/`, manter o repositório privado. Detalhes e limites em `docs/TESTE-PROTEGIDO.md`.

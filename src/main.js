@@ -6,7 +6,7 @@ import {
 import {
   montarCfg, iniciarEstadoMundo, escolherPersonagem, criarMundo, passoMundo, pularMes, pularDia, minutosPorSegundo,
   rotuloRelogio, diaDoMes, ubsAberta, agenteJogador, acaoAtual, opcoesPara, comandar, cancelarFila, alternaVontade,
-  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, afazeresDoDia, trocarPersonagem, vinculosEquipe, coesaoDe, pedidosPendentes, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
+  iniciarAtendimento, finalizarAtendimento, atendimentoAtual, filaEspera, acoesPaciente, resumoEquipe, afazeresDoDia, trocarPersonagem, vinculosEquipe, coesaoDe, pedidosPendentes, servicosDe, competenciasDe, sintomasDe, ROTULO_NEC, PAPEIS, diaSemana,
 } from './mundo.js';
 import { criarRenderer } from './render.js';
 import { criarRenderer2D } from './render2d.js';
@@ -323,7 +323,7 @@ function viewUnidade() {
   return `<h2 class="secao">Funcionamento</h2>
     <div class="card"><div class="rotulo"><strong>${aberta ? '🟢 Aberta agora' : '🔴 Fechada agora'}</strong><span>${mundo.expediente[0]}h–${mundo.expediente[1]}h, dias úteis</span></div>
       <p class="dica-t">Médico(a): ${diasMedico} ${med ? '· presente hoje' : '· <b>não atende hoje</b>'}.<br>Pessoas chamadas: ${r.chamados} · tarefas de campo: ${r.acs}.</p></div>
-    <h2 class="secao">Filas</h2>${fila('triagem', '📏 Triagem (técnico)')}${fila('enfermagem', '🩺 Enfermagem')}${fila('consulta', '🩺 Consulta médica')}
+    <h2 class="secao">Filas</h2>${fila('triagem', '📏 Aferição (técnico)')}${fila('acolhimento', '🤝 Acolhimento (enfermeira)')}${fila('enfermagem', '🩺 Consulta de enfermagem')}${fila('consulta', '🩺 Consulta médica')}
     <h2 class="secao">🤝 Vínculo entre os profissionais</h2>
     <div class="card">${vinculosEquipe(S, cfg).map((x) => barraIndicador(`${EMOJI_PAPEL[x.a]} ${esc(cfg.papeis[x.a].curto || cfg.papeis[x.a].nome)} ↔ ${EMOJI_PAPEL[x.b]} ${esc(cfg.papeis[x.b].curto || cfg.papeis[x.b].nome)}`, x.v / 100)).join('')}
       <p class="dica-t">Equipe afinada atende mais rápido e perde menos encaminhamentos; equipe desencontrada atrasa e se perde (até 30% mais lento). O vínculo esfria sem convivência: converse, discuta casos, faça reuniões e pausas na copa.</p></div>
@@ -343,6 +343,8 @@ function viewDesempenho() {
     <div class="card"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div><ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
     <h2 class="secao">Seu trabalho</h2>
     <div class="card"><div class="kv"><span>Consultas feitas</span><span>${m.atendidos}</span><span>Triagens</span><span>${m.triagens}</span><span>Orientações</span><span>${m.orientacoes}</span><span>Visitas domiciliares</span><span>${m.visitas}</span><span>Afazeres concluídos</span><span>${m.afazeres || 0}</span><span>Reuniões de equipe</span><span>${m.reunioes || 0}</span><span>Falhas de comunicação</span><span>${m.falhasComunicacao || 0}</span><span>Espera média</span><span>${espera} min</span></div></div>
+    <h2 class="secao">📘 Competências praticadas (PNAB)</h2>
+    <div class="card">${(() => { const l = competenciasDe(S, papel()); const feitas = l.filter((c) => c.vezes > 0).length; const m = S.metricas; return `<div class="rotulo"><strong>${feitas}/${l.length} competências do seu papel</strong><span></span></div><div class="barra"><i style="width:${Math.round(100 * feitas / l.length)}%"></i></div>${l.map((c) => `<div class="kv" style="font-size:13px;margin-top:6px"><span>${c.vezes ? '✅' : '⬜'} ${esc(c.rot)}</span><span>${c.vezes}×</span></div>`).join('')}${papel() === 'enfermeiro' && (m.acolhCertos || m.acolhErrados) ? `<p class="dica-t" style="margin-top:8px">Classificação de risco: ${m.acolhCertos || 0} adequada(s) · ${m.acolhErrados || 0} a melhorar.</p>` : ''}${papel() === 'tecnico' && (m.alertasSinalizados || m.alertasPerdidos) ? `<p class="dica-t" style="margin-top:8px">Sinais de alerta: ${m.alertasSinalizados || 0} comunicado(s) · ${m.alertasPerdidos || 0} não sinalizado(s).</p>` : ''}<p class="dica-t">Cada competência explica a regra da PNAB na primeira vez que você a pratica (veja o Diário).</p>`; })()}</div>
     <h2 class="secao">Desempenho da unidade</h2>
     <div class="card"><div class="rotulo"><span>Liga</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div></div>
     <div class="card" style="margin-top:10px">
@@ -526,13 +528,14 @@ function folhaAtendimento() {
   const at = atendimentoAtual(W, S);
   if (!at) return '<div class="folha-topo"><h2>Atendimento</h2><button class="fechar" data-act="fechar">✕</button></div><p class="vazio">Nenhum atendimento em andamento.</p>';
   const p = achaPessoa(S, at.pid);
-  const nomeServ = { triagem: 'Triagem', enfermagem: 'Consulta de enfermagem', consulta: 'Consulta médica' }[at.tipo];
+  const nomeServ = { triagem: 'Aferição (técnico de enfermagem)', acolhimento: 'Acolhimento e classificação de risco', enfermagem: 'Consulta de enfermagem', consulta: 'Consulta médica' }[at.tipo];
   let corpo = '';
   if (at.fase === 'chamando') corpo = '<p class="vazio">⏳ Aguardando a pessoa chegar…</p>';
   if (at.fase === 'atendendo') corpo = '<p class="vazio">🩺 Atendendo… (o tempo continua correndo)</p>';
   if (at.fase === 'pronto') {
-    if (at.tipo === 'triagem') corpo = '<button class="btn primario" data-act="atender"><span>📏 Aferir PA, glicemia e peso</span><small>10 min</small></button>';
-    else if (at.tipo === 'enfermagem') corpo = `<p class="dica-t">Escolha o foco da orientação (ou deixe automático):</p><button class="btn primario" data-act="atender"><span>🩺 Consulta de enfermagem (foco automático)</span><small>25 min</small></button>${Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo).map(([k, nome]) => `<button class="btn" data-act="atender" data-foco="${k}"><span>Foco: ${esc(nome)}</span></button>`).join('')}`;
+    if (at.tipo === 'triagem') corpo = '<button class="btn primario" data-act="atender"><span>📏 Aferir PA, glicemia e peso</span><small>10 min</small></button><p class="dica-t">📘 PNAB: o técnico realiza o procedimento e registra; a classificação de risco é da enfermeira.</p>';
+    else if (at.tipo === 'acolhimento') corpo = '<button class="btn primario" data-act="atender"><span>🤝 Acolher e classificar o risco</span><small>6 min</small></button><p class="dica-t">📘 PNAB: o acolhimento com escuta qualificada e a classificação de risco da demanda espontânea são da enfermeira.</p>';
+    else if (at.tipo === 'enfermagem') corpo = `<p class="dica-t">Escolha o foco da orientação (ou deixe automático):</p><button class="btn primario" data-act="atender"><span>🩺 Consulta de enfermagem (foco automático)</span><small>18 min</small></button>${Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo).map(([k, nome]) => `<button class="btn" data-act="atender" data-foco="${k}"><span>Foco: ${esc(nome)}</span></button>`).join('')}`;
     else corpo = '<button class="btn primario" data-act="atender"><span>🩺 Consulta médica</span><small>30 min</small></button>';
   }
   if (at.fase === 'resultado') {
@@ -543,11 +546,18 @@ function folhaAtendimento() {
       if (ref) corpo += `<div class="alerta-sint">🚑 Extrapola a atenção primária: ${esc(ref)}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
       corpo += '<button class="btn primario" style="margin-top:8px" data-act="concluir" data-destino="liberar"><span>✔ Concluir atendimento</span></button>';
     } else {
-      corpo += '<p class="dica-t">Para onde encaminhar?</p>';
-      if (at.tipo === 'triagem') corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem</span></button>';
-      corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
-      if (criterioReferencia(S, p)) corpo += `<div class="alerta-sint">🚑 ${esc(criterioReferencia(S, p))}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
-      corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+      if (at.tipo === 'triagem') { // técnico: não classifica risco nem decide o destino
+        const alerta = /SINAL DE ALERTA/.test(at.resultado || '');
+        corpo += `<p class="dica-t">📘 PNAB: a classificação de risco é atribuição da enfermeira. Registre e entregue a pessoa ao acolhimento${alerta ? ' — e comunique o sinal de alerta com prioridade.' : '.'}</p>
+          ${alerta ? '<div class="alerta-sint">⚠️ Há sinal de alerta nas medidas: comunique a enfermeira na hora.</div>' : ''}
+          <button class="btn ${alerta ? 'primario' : ''}" data-act="concluir" data-destino="acolhimento_urgente"><span>🚨 Entregar à enfermeira com prioridade</span></button>
+          <button class="btn ${alerta ? '' : 'primario'}" data-act="concluir" data-destino="acolhimento"><span>🤝 Registrar e encaminhar ao acolhimento</span></button>`;
+      } else {
+        corpo += `<p class="dica-t">${at.tipo === 'acolhimento' ? '📘 Classifique o risco e decida o destino:' : 'Para onde encaminhar?'}</p>`;
+        corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem (protocolos)</span></button><button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
+        corpo += `<button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>só se extrapolar a atenção primária</small></button>`;
+        corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+      }
     }
   }
   return `<div class="folha-topo"><h2>${nomeServ}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
@@ -556,8 +566,7 @@ function folhaAtendimento() {
 }
 
 function folhaFila() {
-  const servico = papel() === 'tecnico' ? 'triagem' : papel() === 'enfermeiro' ? 'enfermagem' : 'consulta';
-  const l = filaEspera(W, servico);
+  const l = filaEspera(W, servicosDe(papel()));
   const itens = l.length ? l.map((o) => { const p = achaPessoa(S, o.pid); return `<div class="pessoa"><span class="emoji">${emojiPessoa(p)}</span><span class="info"><div class="nome">${esc(p.nome)}</div><div class="sub">${p.idade} anos · aguarda há ${Math.round(S.mundo.min - o.t0)} min</div></span><button class="btn peq" style="width:auto" data-act="chamar" data-id="${p.id}">Chamar</button></div>`; }).join('') : '<p class="vazio">Ninguém na sua fila.</p>';
   return `<div class="folha-topo"><h2>📋 Fila de espera</h2><button class="fechar" data-act="fechar">✕</button></div>${itens}`;
 }
@@ -612,7 +621,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.1 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.2 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>

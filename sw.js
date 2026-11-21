@@ -1,5 +1,5 @@
 // Service worker: o jogo funciona offline depois da primeira visita.
-const VERSAO = 'saude-sim-v10';
+const VERSAO = 'saude-sim-v11';
 const ARQUIVOS = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest',
   'src/main.js', 'src/engine.js', 'src/rng.js', 'src/mundo.js', 'src/render.js', 'src/render2d.js', 'src/feedback.js',

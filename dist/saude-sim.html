@@ -269,7 +269,7 @@ window.__jogoMain = function () {
 document.body.classList.add('sem-jogo');
 (function () {
 'use strict';
-const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2,"feedback":{"_ajuda":"Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.","formAction":"","campos":{}},"familia":{"_nota":"Valores aproximados em R$/mês, só para o jogo: a validar com consultoria clínica e econômica.","classes":{"baixa":{"rotulo":"Baixa renda","renda":2400,"folga":0.05},"media":{"rotulo":"Classe média","renda":6500,"folga":0.2},"alta":{"rotulo":"Alta renda","renda":16000,"folga":0.42}},"medicamento":{"has":{"preco":45,"popular":0.1},"dm":{"preco":80,"popular":0.1},"dep":{"preco":100,"popular":0.6}},"cuidador":{"preco":2100,"qualidadeContratado":60,"erroFamiliar":0.14,"erroContratado":0.06,"sobrecargaDia":0.9,"lesaoLimite":3},"pesca":{"humor":14,"estresse":6}}},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá","icone":"🛋️"},"m":{"nome":"Mesa de jantar","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"},"V":{"nome":"Televisão","icone":"📺"},"K":{"nome":"Fonte","icone":"⛲"},"X":{"nome":"Estante de livros","icone":"📚"},"N":{"nome":"Poltrona","icone":"📖"},"J":{"nome":"Planta","icone":"🪴"},"M":{"nome":"Mesa de reunião","icone":"🗣️"},"Q":{"nome":"Cadeira da sala de reunião","icone":"🪑"},"Z":{"nome":"Arquivo de prontuários","icone":"🗄️"},"W":{"nome":"Copa (café e água)","icone":"☕"},"I":{"nome":"Farmácia Popular (balcão)","icone":"💊"},"f":{"nome":"Píer de pesca","icone":"🎣"}},"modelos":{"casa":{"piso":"casa","linhas":["#########","#B_B_C_G#","#______J#","#X_V____#","#N_m__m_#","#__S____#","####+####"]},"apto":{"piso":"casa","linhas":["#######","#B_C_G#","#N___J#","#X_V_m#","#__S__#","##+####"]},"ubs":{"piso":"ubs","linhas":["###############","#__QMMMQ_ZZ_WW#","#___QQQ_______#","#_____________#","#######+#######","#H_H_H__#_Y__D#","#_______#_____#","#_______+_____#","#_____U_#_____#","#_______#____D#","#H_H_H__#_____#","#######+#######"]},"escola":{"piso":"escola","linhas":["###########","#E_E_E_E_E#","#_________#","#E_E_E_E_E#","#_________#","#_________#","#####+#####"]},"trabalho":{"piso":"trabalho","linhas":["###########","#O_O_O_O_O#","#_________#","#O_O_O_O_O#","#_________#","#_________#","#####+#####"]},"lanche":{"piso":"lanche","linhas":["#########","#L_L_L_L#","#_______#","#_m___m_#","#_______#","####+####"]},"farmacia":{"piso":"ubs","linhas":["######","#_II_#","#____#","#____#","##+###"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos","Equipe grande e impessoal: alinhar os profissionais exige esforço"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18,"procura":0.8,"afazeres":{"medico":4,"enfermeiro":5,"tecnico":6,"acs":5},"campo":{"medico":0.2,"enfermeiro":0.3,"tecnico":0,"acs":1},"equipeVinculo":40},"mapa":{"w":58,"h":32,"base":"c","retangulos":[{"c":".","x":0,"y":12,"w":58,"h":3},{"c":".","x":26,"y":0,"w":3,"h":32},{"c":",","x":2,"y":24,"w":22,"h":7},{"c":",","x":30,"y":24,"w":26,"h":7}],"carimbos":[{"m":"ubs","x":2,"y":0},{"m":"apto","x":19,"y":6,"casa":"silva"},{"m":"apto","x":30,"y":6,"casa":"oliveira"},{"m":"apto","x":38,"y":6,"casa":"pereira"},{"m":"trabalho","x":46,"y":5},{"m":"apto","x":2,"y":15,"flip":true,"casa":"costa"},{"m":"apto","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":19,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":30,"y":15,"flip":true},{"m":"lanche","x":43,"y":15,"flip":true},{"m":"farmacia","x":52,"y":15,"flip":true}],"objetos":[{"t":"P","x":33,"y":27},{"t":"P","x":36,"y":27},{"t":"A","x":41,"y":27},{"t":"A","x":44,"y":27},{"t":"T","x":31,"y":25},{"t":"T","x":38,"y":29},{"t":"T","x":47,"y":26},{"t":"T","x":53,"y":28},{"t":"T","x":5,"y":26},{"t":"T","x":12,"y":29},{"t":"T","x":20,"y":27},{"t":"P","x":8,"y":27},{"t":"P","x":16,"y":27},{"t":"T","x":22,"y":25},{"t":"K","x":12,"y":27},{"t":"f","x":17,"y":29}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"media"},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho","profissao":"Designer"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"}],"classe":"alta"},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"casa","profissao":"Aposentado","acamado":"AVC"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":1},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}],"classe":"baixa"}]},"decoracao":[{"t":"hospital","x":17,"y":0,"w":8,"h":3,"alt":3.2,"nome":"UPA 24h / Hospital de referência"},{"t":"predio","x":31,"y":0,"w":7,"h":3,"alt":11,"cor":"#a8b4d6"},{"t":"predio","x":39,"y":0,"w":7,"h":3,"alt":8,"cor":"#d6b0a8"},{"t":"predio","x":47,"y":0,"w":9,"h":3,"alt":14,"cor":"#8fb0b8"},{"t":"lago","x":18,"y":28,"w":5,"h":3}]},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão","Equipe pequena e unida: cuidar do vínculo entre colegas rende muito"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0,"procura":0.4,"afazeres":{"medico":5,"enfermeiro":5,"tecnico":5,"acs":6},"campo":{"medico":0.6,"enfermeiro":0.5,"tecnico":0,"acs":1},"equipeVinculo":55},"mapa":{"w":54,"h":28,"base":",","retangulos":[{"c":".","x":0,"y":14,"w":54,"h":2},{"c":".","x":26,"y":0,"w":2,"h":15},{"c":"c","x":22,"y":17,"w":8,"h":8}],"carimbos":[{"m":"ubs","x":2,"y":2},{"m":"apto","x":19,"y":8,"casa":"santos"},{"m":"casa","x":30,"y":7,"casa":"silva"},{"m":"casa","x":41,"y":7,"casa":"oliveira"},{"m":"casa","x":2,"y":16,"flip":true,"casa":"pereira"},{"m":"casa","x":12,"y":16,"flip":true,"casa":"souza"},{"m":"escola","x":30,"y":16,"flip":true},{"m":"trabalho","x":42,"y":16,"flip":true},{"m":"farmacia","x":47,"y":1}],"objetos":[{"t":"P","x":24,"y":19},{"t":"P","x":27,"y":19},{"t":"A","x":24,"y":22},{"t":"A","x":27,"y":22},{"t":"T","x":22,"y":24},{"t":"T","x":29,"y":24},{"t":"T","x":22,"y":17},{"t":"T","x":29,"y":17},{"t":"K","x":25,"y":20},{"t":"f","x":31,"y":25},{"t":"f","x":37,"y":23}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa","profissao":"Costureira"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}],"classe":"media"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"baixa"},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"casa","profissao":"Aposentada","acamado":"fragilidade"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":2},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}],"classe":"baixa"}]},"decoracao":[{"t":"hospital","x":30,"y":0,"w":8,"h":4,"alt":3.6,"nome":"UPA / Hospital de referência"},{"t":"torre_agua","x":20,"y":1,"w":3,"h":3},{"t":"predio","x":39,"y":0,"w":7,"h":4,"alt":5,"cor":"#c9d6b0"},{"t":"lago","x":32,"y":24,"w":11,"h":4}]},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue","Pouca gente na equipe: ninguém faz nada sozinho"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8,"procura":0.18,"afazeres":{"medico":6,"enfermeiro":6,"tecnico":4,"acs":7},"campo":{"medico":1.2,"enfermeiro":0.9,"tecnico":0,"acs":1.2},"equipeVinculo":60},"mapa":{"w":68,"h":30,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":68,"h":2},{"c":"F","x":2,"y":17,"w":24,"h":11},{"c":"F","x":42,"y":17,"w":14,"h":11}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":28,"y":1},{"m":"escola","x":46,"y":6},{"m":"casa","x":59,"y":6,"casa":"souza"},{"m":"casa","x":30,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":58,"y":15,"flip":true,"casa":"costa"},{"m":"farmacia","x":50,"y":0}],"objetos":[{"t":"R","x":6,"y":19},{"t":"R","x":10,"y":21},{"t":"R","x":14,"y":19},{"t":"R","x":18,"y":23},{"t":"R","x":22,"y":20},{"t":"R","x":5,"y":25},{"t":"R","x":12,"y":26},{"t":"R","x":20,"y":26},{"t":"R","x":45,"y":20},{"t":"R","x":49,"y":23},{"t":"R","x":53,"y":19},{"t":"R","x":46,"y":25},{"t":"R","x":52,"y":26},{"t":"T","x":12,"y":3},{"t":"T","x":57,"y":3},{"t":"T","x":1,"y":15},{"t":"T","x":26,"y":16},{"t":"f","x":57,"y":25},{"t":"P","x":44,"y":2},{"t":"P","x":44,"y":4},{"t":"K","x":44,"y":3},{"t":"A","x":43,"y":5},{"t":"A","x":45,"y":5}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}],"classe":"baixa"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"baixa"},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"casa","profissao":"Aposentado","acamado":"amputação"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":1},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa","profissao":"Designer"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa","profissao":"Entregador"}],"classe":"media"}]},"decoracao":[{"t":"moinho","x":46,"y":0,"w":3,"h":3},{"t":"feno","x":4,"y":1,"w":1,"h":1},{"t":"feno","x":6,"y":2,"w":1,"h":1},{"t":"feno","x":19,"y":1,"w":1,"h":1},{"t":"pasto","x":27,"y":23,"w":15,"h":6,"vacas":4},{"t":"lago","x":58,"y":23,"w":9,"h":6},{"t":"hospital","x":58,"y":0,"w":8,"h":4,"alt":3.4,"nome":"Hospital regional (referência)"}]}},"papeis":{"acs":{"nome":"Agente comunitário de saúde","icone":"🧑‍🌾","resumo":"Percorre o território, visita famílias, afere pressão em casa, orienta hábitos e convida para a unidade (busca ativa).","desafios":["Distâncias e calor","Famílias com pouco vínculo","Dengue: mutirões contra focos"],"curto":"Agente comunitário","competencias":["Cadastrar e acompanhar as famílias da microárea","Visitas domiciliares e busca ativa (sem pedir autorização)","Orientar famílias e cuidadores sobre hábitos, prevenção e uso dos serviços","Aferir PA e glicemia capilar no domicílio, com capacitação (Lei 13.595/2018)","Mobilização comunitária; o mutirão contra focos é combinado com a coordenação","Não faz consulta nem procedimentos privativos de enfermagem/medicina"]},"tecnico":{"nome":"Técnico(a) de enfermagem","icone":"🧑‍🔬","resumo":"Faz a triagem: aferição de pressão e glicemia, e encaminha cada pessoa para enfermagem, consulta ou orientações.","desafios":["Fila crescendo","Decidir o encaminhamento certo","Tempo curto por pessoa"],"curto":"Técnico(a)","competencias":["Aferir sinais vitais, medidas e glicemia; escuta qualificada no acolhimento","Curativos, procedimentos e medicação sob supervisão da enfermeira","Conferir o estoque de medicamentos e entregar o relatório à enfermeira","Organizar e esterilizar a sala; registros","Visita domiciliar só com agendamento da enfermeira","Classificar risco e prescrever não são atribuições do técnico"]},"enfermeiro":{"nome":"Enfermeiro(a)","icone":"🧑‍⚕️","resumo":"Faz a consulta de enfermagem: rastreia riscos, orienta hábitos e encaminha ao médico quando preciso.","desafios":["Prevenção e vínculo","Escolher o foco da orientação","Equipe enxuta"],"curto":"Enfermeiro(a)","competencias":["Coordenar a unidade e supervisionar ACS e técnicos","Consulta de enfermagem, solicitação de exames e prescrição conforme protocolos","Gerenciar insumos: analisar o relatório do técnico, cobrar atualização e solicitar reposição","Planejar o território: agendar visitas domiciliares (médico, técnico) e mutirões","Educação em saúde e grupos; encaminhar à UPA/hospital quando extrapola a APS"]},"medico":{"nome":"Médico(a)","icone":"👨‍⚕️","resumo":"Faz a consulta médica: confirma diagnósticos, inicia tratamento e acompanha o retorno.","desafios":["Poucos dias de atendimento em alguns lugares","Insumos limitados","Doenças silenciosas"],"curto":"Médico(a)","competencias":["Consulta, diagnóstico e prescrição","Visitas domiciliares, agendadas pela enfermeira coordenadora","Encaminhar direto à UPA/hospital quando extrapola a APS e acompanhar a contrarreferência","Reunião de equipe e discussão de casos","Propor mutirões e ações coletivas à coordenação (única exceção, além das visitas, em que pede autorização)"]}}}};
+const BASE_INLINE = {"game":{"inicio":{"mes":8,"ano":2026,"tempoBase":8,"insumos":14,"verba":30,"infestacao":25},"ritmo":1,"custos":{"visita":1,"medir":1,"consulta":2,"orientar":1,"mutirao":2},"economia":{"verbaBase":18,"verbaBonus":14,"insumosCap":60,"custoInternacao":8},"dengue":{"estacao":[10,11,0,1,2,3],"ataque":0.12,"mutiraoEfeito":22,"crescimentoEstacao":[6,14],"quedaForaEstacao":8,"imunidadeMeses":12,"pGraveSemAtendimento":0.12,"pGraveComAtendimento":0.01},"predios":{"consultorio":{"nome":"Consultório","icone":"🩺","efeito":"Nível 1: abre o 2º consultório (mais um médico). Níveis 2 e 3: consultas mais rápidas.","custo":[25,45,70],"meses":[1,2,3]},"farmacia":{"nome":"Farmácia da unidade","icone":"💊","efeito":"+4 insumos por mês por nível.","custo":[25,45,70],"meses":[1,2,3]},"vigilancia":{"nome":"Vigilância e controle de vetores","icone":"🦟","efeito":"Reduz o crescimento da infestação e melhora os mutirões","custo":[30,50,75],"meses":[1,2,3]},"acs":{"nome":"Agentes comunitários","icone":"🏘️","efeito":"+1 agente comunitário no mapa por nível (e +1,5 de vínculo por mês).","custo":[30,50,75],"meses":[1,2,3]}},"insumosBase":6,"insumosPorNivel":4,"tempoPorNivel":2,"feedback":{"_ajuda":"Preencha formAction e campos para receber os feedbacks no Google Forms (veja docs/FEEDBACK.md). Vazio = o jogador compartilha/copia o texto.","formAction":"","campos":{}},"familia":{"_nota":"Valores aproximados em R$/mês, só para o jogo: a validar com consultoria clínica e econômica.","classes":{"baixa":{"rotulo":"Baixa renda","renda":2400,"folga":0.05},"media":{"rotulo":"Classe média","renda":6500,"folga":0.2},"alta":{"rotulo":"Alta renda","renda":16000,"folga":0.42}},"medicamento":{"has":{"preco":45,"popular":0.1},"dm":{"preco":80,"popular":0.1},"dep":{"preco":100,"popular":0.6}},"cuidador":{"preco":2100,"qualidadeContratado":60,"erroFamiliar":0.14,"erroContratado":0.06,"sobrecargaDia":0.9,"lesaoLimite":3},"pesca":{"humor":14,"estresse":6}}},"cond":{"has":{"nome":"Hipertensão arterial","icone":"❤️","idadeMin":18,"silenciosa":true,"pesos":{"idade":0.9,"sedentarismo":0.7,"alimentacao":0.7,"tabagismo":0.4,"estresse":0.4,"imc":0.8,"genetica":1},"init":{"a1":-0.3,"a2":-1.1,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.01,"p12":0.015,"p23":0.008,"k":1.4,"fatorControlado":0.15},"estagios":["Sem alteração","Pressão limítrofe (risco)","Hipertensão","Hipertensão com complicação"],"queixas":[],"evento":"sofreu um evento cardiovascular (AVC ou infarto) e foi internado(a)","licao":"A hipertensão costuma ser silenciosa: a maioria das pessoas não sente nada até a complicação. Por isso a medição regular da pressão (rastreamento) é uma das ações mais importantes da atenção primária.","fonte":"Cadernos de Atenção Básica nº 37 (Hipertensão) — MS; Diretrizes Brasileiras de Hipertensão (SBC) — a validar com consultoria clínica"},"dm":{"nome":"Diabetes tipo 2","icone":"🩸","idadeMin":18,"silenciosa":false,"pesos":{"idade":0.7,"sedentarismo":0.7,"alimentacao":0.9,"imc":1,"genetica":1,"sono":0.2,"tabagismo":0.2},"init":{"a1":-1.4,"a2":-2.4,"b":2.2,"pComplicadaInicial":0.08},"prog":{"p01":0.007,"p12":0.012,"p23":0.007,"k":1.4,"fatorControlado":0.2},"estagios":["Sem alteração","Pré-diabetes (risco)","Diabetes","Diabetes com complicação"],"queixas":["sede excessiva","urina com muita frequência","cansaço","feridas que demoram a cicatrizar"],"evento":"teve uma complicação do diabetes (pé diabético, problema nos olhos ou nos rins) e foi internado(a)","licao":"O pré-diabetes é a janela de ouro: com mudança de hábitos (alimentação e atividade física) é possível frear ou até reverter a progressão. Depois de instalado, o controle contínuo evita as complicações crônicas.","fonte":"Cadernos de Atenção Básica nº 36 (Diabetes Mellitus) — MS; Diretrizes SBD — a validar com consultoria clínica"},"dep":{"nome":"Depressão","icone":"🌧️","idadeMin":15,"silenciosa":false,"pesos":{"estresse":1,"sono":0.8,"sedentarismo":0.5,"genetica":0.9,"idade":0.1,"tabagismo":0.2},"init":{"a1":-1.2,"a2":-2.2,"b":2.2,"pComplicadaInicial":0.05},"prog":{"p01":0.008,"p12":0.015,"p23":0.005,"k":1.4,"fatorControlado":0.2,"remissao":0.07},"estagios":["Sem alteração","Sinais leves (risco)","Depressão","Depressão grave"],"queixas":["tristeza persistente","falta de interesse nas atividades","insônia","cansaço constante"],"evento":"teve um agravamento importante da depressão, com afastamento do trabalho/estudos e internação","licao":"A depressão é comum, tratável e muitas vezes não é percebida. O vínculo com a equipe e a escuta ajudam a pessoa a falar do que sente — quanto maior o vínculo, maior a chance de o diagnóstico acontecer.","fonte":"Linha de cuidado em saúde mental — MS; mhGAP (OMS) — a validar com consultoria clínica"},"dengue":{"nome":"Dengue","icone":"🦟","queixas":["febre alta","dor no corpo e atrás dos olhos","manchas vermelhas na pele","muita fraqueza"],"licao":"A dengue é um problema do território: depende da água parada nos quintais. Quem sofre mais são crianças pequenas, idosos e pessoas com outras doenças. Hidratação e acompanhamento precoce reduzem muito o risco de formas graves.","fonte":"Dengue: diagnóstico e manejo clínico — MS — a validar com consultoria clínica"}},"cenarios":{"padrao":"interior","terreno":{".":{"nome":"Rua","cor":"#5f6b73"},",":{"nome":"Grama","cor":"#8cc17a"},"c":{"nome":"Calçada","cor":"#c9d1cf"},"F":{"nome":"Roça","cor":"#b98a52"},"W":{"nome":"Água","cor":"#4f9bd1"}},"pisos":{"casa":"#ecd9b8","ubs":"#dcefee","escola":"#f1e7b8","trabalho":"#d9dee8","lanche":"#f6d9c6"},"objetos":{"B":{"nome":"Cama","icone":"🛏️"},"C":{"nome":"Chuveiro","icone":"🚿"},"G":{"nome":"Cozinha","icone":"🍳"},"S":{"nome":"Sofá","icone":"🛋️"},"m":{"nome":"Mesa de jantar","icone":"🍽️"},"H":{"nome":"Cadeiras de espera","icone":"🪑"},"U":{"nome":"Balcão de triagem","icone":"🗂️"},"Y":{"nome":"Farmácia","icone":"💊"},"D":{"nome":"Consultório","icone":"🩺"},"E":{"nome":"Carteira escolar","icone":"📚"},"O":{"nome":"Posto de trabalho","icone":"💼"},"L":{"nome":"Lanchonete","icone":"🍔"},"P":{"nome":"Banco da praça","icone":"🪑"},"A":{"nome":"Academia ao ar livre","icone":"🏋️"},"R":{"nome":"Plantação","icone":"🌽"},"T":{"nome":"Árvore","icone":"🌳"},"V":{"nome":"Televisão","icone":"📺"},"K":{"nome":"Fonte","icone":"⛲"},"X":{"nome":"Estante de livros","icone":"📚"},"N":{"nome":"Poltrona","icone":"📖"},"J":{"nome":"Planta","icone":"🪴"},"M":{"nome":"Mesa de reunião","icone":"🗣️"},"Q":{"nome":"Cadeira da sala de reunião","icone":"🪑"},"Z":{"nome":"Arquivo de prontuários","icone":"🗄️"},"W":{"nome":"Copa (café e água)","icone":"☕"},"I":{"nome":"Farmácia Popular (balcão)","icone":"💊"},"f":{"nome":"Píer de pesca","icone":"🎣"}},"modelos":{"casa":{"piso":"casa","linhas":["#########","#B_B_C_G#","#______J#","#X_V____#","#N_m__m_#","#__S____#","####+####"]},"apto":{"piso":"casa","linhas":["#######","#B_C_G#","#N___J#","#X_V_m#","#__S__#","##+####"]},"ubs":{"piso":"ubs","linhas":["###############","#__QMMMQ_ZZ_WW#","#___QQQ_______#","#_____________#","#######+#######","#H_H_H__#_Y__D#","#_______#_____#","#_______+_____#","#_____U_#_____#","#_______#____D#","#H_H_H__#_____#","#######+#######"]},"escola":{"piso":"escola","linhas":["###########","#E_E_E_E_E#","#_________#","#E_E_E_E_E#","#_________#","#_________#","#####+#####"]},"trabalho":{"piso":"trabalho","linhas":["###########","#O_O_O_O_O#","#_________#","#O_O_O_O_O#","#_________#","#_________#","#####+#####"]},"lanche":{"piso":"lanche","linhas":["#########","#L_L_L_L#","#_______#","#_m___m_#","#_______#","####+####"]},"farmacia":{"piso":"ubs","linhas":["######","#_II_#","#____#","#____#","##+###"]}},"cenarios":{"metropole":{"nome":"Metrópole","icone":"🏙️","resumo":"Bairro denso de uma grande cidade.","desafios":["Muita demanda e uma equipe enxuta","Estresse alto, sedentarismo e lanchonetes por perto","Famílias em apartamentos pequenos","Equipe grande e impessoal: alinhar os profissionais exige esforço"],"game":{"inicio":{"insumos":18,"verba":40,"infestacao":20},"insumosBase":8,"economia":{"verbaBase":24},"dengue":{"ataque":0.1},"tabagismo":0.2,"habitosBase":{"atividade":[10,65],"alimentacao":[15,70],"sono":[20,70],"estresse":[35,90]}},"mundo":{"medicoDias":[0,1,2,3,4],"expediente":[7,17],"trabalho":"O","almoco":"lanchonete","velocidade":0.9,"estresse":18,"procura":0.8,"afazeres":{"medico":4,"enfermeiro":5,"tecnico":6,"acs":5},"campo":{"medico":0.2,"enfermeiro":0.3,"tecnico":0,"acs":1},"equipeVinculo":40},"mapa":{"w":58,"h":32,"base":"c","retangulos":[{"c":".","x":0,"y":12,"w":58,"h":3},{"c":".","x":26,"y":0,"w":3,"h":32},{"c":",","x":2,"y":24,"w":22,"h":7},{"c":",","x":30,"y":24,"w":26,"h":7}],"carimbos":[{"m":"ubs","x":2,"y":0},{"m":"apto","x":19,"y":6,"casa":"silva"},{"m":"apto","x":30,"y":6,"casa":"oliveira"},{"m":"apto","x":38,"y":6,"casa":"pereira"},{"m":"trabalho","x":46,"y":5},{"m":"apto","x":2,"y":15,"flip":true,"casa":"costa"},{"m":"apto","x":10,"y":15,"flip":true,"casa":"souza"},{"m":"apto","x":19,"y":15,"flip":true,"casa":"santos"},{"m":"escola","x":30,"y":15,"flip":true},{"m":"lanche","x":43,"y":15,"flip":true},{"m":"farmacia","x":52,"y":15,"flip":true}],"objetos":[{"t":"P","x":33,"y":27},{"t":"P","x":36,"y":27},{"t":"A","x":41,"y":27},{"t":"A","x":44,"y":27},{"t":"T","x":31,"y":25},{"t":"T","x":38,"y":29},{"t":"T","x":47,"y":26},{"t":"T","x":53,"y":28},{"t":"T","x":5,"y":26},{"t":"T","x":12,"y":29},{"t":"T","x":20,"y":27},{"t":"P","x":8,"y":27},{"t":"P","x":16,"y":27},{"t":"T","x":22,"y":25},{"t":"K","x":12,"y":27},{"t":"f","x":17,"y":29}]},"territorio":{"nomeUnidade":"UBS Vila Nova","familias":[{"id":"silva","nome":"Família Silva","vinculo":[25,45],"membros":[{"nome":"João","idade":49,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Maria","idade":47,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":17,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[25,45],"membros":[{"nome":"Carla","idade":33,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":35,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":7,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"media"},{"id":"pereira","nome":"Família Pereira","vinculo":[20,40],"membros":[{"nome":"Marcos","idade":44,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"costa","nome":"Casal Costa","vinculo":[30,50],"membros":[{"nome":"Ana","idade":28,"sexo":"F","ocupacao":"trabalho","profissao":"Designer"},{"nome":"Thiago","idade":30,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"}],"classe":"alta"},{"id":"souza","nome":"Família Souza","vinculo":[20,40],"membros":[{"nome":"Seu Antônio","idade":66,"sexo":"M","ocupacao":"casa","profissao":"Aposentado","acamado":"AVC"},{"nome":"Dona Lúcia","idade":63,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":37,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":1},{"id":"santos","nome":"Dona Rosa","vinculo":[15,30],"membros":[{"nome":"Dona Rosa","idade":71,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}],"classe":"baixa"}]},"decoracao":[{"t":"hospital","x":17,"y":0,"w":8,"h":3,"alt":3.2,"nome":"UPA 24h / Hospital de referência"},{"t":"predio","x":31,"y":0,"w":7,"h":3,"alt":11,"cor":"#a8b4d6"},{"t":"predio","x":39,"y":0,"w":7,"h":3,"alt":8,"cor":"#d6b0a8"},{"t":"predio","x":47,"y":0,"w":9,"h":3,"alt":14,"cor":"#8fb0b8"},{"t":"lago","x":18,"y":28,"w":5,"h":3}]},"interior":{"nome":"Cidade do interior","icone":"🏘️","resumo":"Cidade média, com praça central e vizinhança próxima.","desafios":["Equipe pequena e poucos recursos","Boa relação com a comunidade, mas hábitos tradicionais","Dengue forte no verão","Equipe pequena e unida: cuidar do vínculo entre colegas rende muito"],"game":{"inicio":{"insumos":14,"verba":30,"infestacao":25},"insumosBase":6,"dengue":{"ataque":0.12},"habitosBase":{"atividade":[25,85],"alimentacao":[35,85],"sono":[35,90],"estresse":[20,70]}},"mundo":{"medicoDias":[0,1,3,4],"expediente":[8,16],"trabalho":"O","almoco":"casa","velocidade":0.75,"estresse":0,"procura":0.4,"afazeres":{"medico":5,"enfermeiro":5,"tecnico":5,"acs":6},"campo":{"medico":0.6,"enfermeiro":0.5,"tecnico":0,"acs":1},"equipeVinculo":55},"mapa":{"w":54,"h":28,"base":",","retangulos":[{"c":".","x":0,"y":14,"w":54,"h":2},{"c":".","x":26,"y":0,"w":2,"h":15},{"c":"c","x":22,"y":17,"w":8,"h":8}],"carimbos":[{"m":"ubs","x":2,"y":2},{"m":"apto","x":19,"y":8,"casa":"santos"},{"m":"casa","x":30,"y":7,"casa":"silva"},{"m":"casa","x":41,"y":7,"casa":"oliveira"},{"m":"casa","x":2,"y":16,"flip":true,"casa":"pereira"},{"m":"casa","x":12,"y":16,"flip":true,"casa":"souza"},{"m":"escola","x":30,"y":16,"flip":true},{"m":"trabalho","x":42,"y":16,"flip":true},{"m":"farmacia","x":47,"y":1}],"objetos":[{"t":"P","x":24,"y":19},{"t":"P","x":27,"y":19},{"t":"A","x":24,"y":22},{"t":"A","x":27,"y":22},{"t":"T","x":22,"y":24},{"t":"T","x":29,"y":24},{"t":"T","x":22,"y":17},{"t":"T","x":29,"y":17},{"t":"K","x":25,"y":20},{"t":"f","x":31,"y":25},{"t":"f","x":37,"y":23}]},"territorio":{"nomeUnidade":"UBS Esperança","familias":[{"id":"silva","nome":"Família Silva","vinculo":[40,60],"membros":[{"nome":"Seu João","idade":58,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":56,"sexo":"F","ocupacao":"casa","profissao":"Costureira"},{"nome":"Lucas","idade":24,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}],"classe":"media"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[40,60],"membros":[{"nome":"Carla","idade":34,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":36,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":6,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":2,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"baixa"},{"id":"pereira","nome":"Família Pereira","vinculo":[35,55],"membros":[{"nome":"Marcos","idade":45,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":41,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":15,"sexo":"M","ocupacao":"escola","profissao":"Estudante"},{"nome":"Laura","idade":12,"sexo":"F","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"souza","nome":"Família Souza","vinculo":[30,50],"membros":[{"nome":"Seu Antônio","idade":67,"sexo":"M","ocupacao":"aposentado","profissao":"Aposentado"},{"nome":"Dona Lúcia","idade":64,"sexo":"F","ocupacao":"casa","profissao":"Aposentada","acamado":"fragilidade"},{"nome":"Camila","idade":38,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":9,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":2},{"id":"santos","nome":"Dona Rosa","vinculo":[25,40],"membros":[{"nome":"Dona Rosa","idade":72,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"}],"classe":"baixa"}]},"decoracao":[{"t":"hospital","x":30,"y":0,"w":8,"h":4,"alt":3.6,"nome":"UPA / Hospital de referência"},{"t":"torre_agua","x":20,"y":1,"w":3,"h":3},{"t":"predio","x":39,"y":0,"w":7,"h":4,"alt":5,"cor":"#c9d6b0"},{"t":"lago","x":32,"y":24,"w":11,"h":4}]},"rural":{"nome":"Zona rural","icone":"🌾","resumo":"Sítios espalhados, estrada de terra e unidade distante.","desafios":["Longas distâncias: as visitas e idas à unidade demoram","Médico só 2 dias por semana","Poucos insumos e reposição lenta; água armazenada favorece a dengue","Pouca gente na equipe: ninguém faz nada sozinho"],"game":{"inicio":{"insumos":9,"verba":25,"infestacao":30},"insumosBase":4,"economia":{"verbaBase":16},"dengue":{"ataque":0.14},"tabagismo":0.22,"habitosBase":{"atividade":[40,95],"alimentacao":[45,95],"sono":[40,95],"estresse":[15,65]}},"mundo":{"medicoDias":[1,3],"expediente":[8,16],"trabalho":"R","almoco":"casa","velocidade":0.55,"estresse":-8,"procura":0.18,"afazeres":{"medico":6,"enfermeiro":6,"tecnico":4,"acs":7},"campo":{"medico":1.2,"enfermeiro":0.9,"tecnico":0,"acs":1.2},"equipeVinculo":60},"mapa":{"w":68,"h":30,"base":",","retangulos":[{"c":".","x":0,"y":13,"w":68,"h":2},{"c":"F","x":2,"y":17,"w":24,"h":11},{"c":"F","x":42,"y":17,"w":14,"h":11}],"carimbos":[{"m":"casa","x":3,"y":6,"casa":"silva"},{"m":"casa","x":16,"y":6,"casa":"oliveira"},{"m":"ubs","x":28,"y":1},{"m":"escola","x":46,"y":6},{"m":"casa","x":59,"y":6,"casa":"souza"},{"m":"casa","x":30,"y":15,"flip":true,"casa":"pereira"},{"m":"casa","x":58,"y":15,"flip":true,"casa":"costa"},{"m":"farmacia","x":50,"y":0}],"objetos":[{"t":"R","x":6,"y":19},{"t":"R","x":10,"y":21},{"t":"R","x":14,"y":19},{"t":"R","x":18,"y":23},{"t":"R","x":22,"y":20},{"t":"R","x":5,"y":25},{"t":"R","x":12,"y":26},{"t":"R","x":20,"y":26},{"t":"R","x":45,"y":20},{"t":"R","x":49,"y":23},{"t":"R","x":53,"y":19},{"t":"R","x":46,"y":25},{"t":"R","x":52,"y":26},{"t":"T","x":12,"y":3},{"t":"T","x":57,"y":3},{"t":"T","x":1,"y":15},{"t":"T","x":26,"y":16},{"t":"f","x":57,"y":25},{"t":"P","x":44,"y":2},{"t":"P","x":44,"y":4},{"t":"K","x":44,"y":3},{"t":"A","x":43,"y":5},{"t":"A","x":45,"y":5}]},"territorio":{"nomeUnidade":"Posto de Saúde Boa Vista","familias":[{"id":"silva","nome":"Família Silva","vinculo":[50,70],"membros":[{"nome":"Seu João","idade":55,"sexo":"M","ocupacao":"trabalho","profissao":"Operário"},{"nome":"Dona Maria","idade":52,"sexo":"F","ocupacao":"trabalho","profissao":"Costureira"},{"nome":"Lucas","idade":20,"sexo":"M","ocupacao":"trabalho","profissao":"Estudante"}],"classe":"baixa"},{"id":"oliveira","nome":"Família Oliveira","vinculo":[45,65],"membros":[{"nome":"Carla","idade":31,"sexo":"F","ocupacao":"trabalho","profissao":"Atendente"},{"nome":"Rafael","idade":33,"sexo":"M","ocupacao":"trabalho","profissao":"Motorista"},{"nome":"Bia","idade":8,"sexo":"F","ocupacao":"escola","profissao":"Estudante"},{"nome":"Davi","idade":3,"sexo":"M","ocupacao":"casa","profissao":"—"}],"classe":"baixa"},{"id":"souza","nome":"Família Souza","vinculo":[40,60],"membros":[{"nome":"Seu Antônio","idade":69,"sexo":"M","ocupacao":"casa","profissao":"Aposentado","acamado":"amputação"},{"nome":"Dona Lúcia","idade":66,"sexo":"F","ocupacao":"aposentado","profissao":"Aposentada"},{"nome":"Camila","idade":40,"sexo":"F","ocupacao":"trabalho","profissao":"Cozinheira"},{"nome":"Enzo","idade":10,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"baixa","cuidador":1},{"id":"pereira","nome":"Família Pereira","vinculo":[45,65],"membros":[{"nome":"Marcos","idade":47,"sexo":"M","ocupacao":"trabalho","profissao":"Contador"},{"nome":"Juliana","idade":44,"sexo":"F","ocupacao":"trabalho","profissao":"Professora"},{"nome":"Gabriel","idade":16,"sexo":"M","ocupacao":"escola","profissao":"Estudante"}],"classe":"media"},{"id":"costa","nome":"Casal Costa","vinculo":[50,70],"membros":[{"nome":"Ana","idade":27,"sexo":"F","ocupacao":"casa","profissao":"Designer"},{"nome":"Thiago","idade":29,"sexo":"M","ocupacao":"trabalho","profissao":"Entregador"},{"nome":"Sofia","idade":1,"sexo":"F","ocupacao":"casa","profissao":"Entregador"}],"classe":"media"}]},"decoracao":[{"t":"moinho","x":46,"y":0,"w":3,"h":3},{"t":"feno","x":4,"y":1,"w":1,"h":1},{"t":"feno","x":6,"y":2,"w":1,"h":1},{"t":"feno","x":19,"y":1,"w":1,"h":1},{"t":"pasto","x":27,"y":23,"w":15,"h":6,"vacas":4},{"t":"lago","x":58,"y":23,"w":9,"h":6},{"t":"hospital","x":58,"y":0,"w":8,"h":4,"alt":3.4,"nome":"Hospital regional (referência)"}]}},"papeis":{"acs":{"nome":"Agente comunitário de saúde","icone":"🧑‍🌾","resumo":"Percorre o território, visita famílias, afere pressão em casa, orienta hábitos e convida para a unidade (busca ativa).","desafios":["Distâncias e calor","Famílias com pouco vínculo","Dengue: mutirões contra focos"],"curto":"Agente comunitário","competencias":["Cadastrar e acompanhar as famílias da microárea","Visitas domiciliares e busca ativa (sem pedir autorização)","Orientar famílias e cuidadores sobre hábitos, prevenção e uso dos serviços","Aferir PA e glicemia capilar no domicílio, com capacitação (Lei 13.595/2018)","Mobilização comunitária; o mutirão contra focos é combinado com a coordenação","Não faz consulta nem procedimentos privativos de enfermagem/medicina"]},"tecnico":{"nome":"Técnico(a) de enfermagem","icone":"🧑‍🔬","resumo":"Afere pressão e glicemia, faz curativos e procedimentos, confere o estoque e comunica sinais de alerta à enfermeira, que classifica o risco.","desafios":["Fila crescendo","Reconhecer e comunicar sinal de alerta com prioridade","Tempo curto por pessoa"],"curto":"Técnico(a)","competencias":["Aferir sinais vitais, medidas e glicemia; escuta qualificada no acolhimento","Curativos, procedimentos e medicação sob supervisão da enfermeira","Conferir o estoque de medicamentos e entregar o relatório à enfermeira","Organizar e esterilizar a sala; registros","Visita domiciliar só com agendamento da enfermeira","Classificar risco e prescrever não são atribuições do técnico"]},"enfermeiro":{"nome":"Enfermeiro(a)","icone":"🧑‍⚕️","resumo":"Coordena a unidade: faz o acolhimento e a classificação de risco, a consulta de enfermagem (com renovação de receitas por protocolo), gerencia insumos e organiza o trabalho de ACS e técnicos.","desafios":["Classificar o risco sem subestimar nem sobrecarregar a rede","Decidir os pedidos da equipe e cobrar o estoque","Prevenção e vínculo"],"curto":"Enfermeiro(a)","competencias":["Coordenar a unidade e supervisionar ACS e técnicos","Consulta de enfermagem, solicitação de exames e prescrição conforme protocolos","Gerenciar insumos: analisar o relatório do técnico, cobrar atualização e solicitar reposição","Planejar o território: agendar visitas domiciliares (médico, técnico) e mutirões","Educação em saúde e grupos; encaminhar à UPA/hospital quando extrapola a APS"]},"medico":{"nome":"Médico(a)","icone":"👨‍⚕️","resumo":"Faz a consulta médica: confirma diagnósticos, inicia tratamento e acompanha o retorno.","desafios":["Poucos dias de atendimento em alguns lugares","Insumos limitados","Doenças silenciosas"],"curto":"Médico(a)","competencias":["Consulta, diagnóstico e prescrição","Visitas domiciliares, agendadas pela enfermeira coordenadora","Encaminhar direto à UPA/hospital quando extrapola a APS e acompanhar a contrarreferência","Reunião de equipe e discussão de casos","Propor mutirões e ações coletivas à coordenação (única exceção, além das visitas, em que pede autorização)"]}}}};
 // Gerador pseudo-aleatório com estado serializável (mulberry32) — permite salvar/carregar e testar de forma determinística.
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const sig = (x) => 1 / (1 + Math.exp(-x));
@@ -1645,10 +1645,15 @@ function postoDe(W, papel, ind) {
   return [{ x: p.x + ind - 1, y: p.y }];
 }
 const servicoDe = (papel) => (papel === 'tecnico' ? 'triagem' : papel === 'enfermeiro' ? 'enfermagem' : 'consulta');
+/** Filas que cada papel atende: o técnico afere; a enfermeira faz o acolhimento (classificação de risco) e a consulta de enfermagem; o médico consulta. */
+const servicosDe = (papel) => (papel === 'tecnico' ? ['triagem'] : papel === 'enfermeiro' ? ['acolhimento', 'enfermagem'] : ['consulta']);
+const proximaDaFila = (W, papel) => filaEspera(W, servicosDe(papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
 const objetoDoServico = (W, papel) => (papel === 'tecnico' ? (W.porTipo.U || [])[0] : (W.porTipo.D || [])[papel === 'enfermeiro' ? 1 : 0] || (W.porTipo.D || [])[0]);
 
 function filaEspera(W, tipo) {
-  return W.ordens.filter((o) => o.estado === 'espera' && (!tipo || o.tipo === tipo)).sort((x, y) => x.t0 - y.t0);
+  const tipos = Array.isArray(tipo) ? tipo : tipo ? [tipo] : null;
+  const peso = (o) => (o.prioridade ? -1e9 : 0) + (tipos ? tipos.indexOf(o.tipo) * 1e6 : 0); // sinal de alerta e acolhimento passam na frente
+  return W.ordens.filter((o) => o.estado === 'espera' && (!tipos || tipos.includes(o.tipo))).sort((x, y) => (peso(x) + x.t0) - (peso(y) + y.t0));
 }
 
 function piorHabito(p) {
@@ -1676,7 +1681,7 @@ function chamarPaciente(W, S, cfg, a, ord) {
   return true;
 }
 
-const duracaoServico = (W, S, cfg, a, tipo) => Math.max(5, Math.round((tipo === 'triagem' ? 10 : tipo === 'enfermagem' ? 25 : duracaoConsulta(S)) * fatorEquipe(W, S, cfg, a)));
+const duracaoServico = (W, S, cfg, a, tipo) => Math.max(5, Math.round((tipo === 'triagem' ? 10 : tipo === 'acolhimento' ? 6 : tipo === 'enfermagem' ? 18 : duracaoConsulta(S)) * fatorEquipe(W, S, cfg, a)));
 
 function aplicarServico(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
@@ -1685,6 +1690,17 @@ function aplicarServico(W, S, cfg, a, t) {
     if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     const r = p.idade >= 18 ? acaoMedir(S, cfg, p.id) : { ok: true, msg: 'Sinais vitais normais para a idade.' };
     partes.push(r.msg); S.metricas.triagens++;
+    t.alerta = sinalDeAlerta(p);
+    if (t.alerta) { t.ord.alerta = true; partes.push(`⚠️ SINAL DE ALERTA (${t.alerta}): avise a enfermeira com prioridade.`); }
+  } else if (t.tipo === 'acolhimento') {
+    partes.push('Acolhimento com escuta qualificada e classificação de risco.');
+    if (t.ord.meta && t.ord.meta.motivo) partes.push(`Queixa: ${t.ord.meta.motivo}.`);
+    const sint = sintomasDe(S, cfg, p.id);
+    if (sint.length) partes.push(`Relata: ${sint.join(', ')}.`);
+    if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
+    else if (p.conhecido.medidas && p.conhecido.medidasTurno === S.turno) partes.push(`Medidas de hoje: PA ${p.conhecido.medidas.pas}/${p.conhecido.medidas.pad}, glicemia ${p.conhecido.medidas.glic}.`);
+    if (t.ord.alerta) partes.push('⚠️ Veio sinalizado pelo técnico (sinal de alerta).');
+    S.metricas.acolhimentos = (S.metricas.acolhimentos || 0) + 1;
   } else if (t.tipo === 'enfermagem') {
     if (t.ord.meta && t.ord.meta.motivo) partes.push(`(${t.ord.meta.motivo})`);
     if (p.idade >= 18 && p.conhecido.medidasTurno !== S.turno) partes.push(acaoMedir(S, cfg, p.id).msg);
@@ -1692,6 +1708,8 @@ function aplicarServico(W, S, cfg, a, t) {
     const r = acaoOrientar(S, cfg, p.id, foco);
     if (r.ok && foco !== 'fumo') { const it = S.mundo.intencao[p.id]; if (foco in it) it[foco] = clamp(it[foco] + 0.5, 0, 1); }
     partes.push(r.msg); S.metricas.orientacoes++;
+    if (CONDS.some((id) => p.cond[id].diag && p.cond[id].trat)) { p.retornoTurno = S.turno; partes.push('Renovação de receita e solicitação de exames de rotina conforme protocolo (condição já diagnosticada e em tratamento).'); }
+    else if (t.ord.meta && t.ord.meta.leve) partes.push('Queixa leve resolvida na consulta de enfermagem por protocolo.');
   } else {
     const leve = t.ord.meta && t.ord.meta.leve && !p.dengue.ativa && !CONDS.some((id) => p.cond[id].estagio >= 2 && !p.cond[id].diag);
     if (leve) partes.push(`Queixa leve (${t.ord.meta.motivo}): examinado(a), orientado(a) e liberado(a).`);
@@ -1699,10 +1717,19 @@ function aplicarServico(W, S, cfg, a, t) {
     if (!leve) p.retornoTurno = S.turno;
     S.metricas.atendidos++;
   }
-  const texto = `${t.tipo === 'triagem' ? '📏 Triagem' : t.tipo === 'enfermagem' ? '🩺 Enfermagem' : '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
+  const texto = `${{ triagem: '📏 Aferição', acolhimento: '🤝 Acolhimento', enfermagem: '🩺 Enfermagem' }[t.tipo] || '🩺 Consulta'} — ${p.nome}: ${partes.join(' ')}`;
+  if (a.jogador) praticaCompetencia(W, S, cfg, a, { triagem: 'sinais', acolhimento: 'acolhimento', enfermagem: 'consulta_enf', consulta: 'consulta' }[t.tipo]);
   t.resultado = partes.join(' ');
   avisar(W, S, texto, 'info', { pessoaId: p.id });
 }
+
+const sinalDeAlerta = (p) => {
+  const m = p.conhecido.medidas;
+  if (!m) return null;
+  if (m.pas >= 180 || m.pad >= 110) return `PA ${m.pas}/${m.pad}`;
+  if (m.glic >= 300 || m.glic < 60) return `glicemia ${m.glic}`;
+  return null;
+};
 
 /** Termina o atendimento: libera a pessoa ou a encaminha ao próximo serviço. */
 function concluirAtendimento(W, S, cfg, a, destino) {
@@ -1714,7 +1741,8 @@ function concluirAtendimento(W, S, cfg, a, destino) {
   if (destino === 'liberar' || !pac) {
     W.ordens = W.ordens.filter((o) => o !== ord);
   } else {
-    ord.tipo = destino;
+    if (destino === 'acolhimento_urgente') { ord.alerta = true; ord.prioridade = true; }
+    ord.tipo = destino === 'acolhimento_urgente' ? 'acolhimento' : destino;
     const receptor = destino === 'consulta' ? 'medico' : 'enfermeiro';
     const vinc = vinculoEquipe(S, cfg, a.papel, receptor);
     if (a.papel !== receptor && rnd(S.mundo) < 0.28 * (1 - vinc / 100)) {
@@ -1729,14 +1757,25 @@ function concluirAtendimento(W, S, cfg, a, destino) {
   W.sinal++;
 }
 
+/** Classificação de risco "esperada" no acolhimento (usada pela enfermeira do computador e para dar retorno ao jogador). */
+function esperadoNoAcolhimento(S, cfg, p, ord) {
+  if (criterioReferencia(S, p)) return { destino: 'referencia', aceitos: ['referencia'], porque: 'o caso extrapola a atenção primária (média/alta complexidade): encaminhe à UPA/hospital' };
+  const sint = sintomasDe(S, cfg, p.id).length > 0;
+  if (p.dengue.ativa || p.conhecido.suspeitas.length || sint || (ord.meta && ord.meta.consulta) || ['retorno', 'contrarreferencia', 'sintoma'].includes(ord.origem)) return { destino: 'consulta', aceitos: ['consulta', 'referencia'], porque: 'há sintomas, valores alterados ou retorno que precisam de avaliação médica' };
+  if (ord.meta && ord.meta.queixa === 'consulta') return { destino: 'enfermagem', aceitos: ['enfermagem', 'consulta'], porque: 'queixa leve: pode ser resolvida na consulta de enfermagem por protocolo (ou com o médico)' };
+  const risco = p.idade >= 18 && (p.conhecido.risco.length || p.habitos.atividade < 40 || p.habitos.alimentacao < 40 || p.tabagismo);
+  return risco ? { destino: 'enfermagem', aceitos: ['enfermagem', 'consulta'], porque: 'fatores de risco: vale a consulta de enfermagem com orientação' } : { destino: 'liberar', aceitos: ['liberar', 'enfermagem'], porque: 'sem sinais de risco: orientar e liberar' };
+}
+const SEVERIDADE = { liberar: 0, enfermagem: 1, consulta: 2, referencia: 3 };
+
 /** Decisão automática dos profissionais não controlados. */
 function rotearAuto(W, S, cfg, a, t) {
   const p = achaPessoa(S, t.ord.pid);
-  if (t.tipo === 'triagem') {
-    const sint = sintomasDe(S, cfg, p.id).length > 0;
-    if (p.dengue.ativa || p.conhecido.suspeitas.length || sint || (t.ord.meta && t.ord.meta.consulta) || t.ord.origem === 'retorno') return 'consulta';
-    const risco = p.idade >= 18 && (p.conhecido.risco.length || p.habitos.atividade < 40 || p.habitos.alimentacao < 40 || p.tabagismo);
-    return risco ? 'enfermagem' : 'liberar';
+  if (t.tipo === 'triagem') return t.alerta ? 'acolhimento_urgente' : 'acolhimento'; // o técnico não classifica risco: entrega à enfermeira
+  if (t.tipo === 'acolhimento') {
+    const ref = criterioReferencia(S, p);
+    if (ref) { encaminharReferencia(S, cfg, p.id); return 'liberar'; } // a enfermeira encaminha direto à UPA/hospital
+    return esperadoNoAcolhimento(S, cfg, p, t.ord).destino === 'liberar' ? 'liberar' : esperadoNoAcolhimento(S, cfg, p, t.ord).destino;
   }
   if (t.tipo === 'enfermagem') return p.conhecido.suspeitas.length ? 'consulta' : 'liberar';
   for (const id of CONDS) if (p.cond[id].diag && !p.cond[id].trat) acaoTratamento(S, cfg, p.id, id, true);
@@ -1756,7 +1795,7 @@ function passoEquipe(W, S, cfg, a, dt) {
   }
   if (!deveEstar && !a.tarefa && !a.path.length) {
     a.vis = false; a.fila = []; soltaAfazer(W, a);
-    if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && o.tipo === servicoDe(a.papel)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
+    if (a.papel !== 'acs') for (const o of W.ordens) if (o.estado === 'espera' && servicosDe(a.papel).includes(o.tipo)) { const pac = W.agentes.find((x) => x.pid === o.pid); o.estado = 'pendente'; o.rolou = true; if (pac) pac.espera = null; }
     return;
   }
   if (a.pausaEquipe > 0) a.pausaEquipe -= dt;
@@ -1769,17 +1808,16 @@ function passoEquipe(W, S, cfg, a, dt) {
 
   const posto = postoDe(W, a.papel, a.ind);
   const naPos = posto.find((q) => q.x === a.x && q.y === a.y);
-  const servico = servicoDe(a.papel);
 
   if (!a.tarefa) {
     if (a.jogador && a.fila.length) {
       const cmd = a.fila.shift();
       if (cmd.k === 'ir') { const alvo = caminhavel(W, cmd.x, cmd.y) ? [{ x: cmd.x, y: cmd.y }] : vizinhosDe(W, cmd.x, cmd.y); irPara(W, a, alvo); return; }
-      if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && o.tipo === servico); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
+      if (cmd.k === 'chamar') { const ord = W.ordens.find((o) => o.pid === cmd.pid && o.estado === 'espera' && servicosDe(a.papel).includes(o.tipo)); if (ord) chamarPaciente(W, S, cfg, a, ord); return; }
       if (cmd.k === 'afazer') { const it = cmd.item || itemDaAgenda(W, a, cmd.uid); if (it && !it.feito) iniciarAfazer(W, S, cfg, a, it); return; }
     }
     if (a.jogador) return; // o jogador decide quem chamar e o que fazer
-    const prox = filaEspera(W, servico).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    const prox = proximaDaFila(W, a.papel);
     if (prox) {
       if (!naPos && posto.length) { irPara(W, a, [posto[0]]); return; }
       chamarPaciente(W, S, cfg, a, prox);
@@ -1848,6 +1886,65 @@ const nomePapel = (cfg, papel) => cfg.papeis[papel].nome;
 
 /* ---------- Afazeres do dia (trabalho de bastidor e de campo) ---------- */
 // local: D consultório · Y farmácia · U triagem · H sala de espera · Z arquivo · W copa · seat (sala de reunião) · ubs (recepção) · campo (casa) · colega
+/* ---------- Competências (PNAB): o jogo mostra e registra o que cada profissional pratica ---------- */
+const COMPETENCIAS = {
+  acs: [
+    { id: 'cadastro', rot: 'Cadastrar e atualizar as famílias da microárea', tip: 'O ACS trabalha com adscrição de famílias em base geográfica definida e cadastra todas as pessoas da microárea.' },
+    { id: 'visita', rot: 'Acompanhar as famílias por visita domiciliar', tip: 'A visita domiciliar é a principal ferramenta do ACS para acompanhar as famílias.' },
+    { id: 'busca', rot: 'Fazer busca ativa de quem precisa de acompanhamento', tip: 'Busca ativa: o ACS encontra quem não vem à unidade (faltosos, casos de risco) e integra equipe e população.' },
+    { id: 'orientar', rot: 'Orientar famílias sobre hábitos, prevenção e uso dos serviços', tip: 'Orientar as famílias sobre a utilização dos serviços e ações de promoção é atribuição do ACS.' },
+    { id: 'aferir', rot: 'Aferir PA e glicemia capilar no domicílio (com capacitação)', tip: 'A Lei 13.595/2018 permite ao ACS aferir PA e glicemia capilar, com capacitação. Ele não faz consulta nem procedimentos privativos.' },
+    { id: 'visita_acam', rot: 'Acompanhar acamados e orientar cuidadores', tip: 'O ACS acompanha pessoas acamadas e orienta cuidadores, sem fazer curativos (privativo de enfermagem).' },
+    { id: 'mobilizar', rot: 'Mobilizar a comunidade (mutirões, grupos)', tip: 'Ações coletivas e de mobilização comunitária fazem parte do trabalho do ACS, combinadas com a coordenação da equipe.' },
+    { id: 'repasse', rot: 'Repassar os casos do território para a equipe', tip: 'O ACS é o elo entre a comunidade e a equipe: leva os casos do território para a unidade.' },
+  ],
+  tecnico: [
+    { id: 'sinais', rot: 'Aferir sinais vitais e glicemia', tip: 'O técnico de enfermagem realiza procedimentos regulamentados, como a aferição de sinais vitais e da glicemia, sob supervisão do enfermeiro.' },
+    { id: 'alerta', rot: 'Identificar sinal de alerta e comunicar a enfermeira com prioridade', tip: 'Ao notar valores de alerta, o técnico comunica a enfermeira na hora: ele não classifica o risco nem decide o destino.' },
+    { id: 'procedimentos', rot: 'Curativos e procedimentos de enfermagem', tip: 'Curativos e procedimentos são do técnico, sob supervisão do enfermeiro; no domicílio, só quando indicado e agendado pela enfermeira.' },
+    { id: 'insumos', rot: 'Conferir o estoque de medicamentos e entregar o relatório', tip: 'O técnico participa do gerenciamento de insumos: confere o estoque e entrega o relatório; a enfermeira analisa e solicita a reposição.' },
+    { id: 'sala', rot: 'Organizar e esterilizar a sala, fazer os registros', tip: 'Preparo da sala, esterilização de material e registros fazem parte da rotina do técnico.' },
+  ],
+  enfermeiro: [
+    { id: 'acolhimento', rot: 'Acolhimento com classificação de risco', tip: 'A enfermeira faz o acolhimento e a classificação de risco da demanda espontânea e decide o destino (orientar, consulta de enfermagem, consulta médica ou referência).' },
+    { id: 'consulta_enf', rot: 'Consulta de enfermagem (inclui prescrição e exames por protocolo)', tip: 'O enfermeiro realiza consulta de enfermagem, solicita exames e prescreve medicamentos conforme protocolos e normas legais, por exemplo na renovação de receitas de hipertensão e diabetes já diagnosticadas.' },
+    { id: 'gestao', rot: 'Gerenciar insumos (analisar relatório e solicitar reposição)', tip: 'O enfermeiro participa do gerenciamento de insumos: analisa o relatório do técnico, cobra atualização e solicita a reposição.' },
+    { id: 'coordenacao', rot: 'Planejar e avaliar o trabalho de ACS e técnicos', tip: 'O enfermeiro planeja, gerencia e avalia as ações dos ACS e dos técnicos em conjunto com a equipe, incluindo a agenda de visitas e mutirões.' },
+    { id: 'educacao', rot: 'Educação em saúde e grupos', tip: 'Educação em saúde e atividades de grupo (como atividade física) são atribuições do enfermeiro e de toda a equipe.' },
+    { id: 'visita', rot: 'Visita domiciliar', tip: 'A visita domiciliar também é atribuição do enfermeiro, em especial para acamados e para quem não consegue ir à unidade.' },
+    { id: 'referencia', rot: 'Encaminhar a outros pontos da rede', tip: 'O enfermeiro encaminha usuários a outros serviços quando o caso extrapola a atenção primária, mantendo o acompanhamento.' },
+    { id: 'equipe', rot: 'Reunião de equipe e educação permanente', tip: 'A reunião de equipe e a educação permanente fortalecem o trabalho em equipe, base da atenção primária.' },
+  ],
+  medico: [
+    { id: 'consulta', rot: 'Consulta clínica, diagnóstico e prescrição', tip: 'O médico realiza consultas clínicas, diagnostica e prescreve, com responsabilização pelo plano terapêutico do usuário.' },
+    { id: 'visita', rot: 'Atenção domiciliar (visita agendada pela enfermeira)', tip: 'O médico faz visita domiciliar quando indicado ou necessário, com o agendamento organizado pela coordenação da equipe.' },
+    { id: 'referencia', rot: 'Encaminhar e coordenar o cuidado (UPA/hospital)', tip: 'O médico encaminha a outros pontos de atenção, respeitando os fluxos locais, e mantém a responsabilização pelo cuidado, inclusive depois da alta.' },
+    { id: 'equipe', rot: 'Reunião de equipe e discussão de casos', tip: 'Discutir casos com a equipe e participar de educação permanente fazem parte do trabalho do médico na atenção primária.' },
+    { id: 'coletivo', rot: 'Propor ações coletivas (mutirão) à coordenação', tip: 'O médico também contribui com ações coletivas e de saúde da comunidade, propondo-as à coordenação.' },
+  ],
+};
+const COMP_AFAZER = {
+  acs: { cadastro_acs: 'cadastro', busca_ativa: 'busca', visita_acam: 'visita_acam', repasse: 'repasse', grupo_atividade: 'mobilizar' },
+  tecnico: { sala_espera: 'sinais', estoque: 'insumos', esterilizar: 'sala', registros: 'sala', curativos: 'procedimentos', visita_acam: 'procedimentos' },
+  enfermeiro: { educacao: 'educacao', gestao_estoque: 'gestao', supervisao: 'coordenacao', cadastro: 'coordenacao', visita_enf: 'visita', visita_acam: 'visita', grupo_atividade: 'educacao', caso: 'equipe', reuniao: 'equipe' },
+  medico: { prontuarios: 'consulta', receitas: 'consulta', visita_med: 'visita', visita_acam: 'visita', propor_mutirao: 'coletivo', caso: 'equipe', reuniao: 'equipe' },
+};
+/** Registra (só para o personagem do jogador) que uma competência foi praticada; na primeira vez, explica a regra. */
+function praticaCompetencia(W, S, cfg, a, id) {
+  if (!a || !a.jogador || !id || !COMPETENCIAS[a.papel]) return;
+  const c = COMPETENCIAS[a.papel].find((x) => x.id === id);
+  if (!c) return;
+  const m = (S.metricas.comp = S.metricas.comp || {});
+  const k = (m[a.papel] = m[a.papel] || {});
+  k[id] = (k[id] || 0) + 1;
+  if (k[id] === 1) avisar(W, S, `📘 Competência (PNAB): ${c.rot}. ${c.tip}`, 'aprendizado');
+}
+/** Para a interface: quanto cada competência foi praticada pelo personagem controlado. */
+function competenciasDe(S, papel) {
+  const k = (S.metricas.comp && S.metricas.comp[papel]) || {};
+  return COMPETENCIAS[papel].map((c) => ({ ...c, vezes: k[c.id] || 0 }));
+}
+
 // Competências conforme a Política Nacional de Atenção Básica (PNAB 2017) e a Lei 13.595/2018 (ACS). `pedido`: só o que a coordenação (enfermeira) precisa agendar/autorizar.
 const AFAZERES = {
   medico: [
@@ -2044,6 +2141,7 @@ function encerrarReuniao(W, S, cfg) {
   for (let i = 0; i < papeis.length; i++) for (let j = i + 1; j < papeis.length; j++) mudaEquipe(S, cfg, papeis[i], papeis[j], ganho);
   W.ultReuniao = { dia };
   const jogou = presentes.some((b) => b.jogador);
+  for (const b of presentes) if (b.jogador) praticaCompetencia(W, S, cfg, b, (COMP_AFAZER[b.papel] || {})[r.def.id]);
   for (const b of W.agentes) if (r.part[b.id] && b.afz && b.afz.reuniao) { if (r.part[b.id] === 'presente') { b.afz.item.feito = true; S.metricas.afazeres = (S.metricas.afazeres || 0) + 1; } b.afz = null; }
   S.metricas.reunioes = (S.metricas.reunioes || 0) + 1;
   if (jogou) {
@@ -2194,7 +2292,7 @@ function passoAfazer(W, S, cfg, a, dt) {
   z.item.feito = true;
   S.metricas.afazeres = (S.metricas.afazeres || 0) + 1;
   if (z.fam && W.agenda[a.id]) W.agenda[a.id].visitadas.push(z.fam);
-  if (a.jogador) avisar(W, S, `${z.def.ic} ${msg}`, 'bom');
+  if (a.jogador) { avisar(W, S, `${z.def.ic} ${msg}`, 'bom'); praticaCompetencia(W, S, cfg, a, (COMP_AFAZER[a.papel] || {})[z.def.id]); }
   a.afz = null;
   W.sinal++;
 }
@@ -2371,6 +2469,7 @@ function passoACS(W, S, cfg, a, dt) {
     else if (t.acao === 'convidar') { r = ordenarUnidade(W, S, cfg, p.id, 'triagem', { origem: 'acs' }); }
     else { const f = achaFamilia(S, p.familiaId); f.vinculo = clamp(f.vinculo + 3, 0, 100); r = { ok: true, msg: 'Conversa amigável (vínculo +3).' }; }
     avisar(W, S, `${t.acao === 'medir' ? '📏' : t.acao === 'orientar' ? '💬' : t.acao === 'convidar' ? '📣' : '🙂'} ${p.nome}: ${r.msg}`, 'info', { pessoaId: p.id });
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, { medir: 'aferir', orientar: 'orientar', convidar: 'repasse', conversar: 'orientar' }[t.acao]);
     alvo.pausa = 0;
     a.tarefa = null; W.sinal++;
     return;
@@ -2397,6 +2496,7 @@ function passoACS(W, S, cfg, a, dt) {
       }
     }
     avisar(W, S, `🏠 ${fam.nome}: ${r.msg}${extras.length ? ' ' + extras.join('. ') + '.' : ''}`, 'info', { familiaId: t.fam });
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, 'visita');
   } else if (t.tipo === 'orientar') {
     const r = acaoOrientar(S, cfg, t.pid, t.foco);
     if (r.ok && t.foco !== 'fumo') { const it = S.mundo.intencao[t.pid]; if (t.foco in it) it[t.foco] = clamp(it[t.foco] + 0.5, 0, 1); }
@@ -2404,6 +2504,7 @@ function passoACS(W, S, cfg, a, dt) {
   } else {
     const r = acaoMutirao(S, cfg);
     avisar(W, S, `🧹 ${r.msg}`, r.ok ? 'bom' : 'info');
+    if (a.jogador) praticaCompetencia(W, S, cfg, a, 'mobilizar');
   }
   a.tarefa = null;
   W.sinal++;
@@ -2440,7 +2541,7 @@ function ordenarUnidade(W, S, cfg, pid, tipo, opts = {}) {
   if (W.ordens.some((o) => o.pid === pid)) return { ok: false, msg: `${p.nome} já foi chamado(a) à unidade.` };
   W.ordens.push({ pid, tipo, estado: 'pendente', rolou: !!opts.espontaneo, espontaneo: !!opts.espontaneo, origem: opts.origem || 'ordem', meta: opts.meta || (tipo === 'triagem' && opts.origem === 'acs' ? { consulta: true } : null), t0: S.mundo.min });
   const med = tipo === 'consulta' && cfg.cenario.mundo.medicoDias.length < 5 ? ' O médico atende só em alguns dias da semana.' : '';
-  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a triagem' : 'a consulta'}.${med}` };
+  return { ok: true, msg: `${p.nome} foi chamado(a) para ${tipo === 'triagem' ? 'a aferição de PA e glicemia' : tipo === 'acolhimento' ? 'o acolhimento' : 'a consulta'}.${med}` };
 }
 
 /* ---------- Demanda e rotinas diárias dos profissionais autônomos ---------- */
@@ -2462,11 +2563,13 @@ function demandaDeRotina(W, S, cfg) {
     const fator = (p.idade >= 60 || p.idade < 6 ? 1.4 : 1) * (0.55 + 0.9 * (f.vinculo / 100)) * ({ baixa: 1.25, media: 1, alta: 0.55 }[f.classe] || 1); // renda alta usa mais o serviço privado
     if (rnd(M) >= (mundo.procura || 0.3) * fator) continue;
     const adulto = p.idade >= 18;
-    let tipo = escolhe(M, adulto ? [['consulta', 40], ['triagem', 30], ['enfermagem', 30]] : [['consulta', 65], ['enfermagem', 35]]);
-    if (tipo === 'consulta' && !diaMedico) tipo = adulto ? 'triagem' : 'enfermagem';
-    const lista = MOTIVOS_LEVES[tipo];
+    let queixa = escolhe(M, adulto ? [['consulta', 45], ['triagem', 40], ['enfermagem', 15]] : [['consulta', 72], ['enfermagem', 28]]);
+    if (queixa === 'consulta' && !diaMedico && false) queixa = 'enfermagem';
+    const lista = MOTIVOS_LEVES[queixa];
     const motivo = lista[Math.floor(rnd(M) * lista.length)];
-    ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'rotina', permiteCrianca: true, meta: { leve: true, motivo } });
+    // demanda espontânea: o adulto é aferido pelo técnico e todos passam pelo acolhimento da enfermeira (que classifica o risco e decide o destino)
+    const tipo = queixa === 'enfermagem' ? 'enfermagem' : adulto ? 'triagem' : 'acolhimento';
+    ordenarUnidade(W, S, cfg, p.id, tipo, { espontaneo: true, origem: 'rotina', permiteCrianca: true, meta: { leve: true, motivo, queixa } });
   }
 }
 
@@ -2574,7 +2677,7 @@ function opcoesPara(W, S, cfg, alvo) {
       op('acs_convidar', 'Convidar para a unidade', '📣', W.ordens.some((x) => x.pid === p.id) ? 'Já foi chamado(a)' : null);
       op('acs_conversar', 'Conversar (criar vínculo)', '🙂');
     } else {
-      const ord = W.ordens.find((x) => x.pid === o.pid && x.estado === 'espera' && x.tipo === servicoDe(j.papel));
+      const ord = W.ordens.find((x) => x.pid === o.pid && x.estado === 'espera' && servicosDe(j.papel).includes(x.tipo));
       op('chamar', 'Chamar para atendimento', '📣', ord ? (ag.tarefa ? 'Você está atendendo' : null) : 'Não está na sua fila');
     }
     return ops;
@@ -2704,6 +2807,7 @@ function comandar(W, S, cfg, opId, alvo) {
     const ped = W.pedidos.find((x) => String(x.id) === arg);
     if (!ped || ped.estado !== 'pendente') return { ok: false, msg: 'Pedido não está mais pendente.' };
     decidirPedido(W, S, cfg, ped, id === 'pedido_sim', id === 'pedido_nao' ? 'decisão da coordenação' : '');
+    praticaCompetencia(W, S, cfg, ag, 'coordenacao');
     return { ok: true, msg: id === 'pedido_sim' ? `✅ Aprovado: ${ped.rot}.` : `❌ Negado: ${ped.rot}.` };
   }
   if (id === 'cobrar_estoque') {
@@ -2747,7 +2851,7 @@ function comandar(W, S, cfg, opId, alvo) {
   }
   if (id === 'chamar') { if (ag.afz) { soltaAfazer(W, ag); ag.path = []; } ag.fila.push({ k: 'chamar', pid: W.agentes.find((x) => x.id === alvo.id).pid }); return { ok: true, msg: 'Chamando…' }; }
   if (id === 'chamar_proximo') {
-    const prox = filaEspera(W, servicoDe(j.papel)).find((o) => { const pac = W.agentes.find((x) => x.pid === o.pid); return pac && pac.espera && !pac.atend; });
+    const prox = proximaDaFila(W, j.papel);
     if (!prox) return { ok: false, msg: j.papel === 'medico' && !cfg.cenario.mundo.medicoDias.includes(diaSemana(S)) ? 'Hoje não é dia de consultório neste cenário: faça os afazeres do dia (visitas, receitas, reuniões).' : 'Ninguém na sua fila agora. Que tal um afazer do dia?' };
     if (ag.afz) { soltaAfazer(W, ag); ag.path = []; }
     ag.fila.push({ k: 'chamar', pid: prox.pid });
@@ -2786,11 +2890,32 @@ function iniciarAtendimento(W, S, cfg, opts = {}) {
 function finalizarAtendimento(W, S, cfg, destino) {
   const a = agenteJogador(W);
   if (!a || !a.tarefa || a.tarefa.fase !== 'resultado') return { ok: false, msg: 'Nada a concluir.' };
+  const t = a.tarefa, p = achaPessoa(S, t.ord.pid);
+  // PNAB: o técnico afere e registra; quem classifica o risco e decide o destino é a enfermeira (acolhimento)
+  if (t.tipo === 'triagem' && !destino.startsWith('acolhimento')) return { ok: false, msg: 'A classificação de risco e o encaminhamento são atribuições da enfermeira (PNAB): entregue a pessoa ao acolhimento.' };
+  if (t.tipo === 'triagem') {
+    if (t.alerta && destino !== 'acolhimento_urgente') { // deixou de sinalizar
+      S.metricas.alertasPerdidos = (S.metricas.alertasPerdidos || 0) + 1;
+      avisar(W, S, `⚠️ ${p.nome} estava com ${t.alerta}, mas você não sinalizou à enfermeira: o atraso pode ser perigoso. Sempre comunique sinal de alerta com prioridade.`, 'alerta', { pessoaId: p.id });
+    } else if (t.alerta) { S.metricas.alertasSinalizados = (S.metricas.alertasSinalizados || 0) + 1; praticaCompetencia(W, S, cfg, a, 'alerta'); avisar(W, S, `✅ Sinal de alerta (${t.alerta}) comunicado com prioridade à enfermeira.`, 'bom', { pessoaId: p.id }); }
+    else if (destino === 'acolhimento_urgente') avisar(W, S, 'Você sinalizou prioridade sem sinal de alerta nas medidas: reserve a prioridade para quem realmente precisa.', 'info');
+  }
+  if (t.tipo === 'acolhimento') {
+    const esp = esperadoNoAcolhimento(S, cfg, p, t.ord);
+    const bom = esp.aceitos.includes(destino);
+    const nomes = { liberar: 'liberar com orientações', enfermagem: 'consulta de enfermagem', consulta: 'consulta médica', referencia: 'referência à UPA/hospital' };
+    S.metricas.acolhCertos = (S.metricas.acolhCertos || 0) + (bom ? 1 : 0);
+    S.metricas.acolhErrados = (S.metricas.acolhErrados || 0) + (bom ? 0 : 1);
+    if (bom) avisar(W, S, `✅ Classificação de risco adequada para ${p.nome}: ${nomes[destino]}. (${esp.porque})`, 'bom', { pessoaId: p.id });
+    else if ((SEVERIDADE[destino] || 0) < SEVERIDADE[esp.destino]) avisar(W, S, `⚠️ Risco subestimado em ${p.nome}: o ideal era ${nomes[esp.destino]} — ${esp.porque}.`, 'alerta', { pessoaId: p.id });
+    else avisar(W, S, `ℹ️ Encaminhamento além do necessário para ${p.nome} (o ideal era ${nomes[esp.destino]}): sobrecarrega a fila do médico/UPA.`, 'info', { pessoaId: p.id });
+  }
   if (destino === 'referencia') {
-    const p = achaPessoa(S, a.tarefa.ord.pid), motivo = criterioReferencia(S, p);
+    const motivo = criterioReferencia(S, p);
     if (!motivo) return { ok: false, msg: 'Este caso pode ser resolvido na atenção primária: a UPA/hospital é só para o que extrapola a sua competência.' };
     if (a.papel !== 'medico' && a.papel !== 'enfermeiro') return { ok: false, msg: 'O encaminhamento à referência é feito pelo médico ou pela enfermeira.' };
     const r = encaminharReferencia(S, cfg, p.id);
+    praticaCompetencia(W, S, cfg, a, 'referencia');
     concluirAtendimento(W, S, cfg, a, 'liberar');
     return { ok: r.ok, msg: r.ok ? `🚑 ${p.nome} foi encaminhado(a) à UPA/hospital (${motivo}). Na alta, volta para o acompanhamento pós-procedimento.` : r.msg };
   }
@@ -2933,13 +3058,13 @@ function bolhaDe(W, S, a) {
 }
 
 function resumoEquipe(W) {
-  return { acs: W.tarefasACS.length, triagem: filaEspera(W, 'triagem').length, enfermagem: filaEspera(W, 'enfermagem').length, consulta: filaEspera(W, 'consulta').length, chamados: W.ordens.length };
+  return { acs: W.tarefasACS.length, acolhimento: filaEspera(W, 'acolhimento').length, triagem: filaEspera(W, 'triagem').length, enfermagem: filaEspera(W, 'enfermagem').length, consulta: filaEspera(W, 'consulta').length, chamados: W.ordens.length };
 }
 
 // Aba de feedback: perguntas, texto do relatório e envio (Google Forms, compartilhar ou copiar).
 // Nada aqui lê dados de saúde reais: só respostas digitadas e informações técnicas do aparelho/jogo.
 
-const VERSAO_JOGO = 'v1.1';
+const VERSAO_JOGO = 'v1.2';
 
 const PERGUNTAS = [
   { id: 'nota', tipo: 'estrelas', rot: 'Nota geral do jogo' },
@@ -5553,7 +5678,7 @@ function viewUnidade() {
   return `<h2 class="secao">Funcionamento</h2>
     <div class="card"><div class="rotulo"><strong>${aberta ? '🟢 Aberta agora' : '🔴 Fechada agora'}</strong><span>${mundo.expediente[0]}h–${mundo.expediente[1]}h, dias úteis</span></div>
       <p class="dica-t">Médico(a): ${diasMedico} ${med ? '· presente hoje' : '· <b>não atende hoje</b>'}.<br>Pessoas chamadas: ${r.chamados} · tarefas de campo: ${r.acs}.</p></div>
-    <h2 class="secao">Filas</h2>${fila('triagem', '📏 Triagem (técnico)')}${fila('enfermagem', '🩺 Enfermagem')}${fila('consulta', '🩺 Consulta médica')}
+    <h2 class="secao">Filas</h2>${fila('triagem', '📏 Aferição (técnico)')}${fila('acolhimento', '🤝 Acolhimento (enfermeira)')}${fila('enfermagem', '🩺 Consulta de enfermagem')}${fila('consulta', '🩺 Consulta médica')}
     <h2 class="secao">🤝 Vínculo entre os profissionais</h2>
     <div class="card">${vinculosEquipe(S, cfg).map((x) => barraIndicador(`${EMOJI_PAPEL[x.a]} ${esc(cfg.papeis[x.a].curto || cfg.papeis[x.a].nome)} ↔ ${EMOJI_PAPEL[x.b]} ${esc(cfg.papeis[x.b].curto || cfg.papeis[x.b].nome)}`, x.v / 100)).join('')}
       <p class="dica-t">Equipe afinada atende mais rápido e perde menos encaminhamentos; equipe desencontrada atrasa e se perde (até 30% mais lento). O vínculo esfria sem convivência: converse, discuta casos, faça reuniões e pausas na copa.</p></div>
@@ -5573,6 +5698,8 @@ function viewDesempenho() {
     <div class="card"><div class="rotulo"><strong>${c.icone} ${esc(c.nome)}</strong></div><ul class="lista">${c.desafios.map((d) => `<li>${esc(d)}</li>`).join('')}</ul></div>
     <h2 class="secao">Seu trabalho</h2>
     <div class="card"><div class="kv"><span>Consultas feitas</span><span>${m.atendidos}</span><span>Triagens</span><span>${m.triagens}</span><span>Orientações</span><span>${m.orientacoes}</span><span>Visitas domiciliares</span><span>${m.visitas}</span><span>Afazeres concluídos</span><span>${m.afazeres || 0}</span><span>Reuniões de equipe</span><span>${m.reunioes || 0}</span><span>Falhas de comunicação</span><span>${m.falhasComunicacao || 0}</span><span>Espera média</span><span>${espera} min</span></div></div>
+    <h2 class="secao">📘 Competências praticadas (PNAB)</h2>
+    <div class="card">${(() => { const l = competenciasDe(S, papel()); const feitas = l.filter((c) => c.vezes > 0).length; const m = S.metricas; return `<div class="rotulo"><strong>${feitas}/${l.length} competências do seu papel</strong><span></span></div><div class="barra"><i style="width:${Math.round(100 * feitas / l.length)}%"></i></div>${l.map((c) => `<div class="kv" style="font-size:13px;margin-top:6px"><span>${c.vezes ? '✅' : '⬜'} ${esc(c.rot)}</span><span>${c.vezes}×</span></div>`).join('')}${papel() === 'enfermeiro' && (m.acolhCertos || m.acolhErrados) ? `<p class="dica-t" style="margin-top:8px">Classificação de risco: ${m.acolhCertos || 0} adequada(s) · ${m.acolhErrados || 0} a melhorar.</p>` : ''}${papel() === 'tecnico' && (m.alertasSinalizados || m.alertasPerdidos) ? `<p class="dica-t" style="margin-top:8px">Sinais de alerta: ${m.alertasSinalizados || 0} comunicado(s) · ${m.alertasPerdidos || 0} não sinalizado(s).</p>` : ''}<p class="dica-t">Cada competência explica a regra da PNAB na primeira vez que você a pratica (veja o Diário).</p>`; })()}</div>
     <h2 class="secao">Desempenho da unidade</h2>
     <div class="card"><div class="rotulo"><span>Liga</span><span>pontuação ${Math.round(i.score * 100)}</span></div><div class="liga">🏅 ${i.liga}</div></div>
     <div class="card" style="margin-top:10px">
@@ -5756,13 +5883,14 @@ function folhaAtendimento() {
   const at = atendimentoAtual(W, S);
   if (!at) return '<div class="folha-topo"><h2>Atendimento</h2><button class="fechar" data-act="fechar">✕</button></div><p class="vazio">Nenhum atendimento em andamento.</p>';
   const p = achaPessoa(S, at.pid);
-  const nomeServ = { triagem: 'Triagem', enfermagem: 'Consulta de enfermagem', consulta: 'Consulta médica' }[at.tipo];
+  const nomeServ = { triagem: 'Aferição (técnico de enfermagem)', acolhimento: 'Acolhimento e classificação de risco', enfermagem: 'Consulta de enfermagem', consulta: 'Consulta médica' }[at.tipo];
   let corpo = '';
   if (at.fase === 'chamando') corpo = '<p class="vazio">⏳ Aguardando a pessoa chegar…</p>';
   if (at.fase === 'atendendo') corpo = '<p class="vazio">🩺 Atendendo… (o tempo continua correndo)</p>';
   if (at.fase === 'pronto') {
-    if (at.tipo === 'triagem') corpo = '<button class="btn primario" data-act="atender"><span>📏 Aferir PA, glicemia e peso</span><small>10 min</small></button>';
-    else if (at.tipo === 'enfermagem') corpo = `<p class="dica-t">Escolha o foco da orientação (ou deixe automático):</p><button class="btn primario" data-act="atender"><span>🩺 Consulta de enfermagem (foco automático)</span><small>25 min</small></button>${Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo).map(([k, nome]) => `<button class="btn" data-act="atender" data-foco="${k}"><span>Foco: ${esc(nome)}</span></button>`).join('')}`;
+    if (at.tipo === 'triagem') corpo = '<button class="btn primario" data-act="atender"><span>📏 Aferir PA, glicemia e peso</span><small>10 min</small></button><p class="dica-t">📘 PNAB: o técnico realiza o procedimento e registra; a classificação de risco é da enfermeira.</p>';
+    else if (at.tipo === 'acolhimento') corpo = '<button class="btn primario" data-act="atender"><span>🤝 Acolher e classificar o risco</span><small>6 min</small></button><p class="dica-t">📘 PNAB: o acolhimento com escuta qualificada e a classificação de risco da demanda espontânea são da enfermeira.</p>';
+    else if (at.tipo === 'enfermagem') corpo = `<p class="dica-t">Escolha o foco da orientação (ou deixe automático):</p><button class="btn primario" data-act="atender"><span>🩺 Consulta de enfermagem (foco automático)</span><small>18 min</small></button>${Object.entries(FOCOS).filter(([k]) => k !== 'fumo' || p.tabagismo).map(([k, nome]) => `<button class="btn" data-act="atender" data-foco="${k}"><span>Foco: ${esc(nome)}</span></button>`).join('')}`;
     else corpo = '<button class="btn primario" data-act="atender"><span>🩺 Consulta médica</span><small>30 min</small></button>';
   }
   if (at.fase === 'resultado') {
@@ -5773,11 +5901,18 @@ function folhaAtendimento() {
       if (ref) corpo += `<div class="alerta-sint">🚑 Extrapola a atenção primária: ${esc(ref)}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
       corpo += '<button class="btn primario" style="margin-top:8px" data-act="concluir" data-destino="liberar"><span>✔ Concluir atendimento</span></button>';
     } else {
-      corpo += '<p class="dica-t">Para onde encaminhar?</p>';
-      if (at.tipo === 'triagem') corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem</span></button>';
-      corpo += '<button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
-      if (criterioReferencia(S, p)) corpo += `<div class="alerta-sint">🚑 ${esc(criterioReferencia(S, p))}.</div><button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>direto (competência médica/enfermagem)</small></button>`;
-      corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+      if (at.tipo === 'triagem') { // técnico: não classifica risco nem decide o destino
+        const alerta = /SINAL DE ALERTA/.test(at.resultado || '');
+        corpo += `<p class="dica-t">📘 PNAB: a classificação de risco é atribuição da enfermeira. Registre e entregue a pessoa ao acolhimento${alerta ? ' — e comunique o sinal de alerta com prioridade.' : '.'}</p>
+          ${alerta ? '<div class="alerta-sint">⚠️ Há sinal de alerta nas medidas: comunique a enfermeira na hora.</div>' : ''}
+          <button class="btn ${alerta ? 'primario' : ''}" data-act="concluir" data-destino="acolhimento_urgente"><span>🚨 Entregar à enfermeira com prioridade</span></button>
+          <button class="btn ${alerta ? '' : 'primario'}" data-act="concluir" data-destino="acolhimento"><span>🤝 Registrar e encaminhar ao acolhimento</span></button>`;
+      } else {
+        corpo += `<p class="dica-t">${at.tipo === 'acolhimento' ? '📘 Classifique o risco e decida o destino:' : 'Para onde encaminhar?'}</p>`;
+        corpo += '<button class="btn" data-act="concluir" data-destino="enfermagem"><span>🩺 Consulta de enfermagem (protocolos)</span></button><button class="btn" data-act="concluir" data-destino="consulta"><span>🩺 Consulta médica</span></button>';
+        corpo += `<button class="btn" data-act="concluir" data-destino="referencia"><span>🚑 Encaminhar à UPA/hospital</span><small>só se extrapolar a atenção primária</small></button>`;
+        corpo += '<button class="btn primario" data-act="concluir" data-destino="liberar"><span>✔ Liberar com orientações</span></button>';
+      }
     }
   }
   return `<div class="folha-topo"><h2>${nomeServ}</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
@@ -5786,8 +5921,7 @@ function folhaAtendimento() {
 }
 
 function folhaFila() {
-  const servico = papel() === 'tecnico' ? 'triagem' : papel() === 'enfermeiro' ? 'enfermagem' : 'consulta';
-  const l = filaEspera(W, servico);
+  const l = filaEspera(W, servicosDe(papel()));
   const itens = l.length ? l.map((o) => { const p = achaPessoa(S, o.pid); return `<div class="pessoa"><span class="emoji">${emojiPessoa(p)}</span><span class="info"><div class="nome">${esc(p.nome)}</div><div class="sub">${p.idade} anos · aguarda há ${Math.round(S.mundo.min - o.t0)} min</div></span><button class="btn peq" style="width:auto" data-act="chamar" data-id="${p.id}">Chamar</button></div>`; }).join('') : '<p class="vazio">Ninguém na sua fila.</p>';
   return `<div class="folha-topo"><h2>📋 Fila de espera</h2><button class="fechar" data-act="fechar">✕</button></div>${itens}`;
 }
@@ -5842,7 +5976,7 @@ function folhaIntro() {
 
 function folhaSobre() {
   return `<div class="folha-topo"><h2>Sobre</h2><button class="fechar" data-act="fechar" aria-label="Fechar">✕</button></div>
-    <div class="card"><p>Saudedavida - SV · protótipo v1.1 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
+    <div class="card"><p>Saudedavida - SV · protótipo v1.2 — simulação simplificada de uma unidade básica de saúde, com mundo em tempo real e um único personagem controlado. As regras ficam em <code>data/*.json</code>; as fontes clínicas estão listadas lá e <b>precisam de validação por consultoria clínica</b>.</p>
     <p class="dica-t">Fora do escopo: óbitos, gestação, puericultura, vacinação, outras doenças e papéis de gestão.</p></div>
     <p class="aviso">Jogo educativo. Não substitui avaliação, diagnóstico ou tratamento por profissionais de saúde.</p>
     <div class="card" style="margin-top:10px"><p>Gráficos: <b>${R && R.modo === '3d' ? '3D' : '2D simples'}</b>${R && R.motivo ? ' <span class="dica-t">(' + R.motivo + ')</span>' : ''}</p>
